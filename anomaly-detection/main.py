@@ -9,7 +9,7 @@ import timm
 import torch
 import tqdm
 
-sys.path.append("anomaly_detection/src")
+sys.path.append("anomaly-detection/src")
 import src.common as common
 import src.metrics as metrics
 import src.sampler as sampler
@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument("--filter_anomalies", default=True)
     parser.add_argument("--filtered_data_path", type=str, default="data/filtered/test/data")
     # feature extractor
-    parser.add_argument("--extractor_weights", default="anomaly_detection/checkpoint.pt", type=str)
+    parser.add_argument("--extractor_weights", default="anomaly-detection/checkpoint.pt", type=str)
     parser.add_argument("--extractor_embedding_dim", default=240, type=int)
     parser.add_argument("--extractor_nbr_features", default=3, type=int)
     # backbone
