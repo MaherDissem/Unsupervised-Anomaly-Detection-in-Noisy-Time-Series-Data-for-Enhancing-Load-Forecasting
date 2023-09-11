@@ -1,0 +1,12 @@
+__pycache__
+# data
+*.csv
+*.npy
+# weights
+*.pth
+*.pt
+# outputs
+*.log
+*.png
+*.jpg
+*.jpeg
