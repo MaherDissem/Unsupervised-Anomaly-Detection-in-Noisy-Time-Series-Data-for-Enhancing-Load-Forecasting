@@ -27,7 +27,7 @@ def compute_timeseriewise_retrieval_metrics(
     best_f1 = 0
     best_threshold = thresholds[0]
     for threshold in thresholds:
-        anomaly_prediction_labels = anomaly_prediction_weights > threshold
+        anomaly_prediction_labels = anomaly_prediction_weights >= threshold
         f1 = metrics.f1_score(anomaly_ground_truth_labels, anomaly_prediction_labels)
         # best_f1 = max(f1, best_f1)
         if f1 > best_f1:

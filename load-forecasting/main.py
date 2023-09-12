@@ -19,11 +19,11 @@ random.seed(0)
 # ---
 # Parameters
 # ---
-epochs = 1000
+epochs = 25
 batch_size = 32
 lr = 0.001
 gamma = 0.01
-n_plots = 51
+n_plots = 32
 
 # ---
 # Load dataset
@@ -34,28 +34,30 @@ N_input = int(input_target_sample_split_ratio*timesteps) # input length
 N_output = timesteps - N_input # target length
 train_test_data_split_ratio = 0.8 # split train and test
 
-data = TS_Dataset("data/filtered", "filter", input_target_sample_split_ratio)
-# data = TS_Dataset("data/aemo_npy_data", "contam", input_target_sample_split_ratio)
+# data = TS_Dataset("data/filtered", "filter", input_target_sample_split_ratio)
+data = TS_Dataset("data/aemo_npy_data", "test", input_target_sample_split_ratio) # contam test data
 
-print(f"number of samples: {len(data)}")
-train_size = int(train_test_data_split_ratio*len(data))
-test_size = len(data) - train_size
-train_dataset, test_dataset = torch.utils.data.random_split(data, [train_size, test_size])
+# print(f"number of samples: {len(data)}")
+# train_size = int(train_test_data_split_ratio*len(data))
+# test_size = len(data) - train_size
+# train_dataset, test_dataset = torch.utils.data.random_split(data, [train_size, test_size])
+
+test_data = TS_Dataset("data/aemo_npy_data", "train", input_target_sample_split_ratio)
 
 trainloader = DataLoader(
-    train_dataset,
+    data,
     batch_size=batch_size,
     shuffle=False,
     pin_memory=True,
     drop_last=True,
 )
 testloader = DataLoader(
-    test_dataset,
+    test_data,
     batch_size=batch_size,
     shuffle=False,
     pin_memory=True,
     drop_last=True,
-)
+) # forecast target should be anomaly free, otherwise metric is not fair
 
 # ---
 # train models
@@ -89,4 +91,4 @@ for ind in range(1, n_plots):
     plt.legend()
     k += 1
     # plt.show()
-    plt.savefig(f"out_figs/{ind}.jpg")
+    plt.savefig(f"data/out_figs/{ind}.jpg")

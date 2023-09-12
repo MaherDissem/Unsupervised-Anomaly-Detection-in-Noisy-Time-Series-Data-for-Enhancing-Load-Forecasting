@@ -23,8 +23,8 @@ class TS_Dataset(torch.utils.data.Dataset):
         }
 
     def __len__(self):
-        return 100 # hack to make pipeline testing faster, remove later
         return len(self.data)
+        return 1000 # hack to make pipeline testing faster, remove later
 
     def load_data(self):
         if self.data_type == "test":

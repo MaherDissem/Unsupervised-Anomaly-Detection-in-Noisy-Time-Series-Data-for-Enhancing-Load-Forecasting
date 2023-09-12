@@ -18,7 +18,7 @@ class TS_Dataset(torch.utils.data.Dataset):
         # anom_idx = np.load(self.gt[idx]) if self.gt else None
         # is_anom = anom_idx is not None and len(anom_idx)>0
         data = torch.tensor(data, dtype=torch.float)
-        if self.data_type == "contam":
+        if self.data_type == "test" or self.data_type == "train":
             data = data.unsqueeze(1)
         seq_len = int(data.shape[0]*self.ts_split)
         return data[:seq_len, :], data[seq_len:, :]
@@ -30,9 +30,12 @@ class TS_Dataset(torch.utils.data.Dataset):
         if self.data_type == "filter":
             data = glob.glob(os.path.join(self.root_dir, "test", "data", "*.npy")) # TODO give path directly instead of joining
             gt = glob.glob(os.path.join(self.root_dir, "test", "gt", "*.npy"))
-        if self.data_type == "contam":
+        if self.data_type == "test":
             data = glob.glob(os.path.join(self.root_dir, "test", "data", "*.npy"))
             gt = glob.glob(os.path.join(self.root_dir, "test", "gt", "*.npy"))
+        if self.data_type == "train":
+            data = glob.glob(os.path.join(self.root_dir, "train", "data", "*.npy"))
+            gt = glob.glob(os.path.join(self.root_dir, "train", "gt", "*.npy"))
         if len(data) == 0:
             raise ValueError("No data found in the specified directory")
         return data, gt
