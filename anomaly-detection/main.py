@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument("--faiss_on_gpu", action="store_true")
     parser.add_argument("--faiss_num_workers", type=int, default=4)
     # SoftPatch hyper-parameter
-    parser.add_argument("--weight_method", type=str, default="lof")
+    parser.add_argument("--weight_method", type=str, default="gaussian")
     parser.add_argument("--threshold", type=float, default=0.15)
     parser.add_argument("--lof_k", type=int, default=6)
     parser.add_argument("--without_soft_weight", action="store_true")

@@ -196,7 +196,7 @@ class SoftPatch(torch.nn.Module):
 
             patch_weight = patch_weight.reshape(-1)
             threshold = torch.quantile(patch_weight, 1 - self.threshold)
-            sampling_weight = torch.where(patch_weight > threshold, 0, 1) # denoising
+            sampling_weight = torch.where(patch_weight > threshold, 0, 1) # denoising: sampling_weight[i] is 0 if patch_weight[i] > threshold, else 1, i.e. high weight are ignored
             self.featuresampler.set_sampling_weight(sampling_weight)
             self.patch_weight = patch_weight.clamp(min=0)
 
