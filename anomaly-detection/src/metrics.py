@@ -23,21 +23,15 @@ def compute_timeseriewise_retrieval_metrics(
     auroc = metrics.roc_auc_score(
         anomaly_ground_truth_labels, anomaly_prediction_weights
     )
-    # find best f1 score
-    best_f1 = 0
-    best_threshold = thresholds[0]
-    for threshold in thresholds:
-        anomaly_prediction_labels = anomaly_prediction_weights >= threshold
-        f1 = metrics.f1_score(anomaly_ground_truth_labels, anomaly_prediction_labels)
-        # best_f1 = max(f1, best_f1)
-        if f1 > best_f1:
-            best_f1 = f1
-            best_threshold = threshold
+    precision, recall, thresholds = metrics.precision_recall_curve(
+        anomaly_ground_truth_labels, anomaly_prediction_weights
+    )
+    f1 = 2* precision * recall / (precision + recall)
+    k = f1.argmax()
 
-    metrics.f1_score(anomaly_ground_truth_labels, anomaly_prediction_weights > 0.5)
     # TODO: draw and save curve
     # draw_curve(fpr, tpr, auroc)
-    return {"auroc": auroc, "fpr": fpr, "tpr": tpr, "threshold": thresholds, "best_f1": best_f1, "best_threshold": best_threshold}
+    return {"auroc": auroc, "fpr": fpr, "tpr": tpr, "thresholds": thresholds, "best_f1": f1[k], "best_threshold": thresholds[k]}
 
 
 def compute_pixelwise_retrieval_metrics(anomaly_segmentations, ground_truth_masks):
