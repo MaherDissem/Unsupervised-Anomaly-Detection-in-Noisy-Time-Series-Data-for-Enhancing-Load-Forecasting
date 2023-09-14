@@ -21,7 +21,10 @@
 5. Run the load forecasting model and compare training it on contaminated test data vs on the new filtered data: `load-forecasting/.main.py`
 
 ### Comments 
-Our codebase builds heavily on the following projects: [SoftPatch](https://github.com/TencentYoutuResearch/AnomalyDetection-SoftPatch). Thanks for open-sourcing!
+Our codebase builds heavily on the following projects: 
+- [SoftPatch](https://github.com/TencentYoutuResearch/AnomalyDetection-SoftPatch) 
+- 
+Thanks for open-sourcing!
 
 ### Citation
 TBA

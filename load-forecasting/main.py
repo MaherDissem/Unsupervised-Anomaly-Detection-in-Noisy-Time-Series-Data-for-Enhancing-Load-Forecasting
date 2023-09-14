@@ -19,7 +19,7 @@ random.seed(0)
 # ---
 # Parameters
 # ---
-epochs = 5
+epochs = 50
 batch_size = 32
 lr = 0.001
 gamma = 0.01
