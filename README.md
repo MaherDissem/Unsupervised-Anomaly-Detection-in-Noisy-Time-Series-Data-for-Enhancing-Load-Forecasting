@@ -1,18 +1,27 @@
 ## Unsupervised anomaly detecion on noisy time series data for accurate load forecasting
 
+### Setup
+``````
 - python -m venv venv
 
 - source venv/Scripts/activate
 
 - pip install -r requirements.txt
-
 ``````
-1. Collect data: data/collect_aemo_data.py
 
-2. Contaminate data (both train and test) and save it the anomaly detector's format: data/prepare_data.py
+### Running
+1. Collect data: `data/collect_aemo_data.py`
 
-3. Train the feature extraction model (reconstruction autoencoder): anomaly-detection/src/train_feature_extractor.py
+2. Contaminate data (both train and test) and save them into the format of the anomaly detector framework: `data/prepare_data.py`
 
-4. Run TS_softpatch to train it on train data (fill memory bank from train features) and evaluate and filter test data: anomaly-detection/main.py
+3. Train the feature extraction model (reconstruction LSTM-Autoencoder): `anomaly-detection/src/train_feature_extractor.py`
 
-5. Run load forecasting model and compare its performance on the contaminated test data vs on the new filtered data: load-forecasting/.main.py
+4. Train TS_softpatch (fill memory bank with denoised patch features), evaluate its anomaly detection on test data and save filtered data (samples predicted to be anomaly-free): `anomaly-detection/main.py`
+
+5. Run the load forecasting model and compare training it on contaminated test data vs on the new filtered data: `load-forecasting/.main.py`
+
+### Comments 
+Our codebase builds heavily on the following projects: [SoftPatch](https://github.com/TencentYoutuResearch/AnomalyDetection-SoftPatch). Thanks for open-sourcing!
+
+### Citation
+TBA
