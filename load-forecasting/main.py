@@ -19,7 +19,7 @@ random.seed(0)
 # ---
 # Parameters
 # ---
-epochs = 25
+epochs = 5
 batch_size = 32
 lr = 0.001
 gamma = 0.01
@@ -58,7 +58,9 @@ testloader = DataLoader(
 encoder = EncoderRNN(input_size=1, hidden_size=128, num_grulstm_layers=1, batch_size=batch_size).to(device)
 decoder = DecoderRNN(input_size=1, hidden_size=128, num_grulstm_layers=1, fc_units=16, output_size=1).to(device)
 model = Net_GRU(encoder, decoder, target_length=N_output, device=device).to(device)
-train_model(trainloader, testloader, model, loss_type='mse', learning_rate=lr, epochs=epochs, device=device)
+train_loss_evol = train_model(trainloader, testloader, model, loss_type='mse', learning_rate=lr, epochs=epochs, device=device)
+plt.plot(train_loss_evol)
+plt.savefig("results/out_figs/filtered/loss.jpg")
 
 # ---
 # Visualize results

@@ -13,6 +13,7 @@ def train_model(
 
     optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
     mse_criterion = torch.nn.MSELoss()
+    losses = []
     for epoch in range(1, epochs): 
         for i, data in enumerate(trainloader, 0):
             inputs, target = data
@@ -30,11 +31,13 @@ def train_model(
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            losses.append(loss.item())
         if verbose:
             if epoch % print_every == 0:
                 print('epoch ', epoch, ' loss ', loss.item(),' loss shape ', loss_shape.item(), ' loss temporal ', loss_temporal.item())
             if epoch % eval_every == 0:
                 eval_model(net, testloader, gamma, device, verbose=1)
+    return losses
   
 
 def eval_model(net, loader, gamma, device, verbose=1):   
