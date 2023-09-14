@@ -23,29 +23,22 @@ epochs = 25
 batch_size = 32
 lr = 0.001
 gamma = 0.01
-n_plots = 32
+n_plots = 32 # must be <= batch_size, TODO fix this
 
 # ---
-# Load dataset
+# Load data
 # ---
 timesteps = 240 
-input_target_sample_split_ratio = 0.5834 # split same ts sequence into train and forecasting target
-N_input = int(input_target_sample_split_ratio*timesteps) # input length
+sequence_split = 0.5834 # split same ts sequence into train and forecasting target
+N_input = int(sequence_split*timesteps) # input length
 N_output = timesteps - N_input # target length
-train_test_data_split_ratio = 0.8 # split train and test
 
-# data = TS_Dataset("data/filtered", "filter", input_target_sample_split_ratio)
-data = TS_Dataset("data/aemo_npy_data", "test", input_target_sample_split_ratio) # contam test data
-
-# print(f"number of samples: {len(data)}")
-# train_size = int(train_test_data_split_ratio*len(data))
-# test_size = len(data) - train_size
-# train_dataset, test_dataset = torch.utils.data.random_split(data, [train_size, test_size])
-
-test_data = TS_Dataset("data/aemo_npy_data", "train", input_target_sample_split_ratio)
+# train_data = TS_Dataset("data/aemo_npy_data", "test", sequence_split) # contam test data
+train_data = TS_Dataset("data/filtered", "filter", sequence_split) # contam test data filltered through anomaly detection
+test_data = TS_Dataset("data/aemo_npy_data", "train", sequence_split) # forecast target should be anomaly free, otherwise metric is not fair
 
 trainloader = DataLoader(
-    data,
+    train_data,
     batch_size=batch_size,
     shuffle=False,
     pin_memory=True,
@@ -57,7 +50,7 @@ testloader = DataLoader(
     shuffle=False,
     pin_memory=True,
     drop_last=True,
-) # forecast target should be anomaly free, otherwise metric is not fair
+) 
 
 # ---
 # train models
@@ -71,24 +64,19 @@ train_model(trainloader, testloader, model, loss_type='mse', learning_rate=lr, e
 # Visualize results
 # ---
 gen_test = iter(testloader)
-test_inputs, test_targets = next(gen_test)
-test_inputs  = torch.tensor(test_inputs, dtype=torch.float32).to(device)
-test_targets = torch.tensor(test_targets, dtype=torch.float32).to(device)
+inputs, targets = next(gen_test)
+inputs  = torch.tensor(inputs, dtype=torch.float32).to(device)
+targets = torch.tensor(targets, dtype=torch.float32).to(device)
+preds = model(inputs).to(device)
 
 for ind in range(1, n_plots):
     plt.figure()
-    plt.rcParams['figure.figsize'] = (10.0, 13.0)  
-    k = 1 # loss nbr
-    pred = model(test_inputs).to(device)
-    input = test_inputs.detach().cpu().numpy()[ind,:,:]
-    target = test_targets.detach().cpu().numpy()[ind,:,:]
-    preds = pred.detach().cpu().numpy()[ind,:,:]
-    plt.subplot(2, 1, k)
+    plt.rcParams['figure.figsize'] = (10.0, 5.0)  
+    input = inputs.detach().cpu().numpy()[ind,:,:]
+    target = targets.detach().cpu().numpy()[ind,:,:]
+    pred = preds.detach().cpu().numpy()[ind,:,:]
     plt.plot(range(0, N_input), input, label='input', linewidth=3)
-    plt.plot(range(N_input-1, N_input+N_output), np.concatenate([ input[N_input-1:N_input], target ]), label='target', linewidth=3)   
-    plt.plot(range(N_input-1, N_input+N_output),  np.concatenate([ input[N_input-1:N_input], preds ]), label='prediction', linewidth=3)       
-    plt.xticks(range(0, 40, 2))
+    plt.plot(range(N_input-1, N_input+N_output), np.concatenate([input[N_input-1:N_input], target]), label='target', linewidth=3)   
+    plt.plot(range(N_input-1, N_input+N_output),  np.concatenate([input[N_input-1:N_input], pred]), label='prediction', linewidth=3)       
     plt.legend()
-    k += 1
-    # plt.show()
-    plt.savefig(f"data/out_figs/{ind}.jpg")
+    plt.savefig(f"results/out_figs/filtered/{ind}.jpg")

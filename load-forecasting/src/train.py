@@ -13,7 +13,7 @@ def train_model(
 
     optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
     mse_criterion = torch.nn.MSELoss()
-    for epoch in range(epochs): 
+    for epoch in range(1, epochs): 
         for i, data in enumerate(trainloader, 0):
             inputs, target = data
             inputs = torch.tensor(inputs, dtype=torch.float32).to(device)
