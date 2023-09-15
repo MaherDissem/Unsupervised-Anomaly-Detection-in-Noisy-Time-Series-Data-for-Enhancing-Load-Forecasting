@@ -12,9 +12,9 @@
 ### Running
 1. Collect data: `data/collect_aemo_data.py`
 
-2. Contaminate data (both train and test) and save them into the format of the anomaly detector framework: `data/prepare_data.py`
+2. Contaminate data (both train and test) and save them into the format of the anomaly detector framework: `data/prepare_data.ipynb`
 
-3. Train the feature extraction model (reconstruction LSTM-Autoencoder): `anomaly-detection/src/train_feature_extractor.py`
+3. Train the feature extraction model (reconstruction LSTM-Autoencoder): `anomaly-detection/src/train_feature_extractor.ipynb`
 
 4. Train TS_softpatch (fill memory bank with denoised patch features), evaluate its anomaly detection on test data and save filtered data (samples predicted to be anomaly-free): `anomaly-detection/main.py`
 
