@@ -171,10 +171,10 @@ def run(args):
     # inference on test set
     scores, heatmaps, labels_gt = coreset.predict(dataloaders["testing"])
     test_end = time.time()
+
     LOGGER.info(
-        "Training time:{}, Testing time:{}".format(
-            train_end - start_time, test_end - train_end
-        )
+        f"Training time: {(train_end - start_time)/60:.2f} min,\
+        Testing time: {(test_end - train_end)/60:.2f} min."
     )
 
     # evaluation of test data
@@ -184,13 +184,13 @@ def run(args):
     scores = (scores - min_scores) / (max_scores - min_scores + 1e-5)
     scores = np.mean(scores, axis=0)
 
-    heatmaps = np.array(heatmaps)
-    min_scores = heatmaps.reshape(len(heatmaps), -1).min(axis=-1).reshape(-1, 1, 1, 1)
-    max_scores = heatmaps.reshape(len(heatmaps), -1).max(axis=-1).reshape(-1, 1, 1, 1)
-    heatmaps = (heatmaps - min_scores) / (heatmaps - min_scores)
-    heatmaps = np.mean(heatmaps, axis=0)
-    if args.save_heatmaps:
-        pass
+    # heatmaps = np.array(heatmaps)
+    # min_scores = heatmaps.reshape(len(heatmaps), -1).min(axis=-1).reshape(-1, 1, 1, 1)
+    # max_scores = heatmaps.reshape(len(heatmaps), -1).max(axis=-1).reshape(-1, 1, 1, 1)
+    # heatmaps = (heatmaps - min_scores) / (heatmaps - min_scores)
+    # heatmaps = np.mean(heatmaps, axis=0)
+    # if args.save_heatmaps:
+    #     pass
 
     LOGGER.info("Computing evaluation metrics.")
     results = metrics.compute_timeseriewise_retrieval_metrics(scores, labels_gt)
