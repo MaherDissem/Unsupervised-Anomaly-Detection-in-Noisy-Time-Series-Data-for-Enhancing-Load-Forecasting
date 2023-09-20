@@ -23,19 +23,19 @@ epochs = 50
 batch_size = 32
 lr = 0.001
 gamma = 0.01
-n_plots = 32 # must be <= batch_size, TODO fix this
+n_plots = 32
 
 # ---
 # Load data
 # ---
 timesteps = 240 
-sequence_split = 0.5834 # split same ts sequence into train and forecasting target
-N_input = int(sequence_split*timesteps) # input length
-N_output = timesteps - N_input # target length
+sequence_split = 0.5834                  # split same ts sequence into train and forecasting target
+N_input = int(sequence_split*timesteps)  # input length
+N_output = timesteps - N_input           # target length
 
-# train_data = TS_Dataset("data/aemo_npy_data", "test", sequence_split) # contam test data
-train_data = TS_Dataset("data/filtered", "filter", sequence_split) # contam test data filltered through anomaly detection
-test_data = TS_Dataset("data/aemo_npy_data", "train", sequence_split) # forecast target should be anomaly free, otherwise metric is not fair
+train_data = TS_Dataset("data/aemo_dataset/npy_data/test", ts_split=sequence_split)   # contam test data
+train_data = TS_Dataset("data/aemo_dataset/npy_data/filter", ts_split=sequence_split) # contam test data filltered through anomaly detection
+test_data = TS_Dataset("data/aemo_dataset/npy_data/clean", ts_split=sequence_split)   # forecast target should be anomaly free, otherwise metric is not fair
 
 trainloader = DataLoader(
     train_data,
@@ -59,19 +59,20 @@ encoder = EncoderRNN(input_size=1, hidden_size=128, num_grulstm_layers=1, batch_
 decoder = DecoderRNN(input_size=1, hidden_size=128, num_grulstm_layers=1, fc_units=16, output_size=1).to(device)
 model = Net_GRU(encoder, decoder, target_length=N_output, device=device).to(device)
 train_loss_evol = train_model(trainloader, testloader, model, loss_type='mse', learning_rate=lr, epochs=epochs, device=device)
-plt.plot(train_loss_evol)
-plt.savefig("results/out_figs/filtered/loss.jpg")
 
 # ---
 # Visualize results
 # ---
+plt.plot(train_loss_evol)
+plt.savefig("results/out_figs/filter/loss.jpg")
+
 gen_test = iter(testloader)
 inputs, targets = next(gen_test)
 inputs  = torch.tensor(inputs, dtype=torch.float32).to(device)
 targets = torch.tensor(targets, dtype=torch.float32).to(device)
 preds = model(inputs).to(device)
 
-for ind in range(1, n_plots):
+for ind in range(1, min(batch_size, n_plots)+1):
     plt.figure()
     plt.rcParams['figure.figsize'] = (10.0, 5.0)  
     input = inputs.detach().cpu().numpy()[ind,:,:]
@@ -81,4 +82,4 @@ for ind in range(1, n_plots):
     plt.plot(range(N_input-1, N_input+N_output), np.concatenate([input[N_input-1:N_input], target]), label='target', linewidth=3)   
     plt.plot(range(N_input-1, N_input+N_output),  np.concatenate([input[N_input-1:N_input], pred]), label='prediction', linewidth=3)       
     plt.legend()
-    plt.savefig(f"results/out_figs/filtered/{ind}.jpg")
+    plt.savefig(f"results/out_figs/filter/{ind}.jpg")

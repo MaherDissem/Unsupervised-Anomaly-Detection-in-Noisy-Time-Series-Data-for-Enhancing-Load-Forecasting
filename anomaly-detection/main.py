@@ -26,7 +26,12 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--save_heatmaps", action="store_true", default=False)
     parser.add_argument("--filter_anomalies", default=True)
-    parser.add_argument("--filtered_data_path", type=str, default="data/filtered/test/data")
+    parser.add_argument("--filtered_data_path", type=str, default="data/aemo_dataset/npy_data/filter")
+    # dataset
+    parser.add_argument("--data_path", type=str, default="data/aemo_dataset/npy_data")
+    parser.add_argument("--batch_size", default=32, type=int)
+    parser.add_argument("--nbr_timesteps", default=240, type=int)
+    parser.add_argument("--nbr_variables", default=1, type=int)
     # feature extractor
     parser.add_argument("--extractor_weights", default="anomaly-detection/checkpoint.pt", type=str)
     parser.add_argument("--extractor_embedding_dim", default=240, type=int)
@@ -44,11 +49,6 @@ def parse_args():
     parser.add_argument("--threshold", type=float, default=0.15)
     parser.add_argument("--lof_k", type=int, default=6)
     parser.add_argument("--without_soft_weight", action="store_true")
-    # dataset
-    parser.add_argument("--data_path", type=str, default="data/aemo_npy_data")
-    parser.add_argument("--batch_size", default=32, type=int)
-    parser.add_argument("--nbr_timesteps", default=240, type=int)
-    parser.add_argument("--nbr_variables", default=1, type=int)
 
     args = parser.parse_args()
     return args
