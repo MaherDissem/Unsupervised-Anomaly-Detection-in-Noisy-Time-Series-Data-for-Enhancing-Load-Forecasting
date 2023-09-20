@@ -18,7 +18,7 @@ class TS_Dataset(torch.utils.data.Dataset):
         # anom_idx = np.load(self.gt[idx]) if self.gt else None
         # is_anom = anom_idx is not None and len(anom_idx)>0
         data = torch.tensor(data, dtype=torch.float)
-        if data.dim() == 3: data = data.unsqueeze(1)
+        if data.dim() == 1: data = data.unsqueeze(1)
         seq_len = int(data.shape[0]*self.ts_split)
         return data[:seq_len, :], data[seq_len:, :]
 
