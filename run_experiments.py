@@ -3,7 +3,7 @@ import os
 import subprocess
 
 gpu_ids = [0, 1, 2, 3]
-nbr_processors = len(gpu_ids)
+nbr_workers = len(gpu_ids)
 
 datasets = ["aemo_dataset", "inpg_dataset"]#, "IRISE_dataset"]
 feature_names = ["TOTALDEMAND", "conso_global"]#, "Site consumption ()"]
@@ -118,7 +118,7 @@ if __name__ == "__main__":
                 exp += 1
     
     # divide the number of experiments by the max number of parallel processes
-    chunks = [experiment_args[i:i+nbr_processors] for i in range(0, len(experiment_args), nbr_processors)]
+    chunks = [experiment_args[i:i+nbr_workers] for i in range(0, len(experiment_args), nbr_workers)]
 
     for chunk in chunks:
         processes = []
