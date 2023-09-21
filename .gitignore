@@ -1,4 +1,7 @@
-__pycache__
+__pycache__/
+*dataset
+results/
+experiments/
 # data
 *.csv
 *.npy
@@ -9,6 +12,7 @@ __pycache__
 *.pth
 *.pt
 # outputs
+*.txt
 *.log
 *.png
 *.jpg

@@ -1,9 +1,10 @@
 import argparse
 import logging
+import os
 import random
 import sys
 import time
-import os
+
 import numpy as np
 import timm
 import torch
@@ -26,18 +27,19 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--save_heatmaps", action="store_true", default=False)
     parser.add_argument("--filter_anomalies", default=True)
-    parser.add_argument("--filtered_data_path", type=str, default="data/aemo_dataset/npy_data/filter")
+    parser.add_argument("--filtered_data_path", type=str, default="data/inpg_dataset/npy_data/filter") # data path
+    parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
     # dataset
-    parser.add_argument("--data_path", type=str, default="data/aemo_dataset/npy_data")
+    parser.add_argument("--data_path", type=str, default="data/inpg_dataset/npy_data")                 # data path
     parser.add_argument("--batch_size", default=32, type=int)
-    parser.add_argument("--nbr_timesteps", default=240, type=int)
+    parser.add_argument("--nbr_timesteps", default=24*3, type=int)
     parser.add_argument("--nbr_variables", default=1, type=int)
     # feature extractor
     parser.add_argument("--extractor_weights", default="anomaly-detection/checkpoint.pt", type=str)
-    parser.add_argument("--extractor_embedding_dim", default=240, type=int)
+    parser.add_argument("--extractor_embedding_dim", default=24*3, type=int)
     parser.add_argument("--extractor_nbr_features", default=3, type=int)
     # backbone
-    parser.add_argument("--backbone_names", "-b", type=str, action='append', default="resnet50")
+    parser.add_argument("--backbone_names", "-b", type=str, default="resnet50") # TODO backbone name, singular
     parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer2", "layer3"])
     # coreset sampler
     parser.add_argument("--sampler_name", type=str, default="approx_greedy_coreset")
@@ -207,6 +209,10 @@ def run(args):
                     if scores[i]<=threshold:
                         np.save(os.path.join(args.filtered_data_path ,str(i)), timeserie)
                     i += 1
+
+    print("\nanomaly detection results:\n",
+          "best f1: ", results["best_f1"], "AUROC: ", results["auroc"],
+          file=open(args.results_file, "a"))
 
 
 if __name__ == "__main__":
