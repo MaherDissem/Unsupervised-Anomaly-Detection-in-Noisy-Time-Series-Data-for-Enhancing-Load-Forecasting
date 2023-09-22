@@ -9,8 +9,8 @@ datasets = ["aemo_dataset", "inpg_dataset"]#, "IRISE_dataset"]
 feature_names = ["TOTALDEMAND", "conso_global"]#, "Site consumption ()"]
 window_sizes = [45, 24]
 nbr_days = [2, 3, 5] # multiplier of window size and sliding step
-contam_rates = [0.05, 0.1, 0.15, 0.2, 0.25]
-
+contam_rates = [0.05, 0.1, 0.15, 0.2]
+sequence_splits = [0.5, 0.75, 0.9]
 
 def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nbr_anom, timesteps, step, gpu_id):
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
@@ -62,33 +62,40 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
     ]
     subprocess.run(command)
 
-    # train load forecasting model on contam data
-    command = [
-        "python", "load-forecasting/main.py",
-        "--train_dataset_path", f"{exp_folder}/data/test/data",
-        "--test_dataset_path", f"{exp_folder}/data/clean",
-        "--timesteps", str(timesteps),
-        "--epochs", "200",
-        "--save_plots_path", f"{exp_folder}/out_figs/contam",
-        "--results_file", str(results_path),
-    ]
-    print(f"\nContam data forecasting",\
-        file=open(results_path, "a"))
-    subprocess.run(command)
+    for sequence_split in sequence_splits:
+        forecast_horizon = int(sequence_split * timesteps)
+        print(f"\n\nForecast horizon of {forecast_horizon} ({sequence_split} split)",\
+            file=open(results_path, "a"))
+        
+        # train load forecasting model on contam data
+        command = [
+            "python", "load-forecasting/main.py",
+            "--train_dataset_path", f"{exp_folder}/data/test/data",
+            "--test_dataset_path", f"{exp_folder}/data/clean",
+            "--timesteps", str(timesteps),
+            "--epochs", "200",
+            "--sequence_split", "200",
+            "--save_plots_path", f"{exp_folder}/out_figs/{forecast_horizon}/contam",
+            "--results_file", str(results_path),
+        ]
+        print(f"\nContam data forecasting",\
+            file=open(results_path, "a"))
+        subprocess.run(command)
 
-    # train load forecasting model on filtered data
-    command = [
-        "python", "load-forecasting/main.py",
-        "--train_dataset_path", f"{exp_folder}/data/filter",
-        "--test_dataset_path", f"{exp_folder}/data/clean",
-        "--timesteps", str(timesteps),
-        "--epochs", "200",
-        "--save_plots_path", f"{exp_folder}/out_figs/filter",
-        "--results_file", str(results_path),
-    ]
-    print(f"\nFilter data forecasting",\
-    file=open(results_path, "a"))
-    subprocess.run(command)
+        # train load forecasting model on filtered data
+        command = [
+            "python", "load-forecasting/main.py",
+            "--train_dataset_path", f"{exp_folder}/data/filter",
+            "--test_dataset_path", f"{exp_folder}/data/clean",
+            "--timesteps", str(timesteps),
+            "--epochs", "200",
+            "--sequence_split", "200",
+            "--save_plots_path", f"{exp_folder}/out_figs/{forecast_horizon}/filter",
+            "--results_file", str(results_path),
+        ]
+        print(f"\nFilter data forecasting",\
+        file=open(results_path, "a"))
+        subprocess.run(command)
 
 
 def create_clean_folder(path):
