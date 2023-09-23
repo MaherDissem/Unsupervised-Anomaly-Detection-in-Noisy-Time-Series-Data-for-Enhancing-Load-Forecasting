@@ -64,7 +64,7 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
 
     for sequence_split in sequence_splits:
         forecast_horizon = int(sequence_split * timesteps)
-        print(f"\n\nForecast horizon of {forecast_horizon} ({sequence_split} split)",\
+        print(f"\n-----\nForecast horizon of {forecast_horizon} ({sequence_split} split)",\
             file=open(results_path, "a"))
         
         # train load forecasting model on contam data
@@ -74,7 +74,7 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
             "--test_dataset_path", f"{exp_folder}/data/clean",
             "--timesteps", str(timesteps),
             "--epochs", "200",
-            "--sequence_split", "200",
+            "--sequence_split", str(sequence_split),
             "--save_plots_path", f"{exp_folder}/out_figs/{forecast_horizon}/contam",
             "--results_file", str(results_path),
         ]
@@ -89,7 +89,7 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
             "--test_dataset_path", f"{exp_folder}/data/clean",
             "--timesteps", str(timesteps),
             "--epochs", "200",
-            "--sequence_split", "200",
+            "--sequence_split", str(sequence_split),
             "--save_plots_path", f"{exp_folder}/out_figs/{forecast_horizon}/filter",
             "--results_file", str(results_path),
         ]
