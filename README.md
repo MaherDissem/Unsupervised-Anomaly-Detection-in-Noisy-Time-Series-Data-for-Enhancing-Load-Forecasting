@@ -1,12 +1,10 @@
-## Unsupervised anomaly detecion on noisy time series data for accurate load forecasting
+## Unsupervised anomaly detection on noisy time series data for accurate load forecasting
 
 ### Setup
 ``````
-- python -m venv venv
-
-- source venv/Scripts/activate
-
-- pip install -r requirements.txt
+python -m venv venv
+source venv/Scripts/activate
+pip install -r requirements.txt
 ``````
 
 ### Running
@@ -20,7 +18,7 @@
 
 5. Run the load forecasting model and compare training it on contaminated test data vs on the new filtered data: `load-forecasting/.main.py`
 
-`run_experiments.py` can be used to run multiple experiments (different contamination rates, forecast horizons, etc.) in parallel in a multi-gpu environment.
+`run_experiments.py` automates this process and can execute multiple experiments (different contamination rates, forecast horizons, etc.) in parallel, within a multi-gpu environment. 
 
 ### Acknowledgement 
 Our codebase builds heavily on the following projects: 
