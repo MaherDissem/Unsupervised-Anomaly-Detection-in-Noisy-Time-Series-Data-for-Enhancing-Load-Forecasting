@@ -16,7 +16,6 @@ from src.train import train_model
 import warnings; warnings.simplefilter('ignore')
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-random.seed(0)
 
 # ---
 # Parameters
@@ -44,6 +43,19 @@ parser.add_argument("--save_plots_path", default="results/out_figs/inpg_dataset/
 parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
 args = parser.parse_args()
 
+# ---
+# Ensure reproductibility
+# ---
+def fix_seeds(seed, with_torch=True, with_cuda=True):
+    random.seed(seed)
+    np.random.seed(seed)
+    if with_torch:
+        torch.manual_seed(seed)
+    if with_cuda:
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+fix_seeds(0)
 
 # ---
 # Load data
