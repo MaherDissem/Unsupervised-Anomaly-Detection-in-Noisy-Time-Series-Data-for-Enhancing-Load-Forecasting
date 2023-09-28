@@ -39,33 +39,28 @@ def train_model(
             if epoch % eval_every == 0:
                 eval_model(net, testloader, gamma, device, verbose=1)
     
-    mse_loss, mae_loss, mape_loss, dtw_loss, tdi_loss = eval_model(net, testloader, gamma, device, verbose=0)
-    print(f" mse_loss: {mse_loss}, mae_loss: {mae_loss}, mape_loss: {mape_loss}, dtw_loss: {dtw_loss}, tdi_loss: {tdi_loss}",
+    smape_loss, dtw_loss, tdi_loss = eval_model(net, testloader, gamma, device, verbose=0)
+    print(f" smape_loss: {smape_loss}, dtw_loss: {dtw_loss}, tdi_loss: {tdi_loss}",
           file=open(log_file, "a"))
     return losses
   
 
 def eval_model(net, loader, gamma, device, verbose=1):   
     criterion = torch.nn.MSELoss()
-    losses_mse = []
-    losses_mae = []
-    losses_mape = []
+    losses_smape = []
     losses_dtw = []
     losses_tdi = []   
     for i, data in enumerate(loader, 0):
-        loss_mse, loss_dtw, loss_tdi = torch.tensor(0),torch.tensor(0),torch.tensor(0)
+        loss_smape, loss_dtw, loss_tdi = torch.tensor(0),torch.tensor(0),torch.tensor(0)
         # get the inputs
         inputs, target = data
         inputs = torch.tensor(inputs, dtype=torch.float32).to(device)
         target = torch.tensor(target, dtype=torch.float32).to(device)
         batch_size, N_output = target.shape[0:2]
         outputs = net(inputs)
-        # MSE    
-        loss_mse = criterion(target, outputs)  
-        # MAE
-        loss_mae = torch.mean(torch.abs(outputs - target))  
-        # MAPE
-        loss_mape = torch.mean(torch.abs((outputs - target) / target)) * 100
+        # sMAPE
+        absolute_percentage_errors = 2 * torch.abs(outputs - target) / (torch.abs(outputs) + torch.abs(target))
+        loss_smape = torch.mean(absolute_percentage_errors) * 100
         # DTW and TDI
         loss_dtw, loss_tdi = 0, 0
         for k in range(batch_size):         
@@ -80,16 +75,12 @@ def eval_model(net, loader, gamma, device, verbose=1):
         loss_dtw = loss_dtw /batch_size
         loss_tdi = loss_tdi / batch_size
 
-        losses_mse.append( loss_mse.item() )
-        losses_mae.append( loss_mae.item() )
-        losses_mape.append( loss_mape.item() )
+        losses_smape.append( loss_smape.item() )
         losses_dtw.append( loss_dtw )
         losses_tdi.append( loss_tdi )
-    mse_loss = np.array(losses_mse).mean()
-    mae_loss = np.array(losses_mae).mean()
-    mape_loss = np.array(losses_mape).mean()
+    smape_loss = np.array(losses_smape).mean()
     dtw_loss = np.array(losses_dtw).mean()
     tdi_loss = np.array(losses_tdi).mean()
     if verbose:
-        print( 'Eval mse=', mse_loss, 'mae=', mae_loss, 'mape=', loss_mape, ' dtw=', dtw_loss ,' tdi=', tdi_loss) 
-    return mse_loss, mae_loss, mape_loss, dtw_loss, tdi_loss
+        print( 'Eval s-mape=', smape_loss, ' dtw=', dtw_loss ,' tdi=', tdi_loss) 
+    return smape_loss, dtw_loss, tdi_loss
