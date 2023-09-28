@@ -87,7 +87,7 @@ for batch_idx, batch in enumerate(test_dataloader):
     gt = batch["is_anomaly"]
     encoded_batch, decoded_batch = loaded_model(batch_data)
     for data_sample, decoded_sample, is_anomaly in zip(batch_data, decoded_batch, gt):
-        if not is_anomaly: continue
+        if is_anomaly: continue
         plt.clf()
         plt.title(f"is_anomaly: {is_anomaly}")
         plt.plot(data_sample.squeeze().cpu().data, label="input")
