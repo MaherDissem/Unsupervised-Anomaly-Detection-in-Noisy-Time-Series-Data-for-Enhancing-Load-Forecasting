@@ -119,14 +119,17 @@ def delete_files_in_directory(directory_path):
 delete_files_in_directory(args.npy_data_path)
 
 
-for i, sample in enumerate(clean_data): # clean train data to later evalute forecasting performance
+for i, sample in enumerate(clean_data):                                         # clean data to evalute forecasting performance (we don't forecast artificial anomalies)
+    if np.isnan(sample).any(): continue
     np.save(os.path.join(args.npy_data_path, "clean", str(i)), sample)
 
-for i, (sample, anom_idx) in enumerate(zip(train_contam_data, train_anom_idx)): # contaminated train data
+for i, (sample, anom_idx) in enumerate(zip(train_contam_data, train_anom_idx)): # contaminated train data of anomaly detection
+    if np.isnan(sample).any(): continue
     np.save(os.path.join(args.npy_data_path, "train", "data", str(i)), sample)
     np.save(os.path.join(args.npy_data_path, "train", "gt", str(i)), anom_idx)
 
-for i, (sample, anom_idx) in enumerate(zip(test_contam_data, test_anom_idx)):   # contaminated test data
+for i, (sample, anom_idx) in enumerate(zip(test_contam_data, test_anom_idx)):   # contaminated test data of anomaly detection
+    if np.isnan(sample).any(): continue                                         # also train data of load forecasting (contaminated and filtered)
     np.save(os.path.join(args.npy_data_path, "test", "data", str(i)), sample)
     np.save(os.path.join(args.npy_data_path, "test", "gt", str(i)), anom_idx)
 
