@@ -7,6 +7,7 @@ gpu_ids = [0, 1, 2, 3]
 nbr_workers = len(gpu_ids)
 
 # experiment variables
+experiments_root = "experiments2"
 datasets = ["aemo_dataset", "inpg_dataset", "IRISE_dataset"]
 feature_names = ["TOTALDEMAND", "conso_global", "Site consumption ()"]
 window_sizes = [45, 24, 50]
@@ -14,10 +15,9 @@ nbr_days = [2, 3, 5] # multiplier of window size and sliding step
 contam_rates = [0.05, 0.1, 0.15, 0.2]
 sequence_splits = [0.5, 0.75, 0.9]
 
-
 def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nbr_anom, timesteps, step, gpu_id):
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
-    exp_folder = os.path.join("experiments2", f"exp{exp}_{dataset}")
+    exp_folder = os.path.join(experiments_root, f"exp{exp}_{dataset}")
     results_path = os.path.join(exp_folder, "results.txt")
     os.makedirs(exp_folder, exist_ok=True)
     print(f"exp: {exp}, dataset: {dataset}, contam_rate: {contam_rate}, timesteps: {timesteps}",\
@@ -115,7 +115,7 @@ def create_clean_folder(path):
 
 
 if __name__ == "__main__":
-    create_clean_folder("experiments")
+    create_clean_folder(experiments_root)
     experiment_args = []
     exp = 0
     for dataset, feature_name, window_size in zip(datasets, feature_names, window_sizes):
