@@ -29,6 +29,7 @@ parser.add_argument("--timesteps", type=int, default=24*3, help="Number of times
 parser.add_argument("--nbr_var", type=int, default=1, help="Number of variables")
 parser.add_argument("--sequence_split", type=float, default=0.5834, help="Sequence split ratio")
 # model
+parser.add_argument("--loss_type", type=str, default="mse", help="Loss function to optimize (mse/dilate)")
 parser.add_argument("--hidden_size", type=int, default=128, help="Hidden size of the model")
 parser.add_argument("--num_grulstm_layers", type=int, default=1, help="Number of GRU/LSTM layers")
 parser.add_argument("--fc_units", type=int, default=16, help="Number of fully connected units")
@@ -100,7 +101,7 @@ decoder = DecoderRNN(
 ).to(device)
 
 model = Net_GRU(encoder, decoder, target_length=N_output, device=device).to(device)
-train_loss_evol = train_model(trainloader, testloader, model, loss_type='mse', learning_rate=args.lr, epochs=args.epochs, device=device, log_file=args.results_file, gamma=args.gamma, verbose=0)
+train_loss_evol = train_model(trainloader, testloader, model, loss_type=args.loss_type, learning_rate=args.lr, epochs=args.epochs, device=device, log_file=args.results_file, gamma=args.gamma, verbose=0)
 
 # ---
 # Visualize results
