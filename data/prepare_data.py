@@ -25,6 +25,14 @@ parser.add_argument("--step", type=int, default=24, help="Step size")
 args = parser.parse_args()
 
 # ---
+# Ensure reproductibility
+# ---
+def fix_seeds(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+fix_seeds(0)
+
+# ---
 # Loading and train/test splitting
 # ---
 X = []
