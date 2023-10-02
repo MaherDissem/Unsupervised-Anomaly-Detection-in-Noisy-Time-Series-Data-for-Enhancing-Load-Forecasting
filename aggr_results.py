@@ -56,10 +56,18 @@ def collect_results(root_path):
             print(f"Error in {path}")
     return results, exp_params
 
+datasets = {
+    "aemo_dataset":0,
+    "inpg_dataset":0,
+    "IRISE_dataset":0,
+}
+
 if __name__ == "__main__":
     results, exp_params = collect_results('experiments')
     results.sort(key=lambda x: x[0], reverse=True)
     for result in results[:6]: 
+        if datasets[exp_params[result[1]]["dataset"]]==1: continue
+        datasets[exp_params[result[1]]["dataset"]] = 1
         print("loss decrease after filter", result[0])
         print("exp id:", result[1])
         print("experiment parameters", exp_params[result[1]], end="\n\n")
