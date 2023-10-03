@@ -7,7 +7,7 @@ gpu_ids = [0, 1, 2, 3]
 nbr_workers = len(gpu_ids)
 
 # experiment variables
-experiments_root = "experiments"
+experiments_root = "experiments/experiment5"
 datasets = ["aemo_dataset", "inpg_dataset", "IRISE_dataset"]
 feature_names = ["TOTALDEMAND", "conso_global", "Site consumption ()"]
 window_sizes = [45, 24, 50]

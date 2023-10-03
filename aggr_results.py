@@ -63,7 +63,8 @@ datasets = {
 }
 
 if __name__ == "__main__":
-    results, exp_params = collect_results('experiments')
+    experiments_root = "experiments/experiment5"
+    results, exp_params = collect_results(experiments_root)
     results.sort(key=lambda x: x[0], reverse=True)
     for result in results[:6]: 
         if datasets[exp_params[result[1]]["dataset"]]==1: continue
