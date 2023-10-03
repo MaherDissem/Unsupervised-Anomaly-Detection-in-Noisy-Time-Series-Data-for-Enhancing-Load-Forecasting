@@ -27,12 +27,12 @@ def collect_results(root_path):
                     split_ratio = file_content[i].split(' ')[4][1:5]
                     
                     contam_smape_loss = file_content[i+3].split(' ')[2][:6]
-                    contam_dtw_loss = file_content[i+3].split(' ')[4][:6]
-                    contam_dti_loss = file_content[i+3].split(' ')[6][:6]
+                    # contam_dtw_loss = file_content[i+3].split(' ')[4][:6]
+                    # contam_dti_loss = file_content[i+3].split(' ')[6][:6]
 
                     filter_smape_loss = file_content[i+6].split(' ')[2][:6]
-                    filter_dtw_loss = file_content[i+6].split(' ')[4][:6]
-                    filter_dti_loss = file_content[i+6].split(' ')[6][:6]
+                    # filter_dtw_loss = file_content[i+6].split(' ')[4][:6]
+                    # filter_dti_loss = file_content[i+6].split(' ')[6][:6]
 
                     exp_params[f"exp_{exp_i}_{j}"] = {
                         "dataset": dataset,
@@ -44,11 +44,11 @@ def collect_results(root_path):
                         "horizon": horizon,
                         "split_ratio": split_ratio,
                         "contam_smape_loss": contam_smape_loss,
-                        "contam_dtw_loss": contam_dtw_loss,
-                        "contam_dti_loss": contam_dti_loss,
+                        # "contam_dtw_loss": contam_dtw_loss,
+                        # "contam_dti_loss": contam_dti_loss,
                         "filter_smape_loss": filter_smape_loss,
-                        "filter_dtw_loss": filter_dtw_loss,
-                        "filter_dti_loss": filter_dti_loss
+                        # "filter_dtw_loss": filter_dtw_loss,
+                        # "filter_dti_loss": filter_dti_loss
                     }
                     results.append((np.round(float(contam_smape_loss) - float(filter_smape_loss), 4), f"exp_{exp_i}_{j}")) # contam - filter: loss decrese after filtering
                     i += 9; j += 1

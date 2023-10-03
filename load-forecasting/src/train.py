@@ -40,7 +40,7 @@ def train_model(
                 eval_model(net, testloader, gamma, device, verbose=1)
     
     smape_loss, dtw_loss, tdi_loss = eval_model(net, testloader, gamma, device, verbose=0)
-    print(f" smape_loss: {smape_loss}, dtw_loss: {dtw_loss}, tdi_loss: {tdi_loss}",
+    print(f" smape_loss: {smape_loss}", #, dtw_loss: {dtw_loss}, tdi_loss: {tdi_loss}",
           file=open(log_file, "a"))
     return losses
   
@@ -62,18 +62,18 @@ def eval_model(net, loader, gamma, device, verbose=1):
         absolute_percentage_errors = 2 * torch.abs(outputs - target) / (torch.abs(outputs) + torch.abs(target))
         loss_smape = torch.mean(absolute_percentage_errors) * 100
         # DTW and TDI
-        loss_dtw, loss_tdi = 0, 0
-        for k in range(batch_size):         
-            target_k_cpu = target[k, :, 0:1].view(-1).detach().cpu().numpy()
-            output_k_cpu = outputs[k, :, 0:1].view(-1).detach().cpu().numpy()
-            path, sim = dtw_path(target_k_cpu, output_k_cpu)   
-            loss_dtw += sim
-            Dist = 0
-            for i, j in path:
-                    Dist += (i-j)*(i-j)
-            loss_tdi += Dist / (N_output*N_output)                            
-        loss_dtw = loss_dtw /batch_size
-        loss_tdi = loss_tdi / batch_size
+        # loss_dtw, loss_tdi = 0, 0
+        # for k in range(batch_size):         
+        #     target_k_cpu = target[k, :, 0:1].view(-1).detach().cpu().numpy()
+        #     output_k_cpu = outputs[k, :, 0:1].view(-1).detach().cpu().numpy()
+        #     path, sim = dtw_path(target_k_cpu, output_k_cpu)   
+        #     loss_dtw += sim
+        #     Dist = 0
+        #     for i, j in path:
+        #             Dist += (i-j)*(i-j)
+        #     loss_tdi += Dist / (N_output*N_output)                            
+        # loss_dtw = loss_dtw /batch_size
+        # loss_tdi = loss_tdi / batch_size
 
         losses_smape.append( loss_smape.item() )
         losses_dtw.append( loss_dtw )
