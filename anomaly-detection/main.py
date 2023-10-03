@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument("--extractor_embedding_dim", default=24*3, type=int)
     parser.add_argument("--extractor_nbr_features", default=3, type=int)
     # backbone
-    parser.add_argument("--backbone_names", "-b", type=str, default="resnet50") # TODO backbone name, singular
+    parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
     parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer2", "layer3"])
     # coreset sampler
     parser.add_argument("--sampler_name", type=str, default="approx_greedy_coreset")
@@ -123,7 +123,7 @@ def get_backbone(args):
         Loads a pretrained ResNet backbone used to extract features from the input data of shape (batch, extracted_features=3, time_steps, no_variables=1).
     """
     return timm.create_model(
-        args.backbone_names,
+        args.backbone_name,
         pretrained=True,
         features_only=True,
         out_indices=(2, 3) # TODO extract this from args.backbone_layers_to_extract_from

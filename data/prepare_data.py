@@ -62,7 +62,6 @@ test_data = X[M:, :]
 # ---
 # Injecting anomalies into both train and test data
 # --- 
-# TODO make this a function
 train_contam_data = []
 train_anom_idx = []
 for sample_idx in range(train_data.shape[0]):
