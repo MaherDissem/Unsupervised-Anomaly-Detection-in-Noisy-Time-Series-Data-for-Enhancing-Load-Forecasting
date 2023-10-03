@@ -2,7 +2,19 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-torch.manual_seed(0)
+
+# ---
+# Ensure reproductibility
+# ---
+def fix_seeds(seed, with_torch=True, with_cuda=True):
+    np.random.seed(seed)
+    if with_torch:
+        torch.manual_seed(seed)
+    if with_cuda:
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+fix_seeds(0)
 
 
 class EarlyStopping:
