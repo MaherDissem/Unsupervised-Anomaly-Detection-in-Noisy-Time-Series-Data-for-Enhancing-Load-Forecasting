@@ -101,7 +101,7 @@ decoder = DecoderRNN(
 ).to(device)
 
 model = Net_GRU(encoder, decoder, target_length=N_output, device=device).to(device)
-train_loss_evol = train_model(trainloader, testloader, model, loss_type=args.loss_type, learning_rate=args.lr, epochs=args.epochs, device=device, log_file=args.results_file, gamma=args.gamma, verbose=0)
+train_loss_evol = train_model(trainloader, testloader, model, loss_type=args.loss_type, learning_rate=args.lr, epochs=args.epochs, device=device, log_file=args.results_file, gamma=args.gamma, verbose=1)
 
 # ---
 # Visualize results

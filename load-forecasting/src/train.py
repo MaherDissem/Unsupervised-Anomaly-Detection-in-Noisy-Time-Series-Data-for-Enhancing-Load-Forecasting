@@ -7,7 +7,7 @@ from tslearn.metrics import dtw, dtw_path
 def train_model(
         trainloader, testloader,
         net, loss_type, learning_rate, epochs=1000, gamma=0.001, Lambda=1, alpha=0.5, 
-        print_every=1, eval_every=5, verbose=1,
+        print_every=20, eval_every=20, verbose=1,
         device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
         log_file = "results/results.txt"
     ):
@@ -34,8 +34,8 @@ def train_model(
             optimizer.step()
             losses.append(loss.item())
         if verbose:
-            if epoch % print_every == 0:
-                print('epoch ', epoch, ' loss ', loss.item(),' loss shape ', loss_shape.item(), ' loss temporal ', loss_temporal.item())
+            # if epoch % print_every == 0:
+            #     print('epoch ', epoch, ' loss ', loss.item(),' loss shape ', loss_shape.item(), ' loss temporal ', loss_temporal.item())
             if epoch % eval_every == 0:
                 eval_model(net, testloader, gamma, device, verbose=1)
     
