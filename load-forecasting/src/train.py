@@ -7,7 +7,7 @@ from tslearn.metrics import dtw, dtw_path
 def train_model(
         trainloader, testloader,
         net, loss_type, learning_rate, epochs=1000, gamma=0.001, Lambda=1, alpha=0.5, 
-        print_every=20, eval_every=20, verbose=1,
+        print_every=20, eval_every=40, verbose=1,
         device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
         log_file = "results/results.txt"
     ):

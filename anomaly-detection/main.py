@@ -213,7 +213,7 @@ def run(args):
             for timeserie_batch in data_iterator:
                 for timeserie in timeserie_batch["data"]:
                     if scores[i]<=threshold:
-                        np.save(os.path.join(args.filtered_data_path ,str(i)), timeserie)
+                        np.save(os.path.join(args.filtered_data_path, str(i)+'.npy'), timeserie)
                         i += 1
 
         # save contaminated data with same size as filterd data
@@ -222,7 +222,7 @@ def run(args):
             j = 0
             for timeserie_batch in data_iterator:
                 for timeserie in timeserie_batch["data"]:
-                    np.save(os.path.join(args.contaminated_data_path ,str(j)), timeserie)
+                    np.save(os.path.join(args.contaminated_data_path, str(j)+'.npy'), timeserie)
                     j += 1
                     if j==i:
                         done = True

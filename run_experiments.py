@@ -33,7 +33,7 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
         "--min_nbr_anom", str(min_nbr_anom),
         "--max_nbr_anom", str(max_nbr_anom),
         "--window_size", str(timesteps),
-        "--step", str(step)
+        "--step", str(step) # stride
     ]
     subprocess.run(command)
 
