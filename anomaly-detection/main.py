@@ -27,10 +27,11 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--save_heatmaps", action="store_true", default=False)
     parser.add_argument("--filter_anomalies", default=True)
-    parser.add_argument("--filtered_data_path", type=str, default="data/inpg_dataset/npy_data/filter") # data path
+    parser.add_argument("--filtered_data_path", type=str, default="data/inpg_dataset/npy_data/filter")     # data path
+    parser.add_argument("--contaminated_data_path", type=str, default="data/inpg_dataset/npy_data/contam") # data path
     parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
     # dataset
-    parser.add_argument("--data_path", type=str, default="data/inpg_dataset/npy_data")                 # data path
+    parser.add_argument("--data_path", type=str, default="data/inpg_dataset/npy_data")                     # data path
     parser.add_argument("--batch_size", default=32, type=int)
     parser.add_argument("--nbr_timesteps", default=24*3, type=int)
     parser.add_argument("--nbr_variables", default=1, type=int)
@@ -157,10 +158,10 @@ def get_coreset(args, device):
 
 
 def run(args):
-    seed = args.seed
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    fix_seeds(seed, device)
     LOGGER.info("using: {}".format(device))
+    seed = args.seed
+    fix_seeds(seed, device)
 
     dataloaders = get_dataloaders(args)
     coreset = get_coreset(args, device)
@@ -199,8 +200,13 @@ def run(args):
     LOGGER.info("AUROC: {}".format(results["auroc"]))
     LOGGER.info("best_f1: {}".format(results["best_f1"]))
 
-    # filter anomalies
+    # save results to experiment log file
+    print("\nanomaly detection results:\n",
+        "best f1: ", results["best_f1"], "AUROC: ", results["auroc"],
+        file=open(args.results_file, "a"))
+
     if args.filter_anomalies:
+        # save filtered data
         threshold = results["best_threshold"]
         with tqdm.tqdm(dataloaders["testing"], desc="Saving filtered data...", leave=True) as data_iterator:
             i = 0
@@ -208,11 +214,20 @@ def run(args):
                 for timeserie in timeserie_batch["data"]:
                     if scores[i]<=threshold:
                         np.save(os.path.join(args.filtered_data_path ,str(i)), timeserie)
-                    i += 1
+                        i += 1
 
-    print("\nanomaly detection results:\n",
-          "best f1: ", results["best_f1"], "AUROC: ", results["auroc"],
-          file=open(args.results_file, "a"))
+        # save contaminated data with same size as filterd data
+        with tqdm.tqdm(dataloaders["testing"], desc="Saving contaminated data...", leave=True) as data_iterator:
+            done = False
+            j = 0
+            for timeserie_batch in data_iterator:
+                for timeserie in timeserie_batch["data"]:
+                    np.save(os.path.join(args.contaminated_data_path ,str(j)), timeserie)
+                    j += 1
+                    if j==i:
+                        done = True
+                        break
+                if done: break
 
 
 if __name__ == "__main__":

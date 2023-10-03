@@ -7,7 +7,7 @@ gpu_ids = [0, 1, 2, 3]
 nbr_workers = len(gpu_ids)
 
 # experiment variables
-experiments_root = "experiments2"
+experiments_root = "experiments"
 datasets = ["aemo_dataset", "inpg_dataset", "IRISE_dataset"]
 feature_names = ["TOTALDEMAND", "conso_global", "Site consumption ()"]
 window_sizes = [45, 24, 50]
@@ -47,8 +47,8 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
         "--nbr_variables", "1",
         "--embedding_dim", str(timesteps),
         "--epochs", "200",
-        "--every_epoch_print", "200",
-        "--patience", "25",
+        "--every_epoch_print", "20",
+        "--patience", "20",
         "--results_file", str(results_path),
     ]
     subprocess.run(command)
@@ -57,6 +57,7 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
     command = [
         "python", "anomaly-detection/main.py",
         "--filtered_data_path", f"{exp_folder}/data/filter",
+        "--contaminated_data_path", f"{exp_folder}/data/contam",
         "--data_path", f"{exp_folder}/data",
         "--extractor_weights", f"{exp_folder}/checkpoint.pt",
         "--nbr_timesteps", str(timesteps),
@@ -66,14 +67,14 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
     subprocess.run(command)
 
     for sequence_split in sequence_splits:
-        forecast_horizon = int(sequence_split * timesteps)
+        forecast_horizon = int((1 -  sequence_split) * timesteps)
         print(f"\n-----\nForecast horizon of {forecast_horizon} ({sequence_split} split)",\
             file=open(results_path, "a"))
         
         # train load forecasting model on contam data
         command = [
             "python", "load-forecasting/main.py",
-            "--train_dataset_path", f"{exp_folder}/data/test/data",
+            "--train_dataset_path", f"{exp_folder}/data/contam",
             "--test_dataset_path", f"{exp_folder}/data/clean",
             "--loss_type", "mse",
             "--timesteps", str(timesteps),
@@ -144,3 +145,4 @@ if __name__ == "__main__":
 
     print("Done!")
 
+# TODO add starting single experiment from command line

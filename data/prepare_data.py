@@ -105,7 +105,7 @@ for sample_idx in range(test_data.shape[0]):
 # ---
 # Saving dataset
 # ---
-for subfolder in ["train/data", "train/gt", "test/data", "test/gt", "clean", "filter"]:
+for subfolder in ["train/data", "train/gt", "test/data", "test/gt", "clean", "filter", "contam"]:
     folder_tree_path = os.path.join(args.npy_data_path, subfolder)
     try:
         os.makedirs(folder_tree_path, exist_ok=True)
