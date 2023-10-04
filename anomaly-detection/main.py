@@ -211,7 +211,7 @@ def run(args):
         with tqdm.tqdm(dataloaders["testing"], desc="Saving filtered data...", leave=True) as data_iterator:
             k = 0 # number of anomaly free timeserie
             i = 0 # index of timeserie
-            for timeserie_batch in enumerate(data_iterator):
+            for timeserie_batch in data_iterator:
                 for timeserie in timeserie_batch["data"]:
                     if scores[i]<=threshold:
                         np.save(os.path.join(args.filtered_data_path, str(i)+'.npy'), timeserie)
