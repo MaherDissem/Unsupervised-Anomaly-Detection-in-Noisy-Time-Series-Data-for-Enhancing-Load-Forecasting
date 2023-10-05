@@ -61,6 +61,7 @@ model = LSTM_AE(
 )
 loss_history = model.fit(train_dataloader)
 plt.plot(loss_history)
+plt.title("Reconstruction loss evolution")
 os.makedirs(os.path.join(args.path_to_save_plot, "reconstruction"), exist_ok=True)
 plt.savefig(args.path_to_save_plot+"/fe_loss_evol.png")
 print(f"\nFinal reconstruction loss: {loss_history[-1]}", file=open(args.results_file, "a"))
