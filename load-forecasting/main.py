@@ -101,14 +101,14 @@ decoder = DecoderRNN(
 ).to(device)
 
 model = Net_GRU(encoder, decoder, target_length=N_output, device=device).to(device)
-train_loss_evol = train_model(trainloader, testloader, model, loss_type=args.loss_type, learning_rate=args.lr, epochs=args.epochs, gamma=args.gamma, device=device, verbose=1, log_file=args.results_file, save_plots_path=args.save_plots_path)
+train_loss_evol = train_model(trainloader, testloader, model, loss_type=args.loss_type, learning_rate=args.lr, epochs=args.epochs, device=device, log_file=args.results_file, gamma=args.gamma, verbose=1)
 
 # ---
 # Visualize results
 # ---
 plt.plot(train_loss_evol)
-plt.title("Forecast valid loss evolution")
-plt.savefig(args.save_plots_path + "/forecast_valid_loss_evol.jpg")
+os.makedirs(args.save_plots_path, exist_ok=True)
+plt.savefig(args.save_plots_path + "/forecast_train_loss_evol.jpg")
 
 gen_test = iter(testloader) 
 inputs, targets = next(gen_test)

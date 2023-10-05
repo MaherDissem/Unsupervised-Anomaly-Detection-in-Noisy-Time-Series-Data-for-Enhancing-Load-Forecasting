@@ -25,9 +25,9 @@ def train_model(
             loss_mse, loss_shape, loss_temporal = torch.tensor(-1), torch.tensor(-1), torch.tensor(-1)
             if loss_type=='mse':
                 loss_mse = mse_criterion(target, outputs)
-                loss = loss_mse
-            if loss_type=='dilate':
-                loss, loss_shape, loss_temporal = dilate_loss(outputs, target, alpha, gamma, device)
+                loss = loss_mse                    
+            if loss_type=='dilate':    
+                loss, loss_shape, loss_temporal = dilate_loss(outputs, target, alpha, gamma, device)             
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -35,12 +35,12 @@ def train_model(
         if verbose:
             if epoch % eval_every == 0:
                 smape_loss, dtw_loss, tdi_loss = eval_model(net, testloader, gamma, device)
-                print( 'Eval s-mape=', smape_loss, ' dtw=', dtw_loss ,' tdi=', tdi_loss)
+                print( 'Eval s-mape=', smape_loss, ' dtw=', dtw_loss ,' tdi=', tdi_loss) 
     
     smape_loss, dtw_loss, tdi_loss = eval_model(net, testloader, gamma, device)
     print(f" smape_loss: {smape_loss}", #, dtw_loss: {dtw_loss}, tdi_loss: {tdi_loss}",
           file=open(log_file, "a"))
-    return [np.array([losses[i*batch_size:(i+1)*batch_size]]).mean() for i in range(len(losses)//batch_size+1)] # calculate mean loss for each epoch
+    return losses
   
 
 def eval_model(net, loader, gamma, device):   
