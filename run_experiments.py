@@ -15,16 +15,16 @@ nbr_days = [2, 3, 5] # multiplier of window size and sliding step
 contam_rates = [0.05, 0.1, 0.15, 0.2]
 sequence_splits = [0.5, 0.75, 0.9]
 
-def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nbr_anom, timesteps, step, gpu_id):
+def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nbr_anom, timesteps, step, sequence_splits, gpu_id):
+    
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
     exp_folder = os.path.join(experiments_root, f"exp{exp}_{dataset}")
     results_path = os.path.join(exp_folder, "results.txt")
     os.makedirs(exp_folder, exist_ok=True)
-    print(f"exp: {exp}, dataset: {dataset}, contam_rate: {contam_rate}, timesteps: {timesteps}",\
-          file=open(results_path, "a"))
+    print(f"exp: {exp}, dataset: {dataset}, contam_rate: {contam_rate}, timesteps: {timesteps}", file=open(results_path, "a"))
 
     # prepare data
-    command = [
+    subprocess.run([
         "python", "data/prepare_data.py",
         "--csv_data_path", f"data/{dataset}/csv_data/",
         "--feature_name", f"{feature_name}",
@@ -34,11 +34,10 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
         "--max_nbr_anom", str(max_nbr_anom),
         "--window_size", str(timesteps),
         "--step", str(step) # stride
-    ]
-    subprocess.run(command)
+    ])
 
     # train feature extractor
-    command = [
+    subprocess.run([
         "python", "anomaly-detection/src/train_feature_extractor.py",
         "--dataset_root", f"{exp_folder}/data",
         "--path_to_save_plot",  f"{exp_folder}/out_figs",
@@ -50,11 +49,10 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
         "--every_epoch_print", "20",
         "--patience", "20",
         "--results_file", str(results_path),
-    ]
-    subprocess.run(command)
+    ])
 
     # train anomaly detector and save filtered data
-    command = [
+    subprocess.run([
         "python", "anomaly-detection/main.py",
         "--filtered_data_path", f"{exp_folder}/data/filter",
         "--contaminated_data_path", f"{exp_folder}/data/contam",
@@ -63,16 +61,15 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
         "--nbr_timesteps", str(timesteps),
         "--extractor_embedding_dim", str(timesteps),
         "--results_file", str(results_path),
-    ]
-    subprocess.run(command)
+    ])
 
     for sequence_split in sequence_splits:
         forecast_horizon = int((1 -  sequence_split) * timesteps)
-        print(f"\n-----\nForecast horizon of {forecast_horizon} ({sequence_split} split)",\
-            file=open(results_path, "a"))
+        print(f"\n-----\nForecast horizon of {forecast_horizon} ({sequence_split} split)", file=open(results_path, "a"))
         
         # train load forecasting model on contam data
-        command = [
+        print(f"\nContam data forecasting", file=open(results_path, "a"))
+        subprocess.run([
             "python", "load-forecasting/main.py",
             "--train_dataset_path", f"{exp_folder}/data/contam",
             "--test_dataset_path", f"{exp_folder}/data/clean",
@@ -82,13 +79,11 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
             "--sequence_split", str(sequence_split),
             "--save_plots_path", f"{exp_folder}/out_figs/{forecast_horizon}/contam",
             "--results_file", str(results_path),
-        ]
-        print(f"\nContam data forecasting",\
-            file=open(results_path, "a"))
-        subprocess.run(command)
+        ])
 
         # train load forecasting model on filtered data
-        command = [
+        print(f"\nFilter data forecasting", file=open(results_path, "a"))
+        subprocess.run([
             "python", "load-forecasting/main.py",
             "--train_dataset_path", f"{exp_folder}/data/filter",
             "--test_dataset_path", f"{exp_folder}/data/clean",
@@ -98,10 +93,7 @@ def run_experiment(exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nb
             "--sequence_split", str(sequence_split),
             "--save_plots_path", f"{exp_folder}/out_figs/{forecast_horizon}/filter",
             "--results_file", str(results_path),
-        ]
-        print(f"\nFilter data forecasting",\
-        file=open(results_path, "a"))
-        subprocess.run(command)
+        ])
 
 
 def create_clean_folder(path):
@@ -127,7 +119,7 @@ if __name__ == "__main__":
                 min_nbr_anom = int(contam_rate * timesteps)
                 max_nbr_anom = int(contam_rate * timesteps+1)
                 gpu_id = gpu_ids[exp % len(gpu_ids)]  # Assign GPUs in a round-robin fashion
-                experiment_args.append((exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nbr_anom, timesteps, step, gpu_id))
+                experiment_args.append((exp, dataset, feature_name, contam_rate, min_nbr_anom, max_nbr_anom, timesteps, step, sequence_splits, gpu_id))
                 exp += 1
     
     # divide the number of experiments by the max number of parallel processes
