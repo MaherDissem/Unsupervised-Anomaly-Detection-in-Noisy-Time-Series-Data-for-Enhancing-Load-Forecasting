@@ -1,6 +1,6 @@
 import subprocess
 
-save_folder = "data/aemo_dataset/csv_data"
+save_folder = "dataset/raw/AEMO"
 
 for year in range(2000, 2021+1): 
     for month in ['01','02','03','04','05','06','07','08','09','10','11','12']:
