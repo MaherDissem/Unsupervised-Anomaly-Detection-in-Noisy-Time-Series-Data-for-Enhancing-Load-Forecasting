@@ -1,17 +1,17 @@
 import argparse
 import os
-import random
 import sys
 
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 
-sys.path.append("load-forecasting/src")
-from src.dataset import TS_Dataset
-from src.seq2seq import DecoderRNN, EncoderRNN, Net_GRU
-from src.train import train_model
+from dataset import TS_Dataset
+from model import DecoderRNN, EncoderRNN, Net_GRU
+from train import train_model
+sys.path.insert(0, os.getcwd())
+from src.utils.utils import set_seed
 
 import warnings; warnings.simplefilter('ignore')
 
@@ -22,41 +22,33 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # ---
 parser = argparse.ArgumentParser(description="Runs Load Forecasting experiments")
 # dataset
-parser.add_argument("--train_dataset_path", default="data/inpg_dataset/npy_data/test/data", help="Path to train dataset")
-parser.add_argument("--test_dataset_path", default="data/inpg_dataset/npy_data/clean", help="Path to clean dataset")
+parser.add_argument("--train_dataset_path", default="dataset/processed/INPG/lf_train_filter", help="Path to train dataset")
+parser.add_argument("--test_dataset_path", default="dataset/processed/INPG/lf_test_clean", help="Path to clean dataset for testing")
 # sequence
 parser.add_argument("--timesteps", type=int, default=24*3, help="Number of timesteps")
 parser.add_argument("--nbr_var", type=int, default=1, help="Number of variables")
-parser.add_argument("--sequence_split", type=float, default=0.5834, help="Sequence split ratio")
-# model
+parser.add_argument("--sequence_split", type=float, default=2/3, help="Sequence split ratio")
+# model parameters
 parser.add_argument("--loss_type", type=str, default="mse", help="Loss function to optimize (mse/dilate)")
 parser.add_argument("--hidden_size", type=int, default=128, help="Hidden size of the model")
 parser.add_argument("--num_grulstm_layers", type=int, default=1, help="Number of GRU/LSTM layers")
 parser.add_argument("--fc_units", type=int, default=16, help="Number of fully connected units")
 # training
-parser.add_argument("--epochs", type=int, default=200, help="Number of epochs")
+parser.add_argument("--epochs", type=int, default=300, help="Number of epochs")
+parser.add_argument("--patience", type=int, default=20, help="Patience for early stopping")
 parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
-parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
+parser.add_argument("--lr", type=float, default=5e-4, help="Learning rate")
 parser.add_argument("--gamma", type=float, default=0.01, help="Gamma parameter")
 # visualization
 parser.add_argument("--n_plots", type=int, default=32, help="Number of plots")
-parser.add_argument("--save_plots_path", default="results/out_figs/inpg_dataset/contam", help="Path to save plots")
+parser.add_argument("--save_plots_path", default="results/out_figs/INPG/filter", help="Path to save plots")
 parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
 args = parser.parse_args()
 
 # ---
 # Ensure reproductibility
 # ---
-def fix_seeds(seed, with_torch=True, with_cuda=True):
-    random.seed(seed)
-    np.random.seed(seed)
-    if with_torch:
-        torch.manual_seed(seed)
-    if with_cuda:
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-fix_seeds(0)
+set_seed(0)
 
 # ---
 # Load data
@@ -101,7 +93,13 @@ decoder = DecoderRNN(
 ).to(device)
 
 model = Net_GRU(encoder, decoder, target_length=N_output, device=device).to(device)
-train_loss_evol = train_model(trainloader, testloader, model, loss_type=args.loss_type, learning_rate=args.lr, epochs=args.epochs, device=device, log_file=args.results_file, gamma=args.gamma, verbose=1)
+train_loss_evol = train_model(
+    trainloader, testloader, 
+    model, loss_type=args.loss_type, learning_rate=args.lr, gamma=args.gamma,
+    epochs=args.epochs, patience=args.patience,
+    device=device, 
+    verbose=1, log_file=args.results_file,
+)
 
 # ---
 # Visualize results

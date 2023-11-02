@@ -10,13 +10,12 @@ import timm
 import torch
 import tqdm
 
-sys.path.append("anomaly-detection/src")
-import src.common as common
-import src.metrics as metrics
-import src.sampler as sampler
-import src.softpatch as softpatch
-from src.dataset import TS_Dataset
-from src.feature_extractor import LSTM_AE
+import common as common
+import metrics as metrics
+import sampler as sampler
+import softpatch as softpatch
+from dataset import TS_Dataset
+from feature_extractor import LSTM_AE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -25,18 +24,19 @@ def parse_args():
     parser = argparse.ArgumentParser(description="SoftPatch")
     # project
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--save_heatmaps", action="store_true", default=False)
+    parser.add_argument("--save_heatmaps", default=False)
     parser.add_argument("--filter_anomalies", default=True)
-    parser.add_argument("--filtered_data_path", type=str, default="data/inpg_dataset/npy_data/filter")     # data path
-    parser.add_argument("--contaminated_data_path", type=str, default="data/inpg_dataset/npy_data/contam") # data path
+    parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/INPG/lf_train_filter")      # data path
+    parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/INPG/lf_train_contam")   # data path
     parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
     # dataset
-    parser.add_argument("--data_path", type=str, default="data/inpg_dataset/npy_data")                     # data path
+    parser.add_argument("--train_data_path", type=str, default="dataset/processed/INPG/ad_train_contam")         # data path
+    parser.add_argument("--test_data_path", type=str, default="dataset/processed/INPG/ad_test_contam")           # data path
     parser.add_argument("--batch_size", default=32, type=int)
     parser.add_argument("--nbr_timesteps", default=24*3, type=int)
     parser.add_argument("--nbr_variables", default=1, type=int)
     # feature extractor
-    parser.add_argument("--extractor_weights", default="anomaly-detection/checkpoint.pt", type=str)
+    parser.add_argument("--extractor_weights", default="src/anomaly_detection/checkpoint.pt", type=str)
     parser.add_argument("--extractor_embedding_dim", default=24*3, type=int)
     parser.add_argument("--extractor_nbr_features", default=3, type=int)
     # backbone
@@ -76,9 +76,12 @@ def fix_seeds(seed, with_torch=True, with_cuda=True):
 
 
 def get_dataloaders(args):
-    dataset_root = args.data_path
-    train_dataset = TS_Dataset(dataset_root, "train")
-    test_dataset = TS_Dataset(dataset_root, "test")
+    train_data_path = args.train_data_path
+    test_data_path = args.test_data_path
+
+    train_dataset = TS_Dataset(train_data_path)
+    test_dataset = TS_Dataset(test_data_path)
+    
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=args.batch_size,
@@ -207,24 +210,30 @@ def run(args):
 
     if args.filter_anomalies:
         # save filtered data
+        os.makedirs(os.path.join(args.filtered_data_path, "data"), exist_ok=True)
+        os.makedirs(os.path.join(args.filtered_data_path, "gt"), exist_ok=True)
         threshold = results["best_threshold"]
         with tqdm.tqdm(dataloaders["testing"], desc="Saving filtered data...", leave=True) as data_iterator:
             k = 0 # number of anomaly free timeserie
             i = 0 # index of timeserie
             for timeserie_batch in data_iterator:
-                for timeserie in timeserie_batch["data"]:
+                for timeserie, gt in zip(timeserie_batch["data"], timeserie_batch["is_anomaly"]):
                     if scores[i]<=threshold:
-                        np.save(os.path.join(args.filtered_data_path, str(i)+'.npy'), timeserie)
+                        np.save(os.path.join(args.filtered_data_path, "data", str(i)+'.npy'), timeserie)
+                        np.save(os.path.join(args.filtered_data_path, "gt", str(i)+'.npy'), gt)
                         k += 1
                     i += 1
 
         # save contaminated data with same size as filterd data
         with tqdm.tqdm(dataloaders["testing"], desc="Saving contaminated data...", leave=True) as data_iterator:
+            os.makedirs(os.path.join(args.contaminated_data_path, "data"), exist_ok=True)
+            os.makedirs(os.path.join(args.contaminated_data_path, "gt"), exist_ok=True)
             done = False
             j = 0 # index of timeserie
             for timeserie_batch in data_iterator:
-                for timeserie in timeserie_batch["data"]:
-                    np.save(os.path.join(args.contaminated_data_path, str(j)+'.npy'), timeserie)
+                for timeserie, gt in zip(timeserie_batch["data"], timeserie_batch["is_anomaly"]):
+                    np.save(os.path.join(args.contaminated_data_path, "data", str(j)+'.npy'), timeserie)
+                    np.save(os.path.join(args.contaminated_data_path, "gt", str(j)+'.npy'), gt)
                     j += 1
                     if j==k:
                         done = True
@@ -237,3 +246,4 @@ if __name__ == "__main__":
     LOGGER.info("Command line arguments: {}".format(" ".join(sys.argv)))
     args = parse_args()
     run(args)
+    print("Done.")
