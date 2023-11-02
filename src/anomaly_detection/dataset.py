@@ -23,7 +23,6 @@ class TS_Dataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.data)
-        return 1000 # hack to make pipeline testing faster, remove later
 
     def load_data(self):
         data = glob.glob(os.path.join(self.root_dir, "data", "*.npy"))
