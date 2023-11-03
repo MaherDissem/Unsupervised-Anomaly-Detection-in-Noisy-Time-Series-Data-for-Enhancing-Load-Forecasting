@@ -6,9 +6,9 @@ save_folder = "dataset/raw/AEMO"
 for location in ["NSW", "QLD", "VIC", "SA", "TAS"]:
     for year in range(2017, 2022+1): 
         for month in ['01','02','03','04','05','06','07','08','09','10','11','12']:
-            save_path = f"{save_folder}/{location}/{year}{month}.csv"
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            bash_command = f"curl https://aemo.com.au/aemo/data/nem/priceanddemand/PRICE_AND_DEMAND_{year}{month}_{location}1.csv > {save_path}.csv"
+            file_save_path = f"{save_folder}/{location}/{year}{month}.csv"
+            os.makedirs(os.path.dirname(file_save_path), exist_ok=True)
+            bash_command = f"curl https://aemo.com.au/aemo/data/nem/priceanddemand/PRICE_AND_DEMAND_{year}{month}_{location}1.csv > {file_save_path}"
             result = subprocess.run(bash_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             if result.returncode != 0:
                 print("Command failed:")
