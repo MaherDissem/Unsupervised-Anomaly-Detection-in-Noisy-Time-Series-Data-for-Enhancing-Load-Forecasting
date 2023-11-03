@@ -184,15 +184,15 @@ def run(args):
 
     LOGGER.info("Computing evaluation metrics.")
     results = metrics.compute_timeseriewise_retrieval_metrics(scores, labels_gt)
-    LOGGER.info("AUROC: {}".format(results["auroc"]))
-    LOGGER.info("best_f1: {}".format(results["best_f1"]))
-    LOGGER.info("best_precision: {}".format(results["best_precision"]))
-    LOGGER.info("best_recall: {}".format(results["best_recall"]))
+    LOGGER.info(f"AUROC: {results['auroc']:0.3f}")
+    LOGGER.info(f"Best F1: {results['best_f1']:0.3f}")
+    LOGGER.info(f"Best precision: {results['best_precision']:0.3f}")
+    LOGGER.info(f"Best recall: {results['best_recall']:0.3f}")
 
     # save results to experiment log file
-    print("\nanomaly detection results:\n",
-        "best f1: ", results["best_f1"], "AUROC: ", results["auroc"],
-        file=open(args.results_file, "a"))
+    print(f"\nanomaly detection results:\n\
+          AUROC: {results['auroc']:0.3f}, best f1: {results['best_f1']:0.3f}, best precision: {results['best_precision']:0.3f}, best recall: {results['best_recall']:0.3f}",
+          file=open(args.results_file, "a"))
 
     if args.filter_anomalies:
         # save filtered data
