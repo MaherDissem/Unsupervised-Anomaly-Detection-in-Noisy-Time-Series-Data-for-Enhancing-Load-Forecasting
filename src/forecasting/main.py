@@ -107,7 +107,8 @@ train_loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss
 )
 
 print(
-    f"smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, mape={mape_loss}, mase={mase_loss}",
+    f"train_dataset_path: {args.train_dataset_path}\n\
+    Final: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, mape={mape_loss}, mase={mase_loss}",
     file=open(args.results_file, "a")
 )
 
