@@ -28,10 +28,17 @@ def compute_timeseriewise_retrieval_metrics(
     )
     f1 = 2* precision * recall / (precision + recall)
     k = f1.argmax()
-
-    # TODO: draw and save curve
-    # draw_curve(fpr, tpr, auroc)
-    return {"auroc": auroc, "fpr": fpr, "tpr": tpr, "thresholds": thresholds, "best_f1": f1[k], "best_threshold": thresholds[k]}
+    draw_curve(fpr, tpr, auroc)
+    return {
+        "auroc": auroc, 
+        "fpr": fpr, 
+        "tpr": tpr, 
+        "best_f1": f1[k], 
+        "best_precision": precision[k],
+        "best_recall": recall[k],
+        "best_threshold": thresholds[k],
+        "thresholds": thresholds, 
+    }
 
 
 def compute_pixelwise_retrieval_metrics(anomaly_segmentations, ground_truth_masks):
@@ -95,18 +102,19 @@ def draw_curve(fpr, tpr, auroc):
     plt.title('ROC Curve')
     plt.legend(loc="lower right")
 
-    error = 0.015
-    miss = 0.1
-    plt.plot([error, error], [-0.05, 1.05], 'k:', lw=1)
-    plt.plot([-0.05, 1.05], [1-miss, 1-miss], 'k:', lw=1)
-    error_y, miss_x = 0, 1
-    for i in range(len(fpr)):
-        if fpr[i] <= error <= fpr[i + 1]:
-            error_y = tpr[i]
-        if tpr[i] <= 1-miss <= tpr[i + 1]:
-            miss_x = fpr[i]
+    # error = 0.015
+    # miss = 0.1
+    # # plt.plot([error, error], [-0.05, 1.05], 'k:', lw=1)
+    # # plt.plot([-0.05, 1.05], [1-miss, 1-miss], 'k:', lw=1)
+    # error_y, miss_x = 0, 1
+    # for i in range(len(fpr)):
+    #     if fpr[i] <= error <= fpr[i + 1]:
+    #         error_y = tpr[i]
+    #     if tpr[i] <= 1-miss <= tpr[i + 1]:
+    #         miss_x = fpr[i]
     # plt.scatter(error, error_y, c='k')
     # plt.scatter(miss_x, 1-miss, c='k')
-    plt.text(error, error_y, "({0}, {1:.4f})".format(error, error_y), color='k')
-    plt.text(miss_x, 1-miss, "({0:.4f}, {1})".format(miss_x, 1-miss), color='k')
-    plt.show()
+    # plt.text(error, error_y, "({0}, {1:.4f})".format(error, error_y), color='k')
+    # plt.text(miss_x, 1-miss, "({0:.4f}, {1})".format(miss_x, 1-miss), color='k')
+    # plt.show()
+    plt.savefig('results/out_figs/roc.png') # TODO make path a parameter

@@ -202,6 +202,8 @@ def run(args):
     results = metrics.compute_timeseriewise_retrieval_metrics(scores, labels_gt)
     LOGGER.info("AUROC: {}".format(results["auroc"]))
     LOGGER.info("best_f1: {}".format(results["best_f1"]))
+    LOGGER.info("best_precision: {}".format(results["best_precision"]))
+    LOGGER.info("best_recall: {}".format(results["best_recall"]))
 
     # save results to experiment log file
     print("\nanomaly detection results:\n",
