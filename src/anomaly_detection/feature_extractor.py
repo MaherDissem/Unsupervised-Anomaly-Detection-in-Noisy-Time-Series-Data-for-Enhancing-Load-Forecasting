@@ -4,13 +4,7 @@ import torch
 import torch.nn as nn
 
 sys.path.insert(0, os.getcwd()) 
-from src.utils.utils import set_seed
 from src.utils.utils import EarlyStopping
-
-# ---
-# Ensure reproductibility
-# ---
-set_seed(0)
 
 
 # (1) Encoder

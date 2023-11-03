@@ -10,12 +10,12 @@ from torch.utils.data import DataLoader
 from dataset import TS_Dataset
 from model import DecoderRNN, EncoderRNN, Net_GRU
 from train import train_model
+
 sys.path.insert(0, os.getcwd())
 from src.utils.utils import set_seed
 
 import warnings; warnings.simplefilter('ignore')
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # ---
 # Parameters
@@ -39,6 +39,7 @@ parser.add_argument("--patience", type=int, default=20, help="Patience for early
 parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
 parser.add_argument("--lr", type=float, default=5e-4, help="Learning rate")
 parser.add_argument("--gamma", type=float, default=0.01, help="Gamma parameter")
+parser.add_argument("--seed", type=int, default=0)
 # visualization
 parser.add_argument("--n_plots", type=int, default=32, help="Number of plots")
 parser.add_argument("--save_plots_path", default="results/out_figs/INPG/filter", help="Path to save plots")
@@ -48,7 +49,7 @@ args = parser.parse_args()
 # ---
 # Ensure reproductibility
 # ---
-set_seed(0)
+set_seed(args.seed)
 
 # ---
 # Load data
@@ -77,6 +78,7 @@ testloader = DataLoader(
 # ---
 # train models
 # ---
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 encoder = EncoderRNN(
     input_size=args.nbr_var, 
     hidden_size=args.hidden_size, 

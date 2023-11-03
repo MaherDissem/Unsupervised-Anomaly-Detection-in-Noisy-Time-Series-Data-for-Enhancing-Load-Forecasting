@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-import random
 import sys
 import time
 
@@ -16,6 +15,9 @@ import sampler as sampler
 import softpatch as softpatch
 from dataset import TS_Dataset
 from feature_extractor import LSTM_AE
+
+sys.path.insert(0, os.getcwd()) 
+from src.utils.utils import set_seed
 
 LOGGER = logging.getLogger(__name__)
 
@@ -56,23 +58,6 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
-def fix_seeds(seed, with_torch=True, with_cuda=True):
-    """Fixed available seeds for reproducibility.
-
-    Args:
-        seed: [int] Seed value.
-        with_torch: Flag. If true, torch-related seeds are fixed.
-        with_cuda: Flag. If true, torch+cuda-related seeds are fixed
-    """
-    random.seed(seed)
-    np.random.seed(seed)
-    if with_torch:
-        torch.manual_seed(seed)
-    if with_cuda:
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
 
 
 def get_dataloaders(args):
@@ -163,8 +148,7 @@ def get_coreset(args, device):
 def run(args):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     LOGGER.info("using: {}".format(device))
-    seed = args.seed
-    fix_seeds(seed, device)
+    set_seed(args.seed)
 
     dataloaders = get_dataloaders(args)
     coreset = get_coreset(args, device)

@@ -1,11 +1,15 @@
 import argparse
 import os
+import sys
 
 import matplotlib.pyplot as plt
 import torch
 
 from feature_extractor import LSTM_AE
 from dataset import TS_Dataset
+
+sys.path.insert(0, os.getcwd()) 
+from src.utils.utils import set_seed
 
 # ---
 # Parameters
@@ -28,10 +32,17 @@ parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
 parser.add_argument("--learning_rate", type=float, default=5e-4, help="Learning rate")
 parser.add_argument("--max_grad_norm", type=float, default=0.05, help="Maximum gradient norm")
 parser.add_argument("--every_epoch_print", type=int, default=1, help="Print every epoch")
+parser.add_argument("--seed", type=int, default=0)
 # model parameters
 parser.add_argument("--embedding_dim", type=int, default=24*3, help="Embedding dimension")
 
 args = parser.parse_args()
+
+
+# ---
+# Ensure reproductibility
+# ---
+set_seed(args.seed)
 
 # ---
 # Load data
