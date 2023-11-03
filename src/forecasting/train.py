@@ -7,7 +7,7 @@ from loss.dilate_loss import dilate_loss
 from tslearn.metrics import dtw, dtw_path
 
 sys.path.insert(0, os.getcwd())
-from src.utils.utils import EarlyStopping
+from src.utils.early_stop import EarlyStopping
 
 
 def train_model(

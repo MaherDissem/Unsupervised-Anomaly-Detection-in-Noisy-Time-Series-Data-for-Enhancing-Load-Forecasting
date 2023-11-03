@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 sys.path.insert(0, os.getcwd()) 
-from src.utils.utils import EarlyStopping
+from src.utils.early_stop import EarlyStopping
 
 
 # (1) Encoder
