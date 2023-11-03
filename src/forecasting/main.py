@@ -40,6 +40,7 @@ parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
 parser.add_argument("--lr", type=float, default=5e-4, help="Learning rate")
 parser.add_argument("--gamma", type=float, default=0.01, help="Gamma parameter")
 parser.add_argument("--seed", type=int, default=0)
+parser.add_argument("--checkpoint_path", default="src/forecasting/checkpoint.pt", help="Path to save checkpoint")
 # visualization
 parser.add_argument("--n_plots", type=int, default=32, help="Number of plots")
 parser.add_argument("--save_plots_path", default="results/out_figs/INPG/filter", help="Path to save plots")
@@ -95,12 +96,20 @@ decoder = DecoderRNN(
 ).to(device)
 
 model = Net_GRU(encoder, decoder, target_length=N_output, device=device).to(device)
-train_loss_evol = train_model(
+
+train_loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss = train_model(
     trainloader, testloader, 
     model, loss_type=args.loss_type, learning_rate=args.lr, gamma=args.gamma,
     epochs=args.epochs, patience=args.patience,
+    checkpoint_path = args.checkpoint_path,
     device=device, 
-    verbose=1, log_file=args.results_file,
+    verbose=1,
+)
+
+print(
+    f"train_dataset_path\n{args.train_dataset_path}\n\
+    smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, mape={mape_loss}, mase={mase_loss}",
+    file=open(args.results_file, "a")
 )
 
 # ---

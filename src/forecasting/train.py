@@ -15,7 +15,7 @@ def train_model(
         net, loss_type, learning_rate, gamma=0.001, Lambda=1, alpha=0.5, 
         epochs=1000, patience=20,
         device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-        verbose=1, eval_every=5, log_file = "results/results.txt",
+        verbose=1, eval_every=5,
         checkpoint_path='src/forecasting/checkpoint.pt', 
     ):
 
@@ -63,11 +63,7 @@ def train_model(
     net.load_state_dict(torch.load(checkpoint_path))
 
     smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss = eval_model(net, testloader, gamma, device)
-    print(
-        f"Final: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, mape={mape_loss}, mase={mase_loss}",
-        file=open(log_file, "a")
-    )
-    return loss_evol
+    return loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss
   
 
 def eval_model(net, loader, gamma, device):   
