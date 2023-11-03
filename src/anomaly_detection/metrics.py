@@ -1,4 +1,5 @@
 """Anomaly metrics."""
+import os
 import numpy as np
 from sklearn import metrics
 import matplotlib.pyplot as plt
@@ -117,4 +118,6 @@ def draw_curve(fpr, tpr, auroc):
     # plt.text(error, error_y, "({0}, {1:.4f})".format(error, error_y), color='k')
     # plt.text(miss_x, 1-miss, "({0:.4f}, {1})".format(miss_x, 1-miss), color='k')
     # plt.show()
-    plt.savefig('results/out_figs/roc.png') # TODO make path a parameter
+    path = 'results/out_figs/roc.png'
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    plt.savefig(path) # TODO make path a parameter
