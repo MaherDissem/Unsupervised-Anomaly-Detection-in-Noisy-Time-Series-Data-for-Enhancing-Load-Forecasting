@@ -4,7 +4,7 @@ import statsmodels.api as sm
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def seasonal_decomposition(input_data, seasonal_period=48, dim=-1):
+def seasonal_decomposition(input_data, seasonal_period, dim=-1):
     """
     Perform seasonal decomposition of a batch of time series and extract the seasonal component using PyTorch.
 
@@ -59,14 +59,14 @@ def moving_average(input_data, alpha=0.2):
     return moving_average
 
 
-def gen_ts_features(input_data):
+def gen_ts_features(input_data, seasonal_period, alpha):
     """Generate time series features from a batch of time series data."""
     # batch_size, sequence_length, input_dim = input_data.size()
     # torch.Size([32, 144, 1]) -> torch.Size([32, 3, 144, 1])
 
     input_data = input_data.to(device)
     
-    seasonal_components = seasonal_decomposition(input_data, seasonal_period=48)
+    seasonal_components = seasonal_decomposition(input_data, seasonal_period)
     moving_averages = moving_average(input_data, alpha=0.2)
 
     return torch.stack([input_data, seasonal_components, moving_averages], dim=1)

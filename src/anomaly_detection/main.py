@@ -28,15 +28,18 @@ def parse_args():
     parser.add_argument("--save_heatmaps", default=False)
     parser.add_argument("--filter_anomalies", default=True)
     parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/AEMO/NSW/lf_train_filter")      # data path
-    parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/AEMO/NSW/lf_train_contam")   # data path
+    parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/AEMO/NSW/lf_train_contam")  # data path
     parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
     # dataset
     parser.add_argument("--train_data_path", type=str, default="dataset/processed/AEMO/NSW/ad_train_contam")         # data path
     parser.add_argument("--test_data_path", type=str, default="dataset/processed/AEMO/NSW/ad_test_contam")           # data path
     parser.add_argument("--batch_size", default=32, type=int)
-    parser.add_argument("--nbr_timesteps", default=48*3, type=int)
+    parser.add_argument("--nbr_timesteps", default=48*3, type=int)       # sequence length
     parser.add_argument("--nbr_variables", default=1, type=int)
     parser.add_argument("--nbr_features", default=3, type=int)
+    # feature extraction
+    parser.add_argument("--alpha", default=0.2, type=float)
+    parser.add_argument("--seasonal_period", default=48, type=int       )# sequence length
     # backbone
     parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
     parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer2", "layer3"])
@@ -109,10 +112,12 @@ def get_coreset(args, device):
 
     coreset_instance = softpatch.SoftPatch(device)
     coreset_instance.load(
-        backbone=backbone,
-        layers_to_extract_from=args.backbone_layers_to_extract_from,
         device=device,
         input_shape=input_shape,
+        seasonal_period=args.seasonal_period,
+        alpha=args.alpha,
+        backbone=backbone,
+        layers_to_extract_from=args.backbone_layers_to_extract_from,
         featuresampler=sampler,
         nn_method=nn_method,
         LOF_k=args.lof_k,

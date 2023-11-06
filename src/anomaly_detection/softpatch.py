@@ -25,9 +25,11 @@ class SoftPatch(torch.nn.Module):
 
     def load(
         self,
-        backbone,
         device,
         input_shape,
+        seasonal_period,
+        alpha,
+        backbone,
         layers_to_extract_from=("layer2", "layer2"),
         pretrain_embed_dimension=1024,
         target_embed_dimension=1024,
@@ -49,6 +51,8 @@ class SoftPatch(torch.nn.Module):
         self.backbone = backbone.to(device)
         self.layers_to_extract_from = layers_to_extract_from
         self.input_shape = input_shape
+        self.seasonal_period = seasonal_period
+        self.alpha = alpha
 
         self.patch_maker = PatchMaker(patchsize, stride=patchstride)
 
@@ -112,7 +116,11 @@ class SoftPatch(torch.nn.Module):
             return features
         
         # input input_data.shape => torch.Size([8, 240, 1]), batch of 8 timeseries
-        ts_features = gen_ts_features(input_data.to(self.device)) # timeseries.shape -> torch.Size([8, 3, 240, 1]), batch of 8 timeseries
+        ts_features = gen_ts_features(
+            input_data.to(self.device), 
+            self.seasonal_period, 
+            self.alpha
+        ) # timeseries.shape -> torch.Size([8, 3, 240, 1]), batch of 8 timeseries
         
         _ = self.forward_modules["feature_aggregator"].eval()
         with torch.no_grad():
