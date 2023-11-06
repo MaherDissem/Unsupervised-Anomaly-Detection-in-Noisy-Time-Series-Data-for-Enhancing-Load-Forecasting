@@ -14,7 +14,6 @@ import metrics as metrics
 import sampler as sampler
 import softpatch as softpatch
 from dataset import TS_Dataset
-from feature_extractor import LSTM_AE
 
 sys.path.insert(0, os.getcwd()) 
 from src.utils.utils import set_seed
@@ -37,10 +36,7 @@ def parse_args():
     parser.add_argument("--batch_size", default=32, type=int)
     parser.add_argument("--nbr_timesteps", default=48*3, type=int)
     parser.add_argument("--nbr_variables", default=1, type=int)
-    # feature extractor
-    parser.add_argument("--extractor_weights", default="src/anomaly_detection/checkpoint.pt", type=str)
-    parser.add_argument("--extractor_embedding_dim", default=48*3, type=int)
-    parser.add_argument("--extractor_nbr_features", default=3, type=int)
+    parser.add_argument("--nbr_features", default=3, type=int)
     # backbone
     parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
     parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer2", "layer3"])
@@ -57,7 +53,6 @@ def parse_args():
 
     args = parser.parse_args()
     return args
-
 
 
 def get_dataloaders(args):
@@ -91,21 +86,6 @@ def get_sampler(sampler_name, sampling_ratio, device):
         return sampler.ApproximateGreedyCoresetSampler(sampling_ratio, device)
 
 
-def get_feature_extractor(args):
-    """
-        Loads a pretrained LSTM autoencoder that extracts features from input timeseries using the vectorize() method.
-        input: [batch_size, timesteps, no_variables]
-        output: [batch_size, 3, timesteps, no_variables], the second dimension represents the extracted features: original sequence, the reconstruction residual (input-decoded) and the latent representation.
-    """
-    loaded_model = LSTM_AE(
-        args.nbr_timesteps,
-        args.nbr_variables,
-        args.extractor_embedding_dim,
-    ) # other parameters are for training and evaluation
-    loaded_model.load(args.extractor_weights)
-    return loaded_model
-
-
 def get_backbone(args):
     """
         Loads a pretrained ResNet backbone used to extract features from the input data of shape (batch, extracted_features=3, time_steps, no_variables=1).
@@ -119,9 +99,8 @@ def get_backbone(args):
 
 
 def get_coreset(args, device):
-    input_shape = (args.extractor_nbr_features, args.nbr_timesteps, args.nbr_variables)
+    input_shape = (args.nbr_features, args.nbr_timesteps, args.nbr_variables)
 
-    feature_extractor = get_feature_extractor(args)
     backbone = get_backbone(args)
     sampler = get_sampler(args.sampler_name, args.sampling_ratio, device)
     nn_method = common.FaissNN(
@@ -130,7 +109,6 @@ def get_coreset(args, device):
 
     coreset_instance = softpatch.SoftPatch(device)
     coreset_instance.load(
-        feature_extractor=feature_extractor,
         backbone=backbone,
         layers_to_extract_from=args.backbone_layers_to_extract_from,
         device=device,
@@ -210,7 +188,7 @@ def run(args):
                         k += 1
                     i += 1
 
-        # save contaminated data with same size as filterd data
+        # save contaminated data
         with tqdm.tqdm(dataloaders["testing"], desc="Saving contaminated data...", leave=True) as data_iterator:
             os.makedirs(os.path.join(args.contaminated_data_path, "data"), exist_ok=True)
             os.makedirs(os.path.join(args.contaminated_data_path, "gt"), exist_ok=True)
@@ -221,6 +199,8 @@ def run(args):
                     np.save(os.path.join(args.contaminated_data_path, "data", str(j)+'.npy'), timeserie)
                     np.save(os.path.join(args.contaminated_data_path, "gt", str(j)+'.npy'), gt)
                     j += 1
+
+                # # save with same size as filterd data
                 #     if j==k:
                 #         done = True
                 #         break

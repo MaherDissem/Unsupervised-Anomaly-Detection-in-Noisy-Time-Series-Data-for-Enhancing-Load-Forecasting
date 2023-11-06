@@ -12,6 +12,7 @@ import common
 import multi_variate_gaussian
 import sampler
 
+from feature_extractor import gen_ts_features
 
 
 LOGGER = logging.getLogger(__name__)
@@ -24,7 +25,6 @@ class SoftPatch(torch.nn.Module):
 
     def load(
         self,
-        feature_extractor,
         backbone,
         device,
         input_shape,
@@ -46,7 +46,6 @@ class SoftPatch(torch.nn.Module):
         **kwargs,
     ):
         self.device = device
-        self.feature_extractor = feature_extractor.to(device)
         self.backbone = backbone.to(device)
         self.layers_to_extract_from = layers_to_extract_from
         self.input_shape = input_shape
@@ -104,7 +103,7 @@ class SoftPatch(torch.nn.Module):
             return features
         return self._embed(data)
 
-    def _embed(self, timeseries, detach=True, provide_patch_shapes=False):
+    def _embed(self, input_data, detach=True, provide_patch_shapes=False):
         """Returns feature embeddings for timeseries."""
 
         def _detach(features):
@@ -112,19 +111,20 @@ class SoftPatch(torch.nn.Module):
                 return [x.detach().cpu().numpy() for x in features]
             return features
         
-        # input timeseries.shape => torch.Size([8, 240, 1]), batch of 8 timeseries
-        timeseries = self.feature_extractor.vectorize(timeseries.to(self.device)) # timeseries.shape -> torch.Size([8, 3, 240, 1]), batch of 8 timeseries
+        # input input_data.shape => torch.Size([8, 240, 1]), batch of 8 timeseries
+        ts_features = gen_ts_features(input_data.to(self.device)) # timeseries.shape -> torch.Size([8, 3, 240, 1]), batch of 8 timeseries
         
         _ = self.forward_modules["feature_aggregator"].eval()
         with torch.no_grad():
-            features = self.forward_modules["feature_aggregator"](timeseries) # {layer2:torch.Size([8, 512, 28, 28]), layer3:torch.Size([8, 1024, 14, 14])}
+            backbone_features = self.forward_modules["feature_aggregator"](ts_features) # {layer2:torch.Size([8, 512, 28, 28]), layer3:torch.Size([8, 1024, 14, 14])}
 
-        features = [features[layer] for layer in self.layers_to_extract_from] # [torch.Size([8, 512, 28, 28]), torch.Size([8, 1024, 14, 14])]
+        features = [backbone_features[layer] for layer in self.layers_to_extract_from] # [torch.Size([8, 512, 28, 28]), torch.Size([8, 1024, 14, 14])]
 
         features = [
             self.patch_maker.patchify(x, return_spatial_info=True) for x in features
         ]
         # features => [ ( torch.Size([8, 784, 512, 3, 3]), [28,28] ), (#layer3), ... ]
+        
         patch_shapes = [x[1] for x in features] # [[28, 28], [14, 14], ...]
         features = [x[0] for x in features] # [torch.Size([8, 784, 512, 3, 3]), torch.Size([8, 196, 1024, 3, 3]), ...]
         ref_num_patches = patch_shapes[0]
