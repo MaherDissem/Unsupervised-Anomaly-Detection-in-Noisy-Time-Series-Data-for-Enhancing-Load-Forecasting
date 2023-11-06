@@ -42,9 +42,9 @@ def train_model(
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            loss_evol.append(loss.item())
             epoch_loss += loss.item()
         epoch_loss /= (i+1)
+        loss_evol.append(epoch_loss)
 
         if verbose:
             print(f"epoch: {epoch}, loss: {epoch_loss/(i+1)}")
