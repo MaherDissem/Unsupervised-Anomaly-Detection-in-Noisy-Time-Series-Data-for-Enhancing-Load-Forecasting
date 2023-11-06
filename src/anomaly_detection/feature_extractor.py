@@ -1,13 +1,5 @@
-import os
-import sys
-
 import torch
-import torch.nn as nn
-import numpy as np
 import statsmodels.api as sm
-
-sys.path.insert(0, os.getcwd()) 
-from src.utils.early_stop import EarlyStopping
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -31,7 +23,7 @@ def seasonal_decomposition(input_data, seasonal_period=48, dim=-1):
         batch_components = []
 
         for j in range(input_dim):
-            time_series = input_data[i, :, j].cpu().numpy()
+            time_series = input_data[i, :, j].cpu().numpy() # this slows down computation
             decomposition = sm.tsa.seasonal_decompose(time_series, model='additive', period=seasonal_period)
             seasonal_component = torch.tensor(decomposition.seasonal, dtype=torch.float32, device=device)
 
@@ -69,9 +61,9 @@ def moving_average(input_data, alpha=0.2):
 
 def gen_ts_features(input_data):
     """Generate time series features from a batch of time series data."""
+    # batch_size, sequence_length, input_dim = input_data.size()
     # torch.Size([32, 144, 1]) -> torch.Size([32, 3, 144, 1])
-    
-    batch_size, sequence_length, input_dim = input_data.size()
+
     input_data = input_data.to(device)
     
     seasonal_components = seasonal_decomposition(input_data, seasonal_period=48)
