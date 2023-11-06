@@ -22,10 +22,10 @@ import warnings; warnings.simplefilter('ignore')
 # ---
 parser = argparse.ArgumentParser(description="Runs Load Forecasting experiments")
 # dataset
-parser.add_argument("--train_dataset_path", default="dataset/processed/INPG/lf_train_filter", help="Path to train dataset")
-parser.add_argument("--test_dataset_path", default="dataset/processed/INPG/lf_test_clean", help="Path to clean dataset for testing")
+parser.add_argument("--train_dataset_path", default="dataset/processed/AEMO/NSW/lf_train_contam", help="Path to train dataset")
+parser.add_argument("--test_dataset_path", default="dataset/processed/AEMO/NSW/lf_test_clean", help="Path to clean dataset for testing")
 # sequence
-parser.add_argument("--timesteps", type=int, default=24*3, help="Number of timesteps")
+parser.add_argument("--timesteps", type=int, default=48*3, help="Number of timesteps")
 parser.add_argument("--nbr_var", type=int, default=1, help="Number of variables")
 parser.add_argument("--sequence_split", type=float, default=2/3, help="Sequence split ratio")
 # model parameters
@@ -43,7 +43,7 @@ parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--checkpoint_path", default="src/forecasting/checkpoint.pt", help="Path to save checkpoint")
 # visualization
 parser.add_argument("--n_plots", type=int, default=32, help="Number of plots")
-parser.add_argument("--save_plots_path", default="results/out_figs/INPG/filter", help="Path to save plots")
+parser.add_argument("--save_plots_path", default="results/out_figs/AEMO/NSW/contam", help="Path to save plots")
 parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
 args = parser.parse_args()
 

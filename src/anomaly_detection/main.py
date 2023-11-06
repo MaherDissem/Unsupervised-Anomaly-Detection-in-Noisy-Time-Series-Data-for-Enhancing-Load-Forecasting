@@ -28,18 +28,18 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--save_heatmaps", default=False)
     parser.add_argument("--filter_anomalies", default=True)
-    parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/INPG/lf_train_filter")      # data path
-    parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/INPG/lf_train_contam")   # data path
+    parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/AEMO/NSW/lf_train_filter")      # data path
+    parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/AEMO/NSW/lf_train_contam")   # data path
     parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
     # dataset
-    parser.add_argument("--train_data_path", type=str, default="dataset/processed/INPG/ad_train_contam")         # data path
-    parser.add_argument("--test_data_path", type=str, default="dataset/processed/INPG/ad_test_contam")           # data path
+    parser.add_argument("--train_data_path", type=str, default="dataset/processed/AEMO/NSW/ad_train_contam")         # data path
+    parser.add_argument("--test_data_path", type=str, default="dataset/processed/AEMO/NSW/ad_test_contam")           # data path
     parser.add_argument("--batch_size", default=32, type=int)
-    parser.add_argument("--nbr_timesteps", default=24*3, type=int)
+    parser.add_argument("--nbr_timesteps", default=48*3, type=int)
     parser.add_argument("--nbr_variables", default=1, type=int)
     # feature extractor
     parser.add_argument("--extractor_weights", default="src/anomaly_detection/checkpoint.pt", type=str)
-    parser.add_argument("--extractor_embedding_dim", default=24*3, type=int)
+    parser.add_argument("--extractor_embedding_dim", default=48*3, type=int)
     parser.add_argument("--extractor_nbr_features", default=3, type=int)
     # backbone
     parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
@@ -221,10 +221,10 @@ def run(args):
                     np.save(os.path.join(args.contaminated_data_path, "data", str(j)+'.npy'), timeserie)
                     np.save(os.path.join(args.contaminated_data_path, "gt", str(j)+'.npy'), gt)
                     j += 1
-                    if j==k:
-                        done = True
-                        break
-                if done: break
+                #     if j==k:
+                #         done = True
+                #         break
+                # if done: break
 
 
 if __name__ == "__main__":

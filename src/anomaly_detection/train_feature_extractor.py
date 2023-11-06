@@ -16,9 +16,9 @@ from src.utils.utils import set_seed
 # ---
 parser = argparse.ArgumentParser(description="Train the feature extraction model and save its weights")
 # data parameters
-parser.add_argument("--train_dataset", default="dataset/processed/INPG/ad_train_contam", help="Path to dataset root")
-parser.add_argument("--test_dataset", default="dataset/processed/INPG/ad_test_contam", help="Path to dataset root")
-parser.add_argument("--seq_len", type=int, default=24*3, help="Sequence length")
+parser.add_argument("--train_dataset", default="dataset/processed/AEMO/NSW/ad_train_contam", help="Path to dataset root")
+parser.add_argument("--test_dataset", default="dataset/processed/AEMO/NSW/ad_test_contam", help="Path to dataset root")
+parser.add_argument("--seq_len", type=int, default=48*3, help="Sequence length")
 parser.add_argument("--nbr_variables", type=int, default=1, help="Number of variables")
 # module output
 parser.add_argument("--checkpoint_path", default="src/anomaly_detection/checkpoint.pt", help="Path to checkpoint")
@@ -34,7 +34,7 @@ parser.add_argument("--max_grad_norm", type=float, default=0.05, help="Maximum g
 parser.add_argument("--every_epoch_print", type=int, default=1, help="Print every epoch")
 parser.add_argument("--seed", type=int, default=0)
 # model parameters
-parser.add_argument("--embedding_dim", type=int, default=24*3, help="Embedding dimension")
+parser.add_argument("--embedding_dim", type=int, default=48*3, help="Embedding dimension")
 
 args = parser.parse_args()
 
