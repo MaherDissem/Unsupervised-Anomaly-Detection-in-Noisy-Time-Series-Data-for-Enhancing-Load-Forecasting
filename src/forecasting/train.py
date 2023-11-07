@@ -49,8 +49,8 @@ def train_model(
         if verbose:
             print(f"epoch: {epoch}, loss: {epoch_loss/(i+1)}")
             if epoch % eval_every == 0:
-                smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss = eval_model(net, testloader, gamma, device)
-                print(f"Eval: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, mape={mape_loss}, mase={mase_loss}")
+                smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = eval_model(net, testloader, gamma, device)
+                print(f"Eval: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}")
 
         # early_stopping needs the validation loss to check if it has decresed, 
         # and if it has, it will make a checkpoint of the current model
@@ -62,8 +62,8 @@ def train_model(
     # load the last checkpoint with the best model (saved by EarlyStopping)
     net.load_state_dict(torch.load(checkpoint_path))
 
-    smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss = eval_model(net, testloader, gamma, device)
-    return loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss
+    smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = eval_model(net, testloader, gamma, device)
+    return loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss
   
 
 def eval_model(net, loader, gamma, device):   
@@ -75,6 +75,7 @@ def eval_model(net, loader, gamma, device):
     losses_mase = []
     losses_dtw = []
     losses_tdi = []
+    losses_r2 = []
 
     for i, data in enumerate(loader, 0):
         # run inference
@@ -98,6 +99,8 @@ def eval_model(net, loader, gamma, device):
         loss_mape = torch.mean(torch.abs(outputs - target) / (torch.abs(target)+1e-6)) # division by zero for null targets
         # MASE
         loss_mase = torch.mean(torch.abs(outputs - target) / loss_mae)
+        # R squared
+        loss_r2 = 1 - torch.sum((target - outputs)**2) / torch.sum((target - torch.mean(target))**2)
         # DTW and TDI
         # loss_dtw, loss_tdi = 0, 0
         # for k in range(batch_size):         
@@ -118,6 +121,7 @@ def eval_model(net, loader, gamma, device):
         losses_rmse.append( loss_rmse.item() )
         losses_mape.append( loss_mape.item() )
         losses_mase.append( loss_mase.item() )
+        losses_r2.append( loss_r2.item() )
         # losses_dtw.append( loss_dtw )
         # losses_tdi.append( loss_tdi )
 
@@ -127,6 +131,7 @@ def eval_model(net, loader, gamma, device):
     rmse_loss = np.array(losses_rmse).mean()
     mape_loss = np.array(losses_mape).mean()
     mase_loss = np.array(losses_mase).mean()
+    r2_loss = np.array(losses_r2).mean()
     # dtw_loss = np.array(losses_dtw).mean()
     # tdi_loss = np.array(losses_tdi).mean()
-    return smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss #, dtw_loss, tdi_loss
+    return smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss #, dtw_loss, tdi_loss

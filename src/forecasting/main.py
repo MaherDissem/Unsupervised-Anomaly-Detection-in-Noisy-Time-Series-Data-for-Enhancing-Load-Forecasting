@@ -22,10 +22,10 @@ import warnings; warnings.simplefilter('ignore')
 # ---
 parser = argparse.ArgumentParser(description="Runs Load Forecasting experiments")
 # dataset
-parser.add_argument("--train_dataset_path", default="dataset/processed/AEMO/NSW/lf_train_contam", help="Path to train dataset")
-parser.add_argument("--test_dataset_path", default="dataset/processed/AEMO/NSW/lf_test_clean", help="Path to clean dataset for testing")
+parser.add_argument("--train_dataset_path", default="dataset/processed/INPG/lf_train_filter", help="Path to train dataset")
+parser.add_argument("--test_dataset_path", default="dataset/processed/INPG/lf_test_clean", help="Path to clean dataset for testing")
 # sequence
-parser.add_argument("--timesteps", type=int, default=48*3, help="Number of timesteps")
+parser.add_argument("--timesteps", type=int, default=24*3, help="Number of timesteps")
 parser.add_argument("--nbr_var", type=int, default=1, help="Number of variables")
 parser.add_argument("--sequence_split", type=float, default=2/3, help="Sequence split ratio")
 # model parameters
@@ -37,13 +37,13 @@ parser.add_argument("--fc_units", type=int, default=16, help="Number of fully co
 parser.add_argument("--epochs", type=int, default=300, help="Number of epochs")
 parser.add_argument("--patience", type=int, default=20, help="Patience for early stopping")
 parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
-parser.add_argument("--lr", type=float, default=5e-4, help="Learning rate")
+parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
 parser.add_argument("--gamma", type=float, default=0.01, help="Gamma parameter")
 parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--checkpoint_path", default="src/forecasting/checkpoint.pt", help="Path to save checkpoint")
 # visualization
 parser.add_argument("--n_plots", type=int, default=32, help="Number of plots")
-parser.add_argument("--save_plots_path", default="results/out_figs/AEMO/NSW/contam", help="Path to save plots")
+parser.add_argument("--save_plots_path", default="results/out_figs/INPG/filter", help="Path to save plots")
 parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
 args = parser.parse_args()
 
@@ -97,7 +97,7 @@ decoder = DecoderRNN(
 
 model = Net_GRU(encoder, decoder, target_length=N_output, device=device).to(device)
 
-train_loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss = train_model(
+train_loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = train_model(
     trainloader, testloader, 
     model, loss_type=args.loss_type, learning_rate=args.lr, gamma=args.gamma,
     epochs=args.epochs, patience=args.patience,
@@ -108,7 +108,7 @@ train_loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss
 
 print(
     f"train_dataset_path: {args.train_dataset_path}\n\
-    Final: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, mape={mape_loss}, mase={mase_loss}",
+    Final: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}",
     file=open(args.results_file, "a")
 )
 
