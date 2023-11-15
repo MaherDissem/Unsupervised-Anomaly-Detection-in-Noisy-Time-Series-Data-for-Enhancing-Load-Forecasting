@@ -3,6 +3,7 @@ matplotlib==3.7.1
 numba==0.57.1
 numpy==1.23.5
 scikit_learn==1.2.2
+statsmodels==0.14.0
 timm==0.9.6
 torch==2.0.1+cu118
 tqdm==4.65.0
