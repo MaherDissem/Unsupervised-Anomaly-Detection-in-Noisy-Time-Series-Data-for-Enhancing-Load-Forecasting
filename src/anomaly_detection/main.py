@@ -27,19 +27,21 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--save_heatmaps", default=False)
     parser.add_argument("--filter_anomalies", default=True)
-    parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/AEMO/NSW/lf_train_filter")      # data path
-    parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/AEMO/NSW/lf_train_contam")  # data path
+    parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/AEMO/SA/lf_train_filter")      # data path
+    parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/AEMO/SA/lf_train_contam")  # data path
     parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
     # dataset
-    parser.add_argument("--train_data_path", type=str, default="dataset/processed/AEMO/NSW/ad_train_contam")         # data path
-    parser.add_argument("--test_data_path", type=str, default="dataset/processed/AEMO/NSW/ad_test_contam")           # data path
+    parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/SA/ad_train_contam", "dataset/processed/AEMO/SA/ad_test_contam"], help="List of training data paths")
+    parser.add_argument("--test_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/SA/ad_train_contam", "dataset/processed/AEMO/SA/ad_test_contam"], help="List of training data paths")
+    # parser.add_argument("--train_data_path", type=str, default="dataset/processed/INPG/ad_train_contam")         # data path
+    # parser.add_argument("--test_data_path", type=str, default="dataset/processed/INPG/ad_test_contam")           # data path
     parser.add_argument("--batch_size", default=32, type=int)
-    parser.add_argument("--nbr_timesteps", default=48*3, type=int)       # sequence length
+    parser.add_argument("--nbr_timesteps", default=48*5, type=int)       # sequence length
     parser.add_argument("--nbr_variables", default=1, type=int)
     parser.add_argument("--nbr_features", default=3, type=int)
     # feature extraction
     parser.add_argument("--alpha", default=0.2, type=float)
-    parser.add_argument("--seasonal_period", default=48, type=int       )# sequence length
+    parser.add_argument("--seasonal_period", default=48, type=int)       # sequence length
     # backbone
     parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
     parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer2", "layer3"])
@@ -50,7 +52,7 @@ def parse_args():
     parser.add_argument("--faiss_num_workers", type=int, default=4)
     # SoftPatch hyper-parameter
     parser.add_argument("--weight_method", type=str, default="gaussian")
-    parser.add_argument("--threshold", type=float, default=0.15)
+    parser.add_argument("--threshold", type=float, default=0.2)          # denoising parameter
     parser.add_argument("--lof_k", type=int, default=6)
     parser.add_argument("--without_soft_weight", action="store_true")
 
@@ -181,7 +183,18 @@ def run(args):
         # save filtered data
         os.makedirs(os.path.join(args.filtered_data_path, "data"), exist_ok=True)
         os.makedirs(os.path.join(args.filtered_data_path, "gt"), exist_ok=True)
+
+        # remove existing files
+        for f in os.listdir(os.path.join(args.filtered_data_path, "data")):
+            os.remove(os.path.join(args.filtered_data_path, "data", f))
+        for f in os.listdir(os.path.join(args.filtered_data_path, "gt")):
+            os.remove(os.path.join(args.filtered_data_path, "gt", f))
+
         threshold = results["best_threshold"]
+        # threshold = np.percentile(scores, 90) # for unsupervised INPG dataset
+        # print(f"percentile threshold: {threshold}")
+        # threshold = 0.00008
+
         with tqdm.tqdm(dataloaders["testing"], desc="Saving filtered data...", leave=True) as data_iterator:
             k = 0 # number of anomaly free timeserie
             i = 0 # index of timeserie
@@ -197,6 +210,12 @@ def run(args):
         with tqdm.tqdm(dataloaders["testing"], desc="Saving contaminated data...", leave=True) as data_iterator:
             os.makedirs(os.path.join(args.contaminated_data_path, "data"), exist_ok=True)
             os.makedirs(os.path.join(args.contaminated_data_path, "gt"), exist_ok=True)
+
+            # remove existing files
+            for f in os.listdir(os.path.join(args.contaminated_data_path, "data")):
+                os.remove(os.path.join(args.contaminated_data_path, "data", f))
+            for f in os.listdir(os.path.join(args.contaminated_data_path, "gt")):
+                os.remove(os.path.join(args.contaminated_data_path, "gt", f))
             done = False
             j = 0 # index of timeserie
             for timeserie_batch in data_iterator:

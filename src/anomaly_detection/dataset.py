@@ -6,9 +6,9 @@ import torch
 
 class TS_Dataset(torch.utils.data.Dataset):
 
-    def __init__(self, root_dir):
+    def __init__(self, data_folders_paths):
         super().__init__()
-        self.root_dir = root_dir
+        self.data_folders_paths = data_folders_paths
         self.data, self.gt = self.load_data()
 
     def __getitem__(self, idx):
@@ -25,8 +25,11 @@ class TS_Dataset(torch.utils.data.Dataset):
         return len(self.data)
 
     def load_data(self):
-        data = glob.glob(os.path.join(self.root_dir, "data", "*.npy"))
-        gt = glob.glob(os.path.join(self.root_dir, "gt", "*.npy"))
+        data = []
+        gt = []
+        for root_dir in self.data_folders_paths:
+            data.extend(glob.iglob(os.path.join(root_dir, "data", "*.npy")))
+            gt.extend(glob.iglob(os.path.join(root_dir, "gt", "*.npy")))
         if len(data) == 0: 
             raise ValueError("No data found in the specified directory")
         return data, gt
