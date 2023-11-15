@@ -22,12 +22,12 @@ import warnings; warnings.simplefilter('ignore')
 # ---
 parser = argparse.ArgumentParser(description="Runs Load Forecasting experiments")
 # dataset
-parser.add_argument("--train_dataset_path", default="dataset/processed/INPG/lf_train_filter", help="Path to train dataset")
-parser.add_argument("--test_dataset_path", default="dataset/processed/INPG/lf_test_clean", help="Path to clean dataset for testing")
+parser.add_argument("--train_dataset_path", default="dataset/processed/AEMO/SA/lf_train_filter", help="Path to train dataset") # dataset parameter
+parser.add_argument("--test_dataset_path", default="dataset/processed/AEMO/SA/lf_test_clean", help="Path to clean dataset for testing") # dataset parameter
 # sequence
-parser.add_argument("--timesteps", type=int, default=24*3, help="Number of timesteps")
+parser.add_argument("--timesteps", type=int, default=48*5, help="Number of timesteps")          # dataset parameter
 parser.add_argument("--nbr_var", type=int, default=1, help="Number of variables")
-parser.add_argument("--sequence_split", type=float, default=2/3, help="Sequence split ratio")
+parser.add_argument("--sequence_split", type=float, default=4/5, help="Sequence split ratio")   # dataset parameter
 # model parameters
 parser.add_argument("--loss_type", type=str, default="mse", help="Loss function to optimize (mse/dilate)")
 parser.add_argument("--hidden_size", type=int, default=128, help="Hidden size of the model")
@@ -43,7 +43,7 @@ parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--checkpoint_path", default="src/forecasting/checkpoint.pt", help="Path to save checkpoint")
 # visualization
 parser.add_argument("--n_plots", type=int, default=32, help="Number of plots")
-parser.add_argument("--save_plots_path", default="results/out_figs/INPG/filter", help="Path to save plots")
+parser.add_argument("--save_plots_path", default="results/out_figs/AEMO/SA/filter", help="Path to save plots") # dataset parameter
 parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
 args = parser.parse_args()
 
