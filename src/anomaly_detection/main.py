@@ -5,6 +5,7 @@ import sys
 import time
 
 import numpy as np
+import matplotlib.pyplot as plt
 import timm
 import torch
 import tqdm
@@ -25,7 +26,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="SoftPatch")
     # project
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--save_heatmaps", default=False)
+    parser.add_argument("--save_heatmaps", default=True)
     parser.add_argument("--filter_anomalies", default=True)
     parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/AEMO/SA/lf_train_filter")      # data path
     parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/AEMO/SA/lf_train_contam")  # data path
@@ -33,8 +34,6 @@ def parse_args():
     # dataset
     parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/SA/ad_train_contam", "dataset/processed/AEMO/SA/ad_test_contam"], help="List of training data paths")
     parser.add_argument("--test_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/SA/ad_train_contam", "dataset/processed/AEMO/SA/ad_test_contam"], help="List of training data paths")
-    # parser.add_argument("--train_data_path", type=str, default="dataset/processed/INPG/ad_train_contam")         # data path
-    # parser.add_argument("--test_data_path", type=str, default="dataset/processed/INPG/ad_test_contam")           # data path
     parser.add_argument("--batch_size", default=32, type=int)
     parser.add_argument("--nbr_timesteps", default=48*5, type=int)       # sequence length
     parser.add_argument("--nbr_variables", default=1, type=int)
@@ -45,6 +44,7 @@ def parse_args():
     # backbone
     parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
     parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer2", "layer3"])
+    # parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer2", "layer3"])
     # coreset sampler
     parser.add_argument("--sampler_name", type=str, default="approx_greedy_coreset")
     parser.add_argument("--sampling_ratio", type=float, default=0.1)
@@ -159,13 +159,11 @@ def run(args):
     scores = (scores - min_scores) / (max_scores - min_scores + 1e-5)
     scores = np.mean(scores, axis=0)
 
-    # heatmaps = np.array(heatmaps)
-    # min_scores = heatmaps.reshape(len(heatmaps), -1).min(axis=-1).reshape(-1, 1, 1, 1)
-    # max_scores = heatmaps.reshape(len(heatmaps), -1).max(axis=-1).reshape(-1, 1, 1, 1)
-    # heatmaps = (heatmaps - min_scores) / (heatmaps - min_scores)
-    # heatmaps = np.mean(heatmaps, axis=0)
-    # if args.save_heatmaps:
-    #     pass
+    heatmaps = np.array(heatmaps)
+    min_scores = heatmaps.reshape(len(heatmaps), -1).min(axis=0).reshape(-1, 1)
+    max_scores = heatmaps.reshape(len(heatmaps), -1).max(axis=0).reshape(-1, 1)
+    heatmaps = (heatmaps - min_scores) / (max_scores - min_scores)
+    heatmaps = np.mean(heatmaps, axis=-1)
 
     LOGGER.info("Computing evaluation metrics.")
     results = metrics.compute_timeseriewise_retrieval_metrics(scores, labels_gt)
@@ -179,8 +177,8 @@ def run(args):
           AUROC: {results['auroc']:0.3f}, best f1: {results['best_f1']:0.3f}, best precision: {results['best_precision']:0.3f}, best recall: {results['best_recall']:0.3f}",
           file=open(args.results_file, "a"))
 
+    # save filtered data
     if args.filter_anomalies:
-        # save filtered data
         os.makedirs(os.path.join(args.filtered_data_path, "data"), exist_ok=True)
         os.makedirs(os.path.join(args.filtered_data_path, "gt"), exist_ok=True)
 
@@ -203,6 +201,19 @@ def run(args):
                     if scores[i]<=threshold:
                         np.save(os.path.join(args.filtered_data_path, "data", str(i)+'.npy'), timeserie)
                         np.save(os.path.join(args.filtered_data_path, "gt", str(i)+'.npy'), gt)
+                    elif args.save_heatmaps:
+                        heatmap = heatmaps[i].reshape(1, -1)
+                        heatmap_data = np.repeat(heatmap, len(timeserie)//heatmap.shape[1], axis=1)
+                        fig, ax1 = plt.subplots(figsize=(10, 6))
+                        ax2 = ax1.twinx()
+                        ax1.imshow(heatmap_data, cmap="YlOrRd", aspect='auto')
+                        ax2.plot(timeserie, label='Time Series', color='blue')
+                        ax2.set_xlabel('Time')
+                        ax2.set_ylabel('Value', color='blue')
+                        ax2.tick_params('y', colors='blue')
+                        plt.title('Time Series with Anomaly Score Heatmap')
+                        plt.savefig(f"results/heatmaps/{i}.png")
+                        plt.close()
                         k += 1
                     i += 1
 
@@ -216,6 +227,7 @@ def run(args):
                 os.remove(os.path.join(args.contaminated_data_path, "data", f))
             for f in os.listdir(os.path.join(args.contaminated_data_path, "gt")):
                 os.remove(os.path.join(args.contaminated_data_path, "gt", f))
+
             done = False
             j = 0 # index of timeserie
             for timeserie_batch in data_iterator:
@@ -223,7 +235,6 @@ def run(args):
                     np.save(os.path.join(args.contaminated_data_path, "data", str(j)+'.npy'), timeserie)
                     np.save(os.path.join(args.contaminated_data_path, "gt", str(j)+'.npy'), gt)
                     j += 1
-
                 # # save with same size as filterd data
                 #     if j==k:
                 #         done = True
