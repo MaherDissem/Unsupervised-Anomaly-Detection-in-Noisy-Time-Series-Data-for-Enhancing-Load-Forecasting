@@ -43,8 +43,7 @@ def parse_args():
     parser.add_argument("--seasonal_period", default=48, type=int)       # sequence length
     # backbone
     parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
-    parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer2", "layer3"])
-    # parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer2", "layer3"])
+    parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer1"])
     # coreset sampler
     parser.add_argument("--sampler_name", type=str, default="approx_greedy_coreset")
     parser.add_argument("--sampling_ratio", type=float, default=0.1)
@@ -142,6 +141,7 @@ def run(args):
     start_time = time.time()
     coreset.fit(dataloaders["training"])
     train_end = time.time()
+    # coreset.save_to_path("model")
 
     # inference on test set
     scores, heatmaps, labels_gt = coreset.predict(dataloaders["testing"])
@@ -160,8 +160,8 @@ def run(args):
     scores = np.mean(scores, axis=0)
 
     heatmaps = np.array(heatmaps)
-    min_scores = heatmaps.reshape(len(heatmaps), -1).min(axis=0).reshape(-1, 1)
-    max_scores = heatmaps.reshape(len(heatmaps), -1).max(axis=0).reshape(-1, 1)
+    min_scores = heatmaps.reshape(len(heatmaps), -1).min()
+    max_scores = heatmaps.reshape(len(heatmaps), -1).max()
     heatmaps = (heatmaps - min_scores) / (max_scores - min_scores)
     heatmaps = np.mean(heatmaps, axis=-1)
 
