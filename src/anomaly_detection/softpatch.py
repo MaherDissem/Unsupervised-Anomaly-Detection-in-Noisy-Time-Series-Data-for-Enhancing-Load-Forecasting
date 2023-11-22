@@ -44,7 +44,13 @@ class SoftPatch(torch.nn.Module):
         lof_k=5,
         threshold=0.15,
         weight_method="lof",
-        soft_weight_flag=True,
+        soft_weight_flag=True, # TODO revert to True and include in save()  TODO also save global min/max of heatmaps
+        coreset_weight = None,
+        min_score=None,
+        max_score=None,
+        min_heatmap_scores=None,
+        max_heatmap_scores=None,
+
         **kwargs,
     ):
         self.device = device
@@ -91,9 +97,14 @@ class SoftPatch(torch.nn.Module):
         self.feature_shape = []
         self.lof_k = lof_k
         self.threshold = threshold
-        self.coreset_weight = None
         self.weight_method = weight_method
         self.soft_weight_flag = soft_weight_flag
+        self.coreset_weight = coreset_weight
+
+        self.min_score = min_score
+        self.max_score = max_score
+        self.min_heatmap_scores = min_heatmap_scores
+        self.max_heatmap_scores = max_heatmap_scores
 
     def embed(self, data):
         if isinstance(data, torch.utils.data.DataLoader):
@@ -358,10 +369,10 @@ class SoftPatch(torch.nn.Module):
             features, patch_shapes = self._embed(timeseries, provide_patch_shapes=True)
             features = np.asarray(features)
 
-            timeserie_scores, _, indices = self.anomaly_scorer.predict([features])
+            timeserie_scores, _, indices = self.anomaly_scorer.predict([features]) # mean distance to NN: (B x w=30 x h=1)
             if self.soft_weight_flag:
                 indices = indices.squeeze()
-                weight = np.take(self.coreset_weight, axis=0, indices=indices)
+                weight = np.take(self.coreset_weight, axis=0, indices=indices) # multiplied by anom score /weight of NN saved in memory bank
 
                 timeserie_scores = timeserie_scores * weight 
 
@@ -369,18 +380,18 @@ class SoftPatch(torch.nn.Module):
 
             timeserie_scores = self.patch_maker.unpatch_scores(
                 timeserie_scores, batchsize=batchsize
-            )
-            timeserie_scores = timeserie_scores.reshape(*timeserie_scores.shape[:2], -1)
+            ) # (B, 30)
+            timeserie_scores = timeserie_scores.reshape(*timeserie_scores.shape[:2], -1) # (B, 30, 1)
             timeserie_scores = self.patch_maker.score(timeserie_scores)
 
             patch_scores = self.patch_maker.unpatch_scores(
                 patch_scores, batchsize=batchsize
-            )
+            ) # (B, 30)
             scales = patch_shapes[0]
             patch_scores = patch_scores.reshape(batchsize, scales[0], scales[1])
             masks = patch_scores
 
-        return [score for score in timeserie_scores], [mask for mask in masks]
+        return [score for score in timeserie_scores], [mask for mask in masks] # masks is (32, 30, 1) -> mask of patch scores not original data points
 
     @staticmethod
     def _params_file(filepath, prepend=""):
@@ -403,6 +414,18 @@ class SoftPatch(torch.nn.Module):
             "patchsize": self.patch_maker.patchsize,
             "patchstride": self.patch_maker.stride,
             "anomaly_scorer_num_nn": self.anomaly_scorer.n_nearest_neighbours,
+
+            "seasonal_period": self.seasonal_period,
+            "alpha": self.alpha,
+            "backbone": self.backbone,
+
+            "soft_weight_flag": self.soft_weight_flag,
+            "coreset_weight": self.coreset_weight,
+
+            "min_score": self.min_score,
+            "max_score": self.max_score,
+            "min_heatmap_scores": self.min_heatmap_scores,
+            "max_heatmap_scores": self.max_heatmap_scores,
         }
         with open(self._params_file(save_path, prepend), "wb") as save_file:
             pickle.dump(params, save_file, pickle.HIGHEST_PROTOCOL)

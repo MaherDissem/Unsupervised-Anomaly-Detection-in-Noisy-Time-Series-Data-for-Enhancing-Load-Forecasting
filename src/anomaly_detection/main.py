@@ -141,7 +141,6 @@ def run(args):
     start_time = time.time()
     coreset.fit(dataloaders["training"])
     train_end = time.time()
-    # coreset.save_to_path("model")
 
     # inference on test set
     scores, heatmaps, labels_gt = coreset.predict(dataloaders["testing"])
@@ -154,16 +153,28 @@ def run(args):
 
     # evaluation of test data
     scores = np.array(scores)
-    min_scores = scores.min(axis=-1).reshape(-1, 1)
-    max_scores = scores.max(axis=-1).reshape(-1, 1)
-    scores = (scores - min_scores) / (max_scores - min_scores + 1e-5)
+    coreset.min_score = scores.min(axis=-1).reshape(-1, 1)
+    coreset.max_score = scores.max(axis=-1).reshape(-1, 1)
+    scores = (scores - coreset.min_score) / (coreset.max_score - coreset.min_score + 1e-5)
     scores = np.mean(scores, axis=0)
 
     heatmaps = np.array(heatmaps)
-    min_scores = heatmaps.reshape(len(heatmaps), -1).min()
-    max_scores = heatmaps.reshape(len(heatmaps), -1).max()
-    heatmaps = (heatmaps - min_scores) / (max_scores - min_scores)
+    coreset.min_heatmap_scores = heatmaps.reshape(len(heatmaps), -1).min()
+    coreset.max_heatmap_scores = heatmaps.reshape(len(heatmaps), -1).max()
+    heatmaps = (heatmaps - coreset.min_heatmap_scores) / (coreset.max_heatmap_scores - coreset.min_heatmap_scores)
     heatmaps = np.mean(heatmaps, axis=-1)
+    print(coreset.min_heatmap_scores, coreset.max_heatmap_scores)
+
+    # saving model
+    ad_model_save_path = os.path.join(".")
+    os.makedirs(ad_model_save_path, exist_ok=True)
+    coreset.save_to_path(ad_model_save_path) 
+    LOGGER.info("Saved TS_SoftPatch model")
+    # coreset = None
+    # coreset = get_coreset(args, device)
+    # coreset.load_from_path(".", device, common.FaissNN(False, 4), )
+    # print("loaded")
+    # print(coreset.min_heatmap_scores, coreset.max_heatmap_scores)
 
     LOGGER.info("Computing evaluation metrics.")
     results = metrics.compute_timeseriewise_retrieval_metrics(scores, labels_gt)
@@ -182,7 +193,6 @@ def run(args):
         os.makedirs(os.path.join(args.filtered_data_path, "data"), exist_ok=True)
         os.makedirs(os.path.join(args.filtered_data_path, "gt"), exist_ok=True)
 
-        # remove existing files
         for f in os.listdir(os.path.join(args.filtered_data_path, "data")):
             os.remove(os.path.join(args.filtered_data_path, "data", f))
         for f in os.listdir(os.path.join(args.filtered_data_path, "gt")):
@@ -202,6 +212,7 @@ def run(args):
                         np.save(os.path.join(args.filtered_data_path, "data", str(i)+'.npy'), timeserie)
                         np.save(os.path.join(args.filtered_data_path, "gt", str(i)+'.npy'), gt)
                     elif args.save_heatmaps:
+                        # save heatmap of anomalous samples
                         heatmap = heatmaps[i].reshape(1, -1)
                         heatmap_data = np.repeat(heatmap, len(timeserie)//heatmap.shape[1], axis=1)
                         fig, ax1 = plt.subplots(figsize=(10, 6))
@@ -222,7 +233,6 @@ def run(args):
             os.makedirs(os.path.join(args.contaminated_data_path, "data"), exist_ok=True)
             os.makedirs(os.path.join(args.contaminated_data_path, "gt"), exist_ok=True)
 
-            # remove existing files
             for f in os.listdir(os.path.join(args.contaminated_data_path, "data")):
                 os.remove(os.path.join(args.contaminated_data_path, "data", f))
             for f in os.listdir(os.path.join(args.contaminated_data_path, "gt")):
