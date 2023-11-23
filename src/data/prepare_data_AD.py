@@ -7,7 +7,7 @@ import pandas as pd
 import sys
 sys.path.append("./src") # TODO: fix this hack
 
-from anomaly import SynthLoadAnomaly
+from data.synth_anomaly import SynthLoadAnomaly
 from utils.utils import set_seed
 
 # load parameters
@@ -48,6 +48,9 @@ load = load[~load.index.duplicated()]
 idx = pd.date_range(load.index[0], load.index[-1], freq="30T")
 load = load.reindex(idx, fill_value=np.nan)
 load = load.fillna(load.shift(args.day_size*7))
+
+# save load data
+load.to_csv(os.path.join(args.trg_save_data, "load.csv"))
 
 # split contam data into train and test sets for anomaly detection model
 N = int(args.contam_clean_ratio*len(load))//args.day_size*args.day_size
@@ -180,3 +183,4 @@ print(f"{datapoint_contam_ratio*100:.2f}% of datapoints are contaminated.", file
 
 print(f"min_quantile={min_quantile:0.3f} -> value={min_q_val}", file=open(args.log_file, "a"))
 print(f"max_quantile={max_quantile:0.3f} -> value={max_q_val}", file=open(args.log_file, "a"))
+print("data saved to: ", args.trg_save_data, file=open(args.log_file, "a"))
