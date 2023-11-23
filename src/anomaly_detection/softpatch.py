@@ -50,6 +50,7 @@ class SoftPatch(torch.nn.Module):
         max_score=None,
         min_heatmap_scores=None,
         max_heatmap_scores=None,
+        patch_threshold=None,
 
         **kwargs,
     ):
@@ -105,6 +106,7 @@ class SoftPatch(torch.nn.Module):
         self.max_score = max_score
         self.min_heatmap_scores = min_heatmap_scores
         self.max_heatmap_scores = max_heatmap_scores
+        self.patch_threshold = patch_threshold
 
     def embed(self, data):
         if isinstance(data, torch.utils.data.DataLoader):
@@ -426,6 +428,7 @@ class SoftPatch(torch.nn.Module):
             "max_score": self.max_score,
             "min_heatmap_scores": self.min_heatmap_scores,
             "max_heatmap_scores": self.max_heatmap_scores,
+            "patch_threshold": self.patch_threshold,
         }
         with open(self._params_file(save_path, prepend), "wb") as save_file:
             pickle.dump(params, save_file, pickle.HIGHEST_PROTOCOL)

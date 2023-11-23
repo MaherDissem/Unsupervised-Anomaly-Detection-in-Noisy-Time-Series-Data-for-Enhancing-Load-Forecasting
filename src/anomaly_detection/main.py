@@ -26,13 +26,16 @@ def parse_args():
     parser = argparse.ArgumentParser(description="SoftPatch")
     # project
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--save_heatmaps", default=True)
-    parser.add_argument("--filter_anomalies", default=True)
+    parser.add_argument("--filter_anomalies", default=False)
     parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/AEMO/SA/lf_train_filter")      # data path
     parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/AEMO/SA/lf_train_contam")  # data path
+    parser.add_argument("--save_heatmaps", default=False)
+    parser.add_argument("--heatmaps_save_path", type=str, default="results/heatmaps")
+    parser.add_argument("--save_model", default=True)
+    parser.add_argument("--model_save_path", type=str, default="results/weights")
     parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
     # dataset
-    parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/SA/ad_train_contam", "dataset/processed/AEMO/SA/ad_test_contam"], help="List of training data paths")
+    parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/SA/ad_train_contam", "dataset/processed/AEMO/SA/ad_test_contam"], help="List of training data paths") # we do training and testing on the whole dataset
     parser.add_argument("--test_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/SA/ad_train_contam", "dataset/processed/AEMO/SA/ad_test_contam"], help="List of training data paths")
     parser.add_argument("--batch_size", default=32, type=int)
     parser.add_argument("--nbr_timesteps", default=48*5, type=int)       # sequence length
@@ -151,7 +154,7 @@ def run(args):
         Testing time: {(test_end - train_end)/60:.2f} min."
     )
 
-    # evaluation of test data
+    # evaluation on test data
     scores = np.array(scores)
     coreset.min_score = scores.min(axis=-1).reshape(-1, 1)
     coreset.max_score = scores.max(axis=-1).reshape(-1, 1)
@@ -163,21 +166,14 @@ def run(args):
     coreset.max_heatmap_scores = heatmaps.reshape(len(heatmaps), -1).max()
     heatmaps = (heatmaps - coreset.min_heatmap_scores) / (coreset.max_heatmap_scores - coreset.min_heatmap_scores)
     heatmaps = np.mean(heatmaps, axis=-1)
-    print(coreset.min_heatmap_scores, coreset.max_heatmap_scores)
-
-    # saving model
-    ad_model_save_path = os.path.join(".")
-    os.makedirs(ad_model_save_path, exist_ok=True)
-    coreset.save_to_path(ad_model_save_path) 
-    LOGGER.info("Saved TS_SoftPatch model")
-    # coreset = None
-    # coreset = get_coreset(args, device)
-    # coreset.load_from_path(".", device, common.FaissNN(False, 4), )
-    # print("loaded")
-    # print(coreset.min_heatmap_scores, coreset.max_heatmap_scores)
 
     LOGGER.info("Computing evaluation metrics.")
     results = metrics.compute_timeseriewise_retrieval_metrics(scores, labels_gt)
+    # threshold = np.percentile(scores, 90) # for unsupervised INPG dataset
+    # print(f"percentile threshold: {threshold}")
+    # threshold = 0.00008
+    threshold = results["best_threshold"]
+    coreset.patch_threshold = threshold
     LOGGER.info(f"AUROC: {results['auroc']:0.3f}")
     LOGGER.info(f"Best F1: {results['best_f1']:0.3f}")
     LOGGER.info(f"Best precision: {results['best_precision']:0.3f}")
@@ -197,11 +193,6 @@ def run(args):
             os.remove(os.path.join(args.filtered_data_path, "data", f))
         for f in os.listdir(os.path.join(args.filtered_data_path, "gt")):
             os.remove(os.path.join(args.filtered_data_path, "gt", f))
-
-        threshold = results["best_threshold"]
-        # threshold = np.percentile(scores, 90) # for unsupervised INPG dataset
-        # print(f"percentile threshold: {threshold}")
-        # threshold = 0.00008
 
         with tqdm.tqdm(dataloaders["testing"], desc="Saving filtered data...", leave=True) as data_iterator:
             k = 0 # number of anomaly free timeserie
@@ -223,7 +214,7 @@ def run(args):
                         ax2.set_ylabel('Value', color='blue')
                         ax2.tick_params('y', colors='blue')
                         plt.title('Time Series with Anomaly Score Heatmap')
-                        plt.savefig(f"results/heatmaps/{i}.png")
+                        plt.savefig(f"{args.heatmaps_save_path}/{i}.png")
                         plt.close()
                         k += 1
                     i += 1
@@ -250,6 +241,13 @@ def run(args):
                 #         done = True
                 #         break
                 # if done: break
+
+    # saving model
+    if args.save_model:
+        ad_model_save_path = os.path.join(args.model_save_path)
+        os.makedirs(ad_model_save_path, exist_ok=True)
+        coreset.save_to_path(ad_model_save_path) 
+        LOGGER.info("Saved TS_SoftPatch model")
 
 
 if __name__ == "__main__":
