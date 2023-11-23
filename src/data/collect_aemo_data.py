@@ -4,7 +4,7 @@ import subprocess
 save_folder = "dataset/raw/AEMO"
 
 for location in ["NSW", "QLD", "VIC", "SA", "TAS"]:
-    for year in range(2017, 2022+1): 
+    for year in range(2015, 2020+1): # sampling rate for 2021+ is different
         for month in ['01','02','03','04','05','06','07','08','09','10','11','12']:
             file_save_path = f"{save_folder}/{location}/{year}{month}.csv"
             os.makedirs(os.path.dirname(file_save_path), exist_ok=True)
