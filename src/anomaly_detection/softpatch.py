@@ -50,7 +50,7 @@ class SoftPatch(torch.nn.Module):
         max_score=None,
         min_heatmap_scores=None,
         max_heatmap_scores=None,
-        patch_threshold=None,
+        window_threshold=None,
 
         **kwargs,
     ):
@@ -106,7 +106,7 @@ class SoftPatch(torch.nn.Module):
         self.max_score = max_score
         self.min_heatmap_scores = min_heatmap_scores
         self.max_heatmap_scores = max_heatmap_scores
-        self.patch_threshold = patch_threshold
+        self.window_threshold = window_threshold # TODO rename to window_threshold
 
     def embed(self, data):
         if isinstance(data, torch.utils.data.DataLoader):
@@ -355,7 +355,9 @@ class SoftPatch(torch.nn.Module):
                 if isinstance(timeserie, dict):
                     labels_gt.extend(timeserie["is_anomaly"].numpy().tolist())
                     timeserie = timeserie["data"]
-                _scores, _masks = self._predict(timeserie)
+                if isinstance(timeserie, list):
+                    timeserie = timeserie[0]
+                _scores, _masks = self._predict(timeserie) # timeserie -> torch.Size([32, 240, 1])
                 for score, mask in zip(_scores, _masks):
                     scores.append(score)
                     masks.append(mask)
@@ -428,7 +430,7 @@ class SoftPatch(torch.nn.Module):
             "max_score": self.max_score,
             "min_heatmap_scores": self.min_heatmap_scores,
             "max_heatmap_scores": self.max_heatmap_scores,
-            "patch_threshold": self.patch_threshold,
+            "window_threshold": self.window_threshold,
         }
         with open(self._params_file(save_path, prepend), "wb") as save_file:
             pickle.dump(params, save_file, pickle.HIGHEST_PROTOCOL)

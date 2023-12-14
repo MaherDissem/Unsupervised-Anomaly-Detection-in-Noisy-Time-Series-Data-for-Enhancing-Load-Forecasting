@@ -14,11 +14,11 @@ from utils.utils import set_seed
 parser = argparse.ArgumentParser(description="Prepare data for anomaly detection model training and evaluation.")
 parser.add_argument("--raw_data_root",        type=str,   default="dataset/raw/AEMO/NSW", help="Path to raw data root")
 parser.add_argument("--trg_save_data",        type=str,   default="dataset/processed/AEMO/test", help="Path to save processed data")
-parser.add_argument("--load_feature_name",         type=str,   default="TOTALDEMAND", help="Name of the load feature")
-parser.add_argument("--date_feature_name",         type=str,   default="SETTLEMENTDATE", help="Name of the date_time feature")
+parser.add_argument("--load_feature_name",    type=str,   default="TOTALDEMAND", help="Name of the load feature")
+parser.add_argument("--date_feature_name",    type=str,   default="SETTLEMENTDATE", help="Name of the date_time feature")
 parser.add_argument("--day_size",             type=int,   default=48, help="Size of a day")
-parser.add_argument("--n_days",               type=int,   default=1, help="Number of days")
-parser.add_argument("--contam_ratio",         type=float, default=0.3, help="Contamination ratio (percentage of days with anomalies))")
+parser.add_argument("--n_days",               type=int,   default=3, help="Number of days")
+parser.add_argument("--contam_ratio",         type=float, default=0.1, help="Contamination ratio (percentage of days with anomalies))") # train data contam depends on window size (nbr of days in a window)
 parser.add_argument("--contam_clean_ratio",   type=float, default=0.8, help="Clean data save ratio (forcasting model is later evaluated on this clean data)")
 parser.add_argument("--ad_split_ratio",       type=float, default=0.7, help="Anomaly detection train-test split ratio")
 parser.add_argument("--seed",                 type=int,   default=0, help="Random seed")
@@ -49,9 +49,6 @@ idx = pd.date_range(load.index[0], load.index[-1], freq="30T")
 load = load.reindex(idx, fill_value=np.nan)
 load = load.fillna(load.shift(args.day_size*7))
 
-# save load data
-load.to_csv(os.path.join(args.trg_save_data, "load.csv"))
-
 # split contam data into train and test sets for anomaly detection model
 N = int(args.contam_clean_ratio*len(load))//args.day_size*args.day_size
 M = int(args.ad_split_ratio*(len(load[:N])))//args.day_size*args.day_size
@@ -63,14 +60,16 @@ ad_test_load = contaminated_load[M:]
 anomaly_generator = SynthLoadAnomaly()
 def contam_load(load, contam_ratio, feature_name, day_size):
     gt = []
-    n_clean_days = int((1-contam_ratio)*len(load)//day_size)
-    for i in range(len(load)//day_size):
-        # contamination ratio is one every n_days, after n_clean_days
-        contam = i>=n_clean_days and i%args.n_days==0 
+    n_days = len(load)//day_size
+    n_contam_days = int(contam_ratio*len(load)//day_size)
+    contam_days = np.random.choice(range(0, len(load)//day_size), n_contam_days, replace=False)
+    for i in range(n_days):
+        contam = i in contam_days
         if contam:
             day_st = i*day_size
             day_end = day_st + day_size
             sequence = load[feature_name].values[day_st: day_end]
+            # TODO store exact position of anomaly for evaluating AD model
             load[feature_name].values[day_st: day_end] = anomaly_generator.inject_anomaly(sequence)
             gt.extend([1]*day_size)
         else:
@@ -183,4 +182,10 @@ print(f"{datapoint_contam_ratio*100:.2f}% of datapoints are contaminated.", file
 
 print(f"min_quantile={min_quantile:0.3f} -> value={min_q_val}", file=open(args.log_file, "a"))
 print(f"max_quantile={max_quantile:0.3f} -> value={max_q_val}", file=open(args.log_file, "a"))
-print("data saved to: ", args.trg_save_data, file=open(args.log_file, "a"))
+
+# save load serie
+contam_full_load, gt_full_load = contam_load(load, args.contam_ratio, args.load_feature_name, args.day_size) # anomaly contamination is different than for AD model training
+scaled_load = (contam_full_load - min_q_val) / (max_q_val - min_q_val)
+scaled_load.to_csv(os.path.join(args.trg_save_data, "load.csv"))
+pd.Series(gt_full_load).to_csv(os.path.join(args.trg_save_data, "load_gt.csv"))
+print('Done!')

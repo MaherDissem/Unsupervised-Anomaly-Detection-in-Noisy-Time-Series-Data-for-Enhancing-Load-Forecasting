@@ -27,26 +27,26 @@ def parse_args():
     # project
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--filter_anomalies", default=False)
-    parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/AEMO/SA/lf_train_filter")      # data path
-    parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/AEMO/SA/lf_train_contam")  # data path
+    parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/AEMO/test/lf_train_filter")      # data path
+    parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/AEMO/test/lf_train_contam")  # data path
     parser.add_argument("--save_heatmaps", default=False)
     parser.add_argument("--heatmaps_save_path", type=str, default="results/heatmaps")
     parser.add_argument("--save_model", default=True)
     parser.add_argument("--model_save_path", type=str, default="results/weights")
     parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
     # dataset
-    parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/SA/ad_train_contam", "dataset/processed/AEMO/SA/ad_test_contam"], help="List of training data paths") # we do training and testing on the whole dataset
-    parser.add_argument("--test_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/SA/ad_train_contam", "dataset/processed/AEMO/SA/ad_test_contam"], help="List of training data paths")
+    parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/test/ad_train_contam", "dataset/processed/AEMO/test/ad_test_contam"], help="List of training data paths") # we do training and testing on the whole dataset
+    parser.add_argument("--test_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/test/ad_train_contam", "dataset/processed/AEMO/test/ad_test_contam"], help="List of training data paths")
     parser.add_argument("--batch_size", default=32, type=int)
-    parser.add_argument("--nbr_timesteps", default=48*5, type=int)       # sequence length
+    parser.add_argument("--nbr_timesteps", default=48*3, type=int)       # sequence length
     parser.add_argument("--nbr_variables", default=1, type=int)
     parser.add_argument("--nbr_features", default=3, type=int)
     # feature extraction
     parser.add_argument("--alpha", default=0.2, type=float)
-    parser.add_argument("--seasonal_period", default=48, type=int)       # sequence length
+    parser.add_argument("--seasonal_period", default=48, type=int)   # TODO fix to be > 2 sequence length
     # backbone
     parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
-    parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer1"])
+    parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer1", "layer2"])
     # coreset sampler
     parser.add_argument("--sampler_name", type=str, default="approx_greedy_coreset")
     parser.add_argument("--sampling_ratio", type=float, default=0.1)
@@ -169,11 +169,13 @@ def run(args):
 
     LOGGER.info("Computing evaluation metrics.")
     results = metrics.compute_timeseriewise_retrieval_metrics(scores, labels_gt)
-    # threshold = np.percentile(scores, 90) # for unsupervised INPG dataset
-    # print(f"percentile threshold: {threshold}")
-    # threshold = 0.00008
-    threshold = results["best_threshold"]
-    coreset.patch_threshold = threshold
+    window_threshold = results["best_threshold"]
+    # window_threshold = np.percentile(scores, 90); print(f"percentile threshold: {threshold}") # for unsupervised INPG dataset
+    # window_threshold = 0.00008
+    coreset.window_threshold = window_threshold
+    # anom_heatmaps = [heatmaps[i].max() for i in range(len(scores)) if scores[i]>window_threshold]
+    # patch_threshold = np.percentile(anom_heatmaps, 80); print(f"percentile threshold: {patch_threshold}")
+    # coreset.patch_threshold = patch_threshold
     LOGGER.info(f"AUROC: {results['auroc']:0.3f}")
     LOGGER.info(f"Best F1: {results['best_f1']:0.3f}")
     LOGGER.info(f"Best precision: {results['best_precision']:0.3f}")
@@ -199,7 +201,7 @@ def run(args):
             i = 0 # index of timeserie
             for timeserie_batch in data_iterator:
                 for timeserie, gt in zip(timeserie_batch["data"], timeserie_batch["is_anomaly"]):
-                    if scores[i]<=threshold:
+                    if scores[i]<=window_threshold:
                         np.save(os.path.join(args.filtered_data_path, "data", str(i)+'.npy'), timeserie)
                         np.save(os.path.join(args.filtered_data_path, "gt", str(i)+'.npy'), gt)
                     elif args.save_heatmaps:

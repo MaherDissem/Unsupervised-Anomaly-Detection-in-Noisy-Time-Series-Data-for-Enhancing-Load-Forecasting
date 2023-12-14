@@ -18,7 +18,7 @@ class TS_Dataset(torch.utils.data.Dataset):
         if self.mask_data:
             mask = torch.ones_like(ts)
             mask_idx = np.random.randint(0, len(ts) - self.len_mask-1)
-            mask[mask_idx:mask_idx+self.len_mask] = 0
+            mask[mask_idx: mask_idx+self.len_mask] = 0
             masked_ts = ts * mask
             return {
                 "clean_data": ts.unsqueeze(-1),
@@ -33,5 +33,7 @@ class TS_Dataset(torch.utils.data.Dataset):
 
     def load_data(self):
         data = glob.glob(os.path.join(self.root_dir, "data", "*.npy"))
+        # remove samples with anomalies
+        # we only need clean data for supervised training
         return data
     
