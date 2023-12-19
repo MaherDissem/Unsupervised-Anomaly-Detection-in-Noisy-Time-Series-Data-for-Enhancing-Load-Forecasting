@@ -174,3 +174,18 @@ class LSTM_AE(nn.Module):
         data = data.to(self.device)
         encoded, decoded = self(data)
         return decoded
+    
+    def impute(self, ts, mask):
+        assert self.is_fitted, "Model is not fitted yet. Call fit() or load() before infer()"
+        self.eval()
+        ts = ts.to(self.device)
+        mask = mask.to(self.device)
+
+        model_out = self.infer(ts)
+
+        model_out = model_out.squeeze(0).squeeze(-1).detach().cpu()
+        filled_ts = ts.clone().squeeze(0).squeeze(-1).detach().cpu()
+        mask = mask.squeeze(0).squeeze(-1).detach().cpu()
+
+        filled_ts[mask==0] = model_out[mask==0]
+        return filled_ts

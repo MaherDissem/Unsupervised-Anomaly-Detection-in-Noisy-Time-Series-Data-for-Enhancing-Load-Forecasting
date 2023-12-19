@@ -38,15 +38,15 @@ def parse_args():
     parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/test/ad_train_contam", "dataset/processed/AEMO/test/ad_test_contam"], help="List of training data paths") # we do training and testing on the whole dataset
     parser.add_argument("--test_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/test/ad_train_contam", "dataset/processed/AEMO/test/ad_test_contam"], help="List of training data paths")
     parser.add_argument("--batch_size", default=32, type=int)
-    parser.add_argument("--nbr_timesteps", default=48*3, type=int)       # sequence length
+    parser.add_argument("--nbr_timesteps", default=48*1, type=int)       # sequence length
     parser.add_argument("--nbr_variables", default=1, type=int)
     parser.add_argument("--nbr_features", default=3, type=int)
     # feature extraction
     parser.add_argument("--alpha", default=0.2, type=float)
-    parser.add_argument("--seasonal_period", default=48, type=int)   # TODO fix to be > 2 sequence length
+    parser.add_argument("--seasonal_period", default=24, type=int)   # TODO fix to be > 2 sequence length
     # backbone
     parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
-    parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer1", "layer2"])
+    parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer2"])
     # coreset sampler
     parser.add_argument("--sampler_name", type=str, default="approx_greedy_coreset")
     parser.add_argument("--sampling_ratio", type=float, default=0.1)

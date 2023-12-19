@@ -11,8 +11,9 @@ from tqdm import tqdm
 #     f"{dataset_root}/ad_test_contam/data",
 #     # f"{dataset_root}/lf_train_contam/data",
 #     # f"{dataset_root}/lf_test_clean/data",
+#     # f"{dataset_root}/ai_train/data",
 # ]
-paths = ["out/anom/data", "out/anom_free/data"]
+
 paths = ["dataset/processed/AEMO/test/ai_train/data"]
 
 for plots_path in paths:

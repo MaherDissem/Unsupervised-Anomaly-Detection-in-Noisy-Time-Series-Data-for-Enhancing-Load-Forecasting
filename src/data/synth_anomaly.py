@@ -82,7 +82,7 @@ class SynthLoadAnomaly():
     def inject_anomaly(self, sequence, anom_type=0, n_anom=1, minimum_length=10):
         sequence = sequence.copy()
         n = len(sequence)
-        # TODO add handling multiple number of anomalies
+        # TODO add handling multiple number of anomalies per sequence
 
         if anom_type==0:
             anom_type = np.random.randint(1, 4)
@@ -90,13 +90,15 @@ class SynthLoadAnomaly():
         if anom_type==1:
             position = np.random.randint(n//4, (len(sequence)-1)//2)
             remaining_length = len(sequence)-1-position
-            length = np.random.randint(max(3, (remaining_length//3*2)), remaining_length)
+            # length = np.random.randint(max(3, (remaining_length//3*2)), remaining_length)
+            length = np.random.randint(3, 8)
             return self._anomaly_type1(sequence.copy(), [position], [length]) # TODO add returning exact anom position 
         
         if anom_type==2:
             position = np.random.randint(n//4, (len(sequence)-1)//2)
             remaining_length = len(sequence)-1-position
-            length = np.random.randint(max(2, (remaining_length//3*2)), remaining_length)
+            # length = np.random.randint(max(2, (remaining_length//3*2)), remaining_length)
+            length = np.random.randint(2, 8)
             return self._anomaly_type2(sequence.copy(), [position], [length])
         
         if anom_type==3:

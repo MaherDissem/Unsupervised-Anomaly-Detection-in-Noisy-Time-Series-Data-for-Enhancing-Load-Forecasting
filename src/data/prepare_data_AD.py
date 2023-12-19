@@ -17,7 +17,7 @@ parser.add_argument("--trg_save_data",        type=str,   default="dataset/proce
 parser.add_argument("--load_feature_name",    type=str,   default="TOTALDEMAND", help="Name of the load feature")
 parser.add_argument("--date_feature_name",    type=str,   default="SETTLEMENTDATE", help="Name of the date_time feature")
 parser.add_argument("--day_size",             type=int,   default=48, help="Size of a day")
-parser.add_argument("--n_days",               type=int,   default=3, help="Number of days")
+parser.add_argument("--n_days",               type=int,   default=1, help="Number of days")
 parser.add_argument("--contam_ratio",         type=float, default=0.1, help="Contamination ratio (percentage of days with anomalies))") # train data contam depends on window size (nbr of days in a window)
 parser.add_argument("--contam_clean_ratio",   type=float, default=0.8, help="Clean data save ratio (forcasting model is later evaluated on this clean data)")
 parser.add_argument("--ad_split_ratio",       type=float, default=0.7, help="Anomaly detection train-test split ratio")
