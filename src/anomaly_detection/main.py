@@ -133,6 +133,9 @@ def get_coreset(args, device):
 
 
 def run(args):
+    logging.basicConfig(level=logging.INFO)
+    LOGGER.info("Command line arguments: {}".format(" ".join(sys.argv)))
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     LOGGER.info("using: {}".format(device))
     set_seed(args.seed)
@@ -251,10 +254,9 @@ def run(args):
         coreset.save_to_path(ad_model_save_path) 
         LOGGER.info("Saved TS_SoftPatch model")
 
+    print("AD module ready!")
+
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    LOGGER.info("Command line arguments: {}".format(" ".join(sys.argv)))
     args = parse_args()
     run(args)
-    print("Done.")
