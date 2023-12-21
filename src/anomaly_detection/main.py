@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument("--nbr_features", default=3, type=int)
     # feature extraction
     parser.add_argument("--alpha", default=0.2, type=float)
-    parser.add_argument("--seasonal_period", default=24, type=int)   # TODO fix to be > 2 sequence length
+    parser.add_argument("--feat_patch_size", default=8, type=int)   # TODO fix to be > 2 sequence length// TODO remove/replce
     # backbone
     parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
     parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer1"])
@@ -118,7 +118,7 @@ def get_coreset(args, device):
     coreset_instance.load(
         device=device,
         input_shape=input_shape,
-        seasonal_period=args.seasonal_period,
+        feat_patch_size=args.feat_patch_size,
         alpha=args.alpha,
         backbone=backbone,
         layers_to_extract_from=args.backbone_layers_to_extract_from,

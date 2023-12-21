@@ -27,7 +27,7 @@ class SoftPatch(torch.nn.Module):
         self,
         device,
         input_shape,
-        seasonal_period,
+        feat_patch_size,
         alpha,
         backbone,
         layers_to_extract_from=("layer2", "layer2"),
@@ -58,7 +58,7 @@ class SoftPatch(torch.nn.Module):
         self.backbone = backbone.to(device)
         self.layers_to_extract_from = layers_to_extract_from
         self.input_shape = input_shape
-        self.seasonal_period = seasonal_period
+        self.feat_patch_size = feat_patch_size
         self.alpha = alpha
 
         self.patch_maker = PatchMaker(patchsize, stride=patchstride)
@@ -131,7 +131,7 @@ class SoftPatch(torch.nn.Module):
         # input input_data.shape => torch.Size([8, 240, 1]), batch of 8 timeseries
         ts_features = gen_ts_features(
             input_data.to(self.device), 
-            self.seasonal_period, 
+            self.feat_patch_size, 
             self.alpha
         ) # timeseries.shape -> torch.Size([8, 3, 240, 1]), batch of 8 timeseries
         
@@ -419,7 +419,7 @@ class SoftPatch(torch.nn.Module):
             "patchstride": self.patch_maker.stride,
             "anomaly_scorer_num_nn": self.anomaly_scorer.n_nearest_neighbours,
 
-            "seasonal_period": self.seasonal_period,
+            "feat_patch_size": self.feat_patch_size,
             "alpha": self.alpha,
             "backbone": self.backbone,
 
