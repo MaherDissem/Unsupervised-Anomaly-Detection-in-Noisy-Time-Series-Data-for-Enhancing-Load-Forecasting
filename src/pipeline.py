@@ -19,7 +19,14 @@ from utils.utils import make_clean_folder
 from utils.utils import set_seed
 
 set_seed(0)
-save_figs = False
+
+# parameters
+day_size = 48
+n_days = 1
+window_size = day_size * n_days
+day_stride = 1 # days
+save_figs = True
+imp_trained = False
 
 # ---
 # Generate synthetic data
@@ -28,7 +35,7 @@ from data.prepare_data_AD import run as prepare_data_AD_run
 from data.prepare_data_AD import parse_args as prepare_data_AD_parse_args
 
 default_prepare_data_AD_args = prepare_data_AD_parse_args()
-default_prepare_data_AD_args.nbr_timesteps = 48*1
+default_prepare_data_AD_args.nbr_timesteps = window_size
 
 prepare_data_AD_run(default_prepare_data_AD_args)
 
@@ -39,7 +46,7 @@ from anomaly_detection.main import run as AD_run
 from anomaly_detection.main import parse_args as AD_parse_args
 
 default_AD_args = AD_parse_args()
-default_AD_args.nbr_timesteps = 48*1
+default_AD_args.nbr_timesteps = window_size
 
 AD_run(default_AD_args)
 
@@ -50,11 +57,6 @@ AD_run(default_AD_args)
 # load continuous "load.csv" data
 load_serie = pd.read_csv("dataset/processed/AEMO/test/load_contam.csv", index_col=0, parse_dates=True)
 gt_serie = pd.read_csv("dataset/processed/AEMO/test/load_contam_gt.csv", index_col=0)
-
-day_size = 48 # same as AD training parameters
-n_days = 1
-window_size = day_size * n_days
-day_stride = 1 # days
 
 # transform into sliding windows (same parameters as AD training)
 def sliding_windows(load_serie, window_size, day_stride, day_size):
@@ -163,16 +165,17 @@ for timeserie, date_range in anomaly_free:
 print(f"saved impuation plots to {save_imputation_train_path}.npy")
 
 # train anomaly imputation model on anomaly free samples
-from anomaly_imputation import train as AI_train
-trained = True
-if not trained:
-    AI_train.train(AI_train.parse_args())
+from anomaly_imputation.train import parse_args as AI_parse_args
+from anomaly_imputation.train import train as AI_train
+from anomaly_imputation.model import LSTM_AE
+
+default_args = AI_parse_args()
+default_args.seq_len = window_size
+
+if not imp_trained:
+    AI_train(default_args)
 
 # infer anomaly detection and impute anomalies on anomalous samples
-from anomaly_imputation.model import LSTM_AE
-from anomaly_imputation.train import parse_args as AI_train_parse_args
-
-default_args = AI_train_parse_args()
 loaded_model = LSTM_AE(default_args.seq_len, default_args.no_features, default_args.embedding_dim, default_args.learning_rate, default_args.every_epoch_print, default_args.epochs, default_args.patience, default_args.max_grad_norm)
 loaded_model.load()
 
@@ -224,13 +227,13 @@ df["first_date"] = df["date"].apply(lambda x: x[0])
 df = df.sort_values(by='var').groupby('first_date').first().reset_index()
 cleaned_dataset = df[["timeserie", "date"]].values.tolist()
     
-# merge consecutive days
-merged_dataset = []
+# merge consecutive days into a single timeserie
+continuous_serie = []
 for timeserie, date in cleaned_dataset:
     for j in range(len(timeserie)):
-        merged_dataset.append((timeserie[j].item(), date[j]))
+        continuous_serie.append((timeserie[j].item(), date[j]))
 
-cleaned_load_serie = pd.DataFrame(merged_dataset, columns=["timeserie", "date"])
+cleaned_load_serie = pd.DataFrame(continuous_serie, columns=["timeserie", "date"])
 cleaned_load_serie.rename(columns={'timeserie': 'TOTALDEMAND'}, inplace=True)
 cleaned_load_serie.to_csv("dataset/processed/AEMO/test/load_cleaned.csv", columns=["date", 'TOTALDEMAND'], index=False)
 
