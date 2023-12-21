@@ -192,8 +192,10 @@ def run(args):
     # save load serie
     contam_full_load, gt_full_load = contam_load(load, args.contam_ratio, args.load_feature_name, args.day_size) # anomaly contamination is different than for AD model training
     scaled_load = (contam_full_load - min_q_val) / (max_q_val - min_q_val)
-    scaled_load.to_csv(os.path.join(args.trg_save_data, "load.csv"))
-    pd.Series(gt_full_load).to_csv(os.path.join(args.trg_save_data, "load_gt.csv"))
+    scaled_load.rename_axis("date", inplace=True)
+    scaled_load.to_csv(os.path.join(args.trg_save_data, "load_contam.csv"))
+    gt_full_load = pd.Series(gt_full_load, index=scaled_load.index).rename("gt", inplace=True)
+    pd.Series(gt_full_load).to_csv(os.path.join(args.trg_save_data, "load_contam_gt.csv"))
     print('Dataset ready!')
 
 

@@ -17,7 +17,9 @@ from anomaly_detection import main as AD_main
 from utils.utils import find_consec_values
 from utils.utils import make_clean_folder
 from utils.utils import set_seed
+
 set_seed(0)
+save_figs = False
 
 # ---
 # Generate synthetic data
@@ -28,7 +30,7 @@ from data.prepare_data_AD import parse_args as prepare_data_AD_parse_args
 default_prepare_data_AD_args = prepare_data_AD_parse_args()
 default_prepare_data_AD_args.nbr_timesteps = 48*1
 
-# prepare_data_AD_run(default_prepare_data_AD_args)
+prepare_data_AD_run(default_prepare_data_AD_args)
 
 # ---
 # train AD model
@@ -39,15 +41,15 @@ from anomaly_detection.main import parse_args as AD_parse_args
 default_AD_args = AD_parse_args()
 default_AD_args.nbr_timesteps = 48*1
 
-# AD_run(default_AD_args)
+AD_run(default_AD_args)
 
 # ---
 # find and impute anomalies
 # ---
 
 # load continuous "load.csv" data
-load_serie = pd.read_csv("dataset/processed/AEMO/test/load.csv", index_col=0, parse_dates=True)
-gt_serie = pd.read_csv("dataset/processed/AEMO/test/load_gt.csv", index_col=0)
+load_serie = pd.read_csv("dataset/processed/AEMO/test/load_contam.csv", index_col=0, parse_dates=True)
+gt_serie = pd.read_csv("dataset/processed/AEMO/test/load_contam_gt.csv", index_col=0)
 
 day_size = 48 # same as AD training parameters
 n_days = 1
@@ -55,13 +57,17 @@ window_size = day_size * n_days
 day_stride = 1 # days
 
 # transform into sliding windows (same parameters as AD training)
-load_windows = []
-dates = []
-day = 0
-while day + window_size < len(load_serie):
-    load_windows.append(load_serie.iloc[day: day+window_size].values)
-    dates.append(load_serie.index[day: day+window_size])
-    day += day_stride*day_size
+def sliding_windows(load_serie, window_size, day_stride, day_size):
+    load_windows = []
+    dates = []
+    day = 0
+    while day + window_size < len(load_serie):
+        load_windows.append(load_serie.iloc[day: day+window_size].values)
+        dates.append(load_serie.index[day: day+window_size])
+        day += day_stride*day_size
+    return load_windows, dates
+
+load_windows, dates = sliding_windows(load_serie, window_size, day_stride, day_size)
 load_windows = np.array(load_windows)
 load_dataset = TensorDataset(torch.tensor(load_windows, dtype=torch.float)) # batch_size x seq_len x 1=feature_dim
 infer_dataloader = DataLoader(load_dataset, batch_size=32, shuffle=False)
@@ -83,8 +89,8 @@ heatmaps = np.mean(heatmaps, axis=-1)
 # save anomaly free samples to train Imputation model and anomalous samples to impute
 save_imputation_train_path = "dataset/processed/AEMO/test/ai_train/data"
 path_list = [save_imputation_train_path, "results/heatmaps", "results/imputation", ]
-# for path in path_list:
-#     make_clean_folder(path)
+for path in path_list:
+    make_clean_folder(path)
 
 anomaly_free = []
 anomalous = []
@@ -127,22 +133,23 @@ with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Impu
                 mask[anom_idx] = 0 
                 anomalous.append((masked_data, mask, date_range))
 
-                # save heatmap jpg
-                # heatmap = heatmaps[i].reshape(1, -1)
-                # heatmap_data = np.repeat(heatmap, len(timeserie)//heatmap.shape[1], axis=1)
-                # fig, ax1 = plt.subplots(figsize=(10, 6))
-                # ax2 = ax1.twinx()
-                # ax1.imshow(heatmap_data, cmap="YlOrRd", aspect='auto')
-                # ax2.plot(timeserie, label='Time Series', color='blue')
-                # ax2.plot(mask, label='Mask', color='green')
-                # ax2.set_xlabel('Time')
-                # ax2.set_ylabel('Value', color='blue')
-                # ax2.tick_params('y', colors='blue')
-                # plt.title('Time Series with Anomaly Score Heatmap')
-                # plt.legend()
-                # os.makedirs("results/heatmaps", exist_ok=True, )
-                # plt.savefig(f"results/heatmaps/{i}.png")
-                # plt.close()
+                if save_figs:
+                    # save heatmap jpg
+                    heatmap = heatmaps[i].reshape(1, -1)
+                    heatmap_data = np.repeat(heatmap, len(timeserie)//heatmap.shape[1], axis=1)
+                    fig, ax1 = plt.subplots(figsize=(10, 6))
+                    ax2 = ax1.twinx()
+                    ax1.imshow(heatmap_data, cmap="YlOrRd", aspect='auto')
+                    ax2.plot(timeserie, label='Time Series', color='blue')
+                    ax2.plot(mask, label='Mask', color='green')
+                    ax2.set_xlabel('Time')
+                    ax2.set_ylabel('Value', color='blue')
+                    ax2.tick_params('y', colors='blue')
+                    plt.title('Time Series with Anomaly Score Heatmap')
+                    plt.legend()
+                    os.makedirs("results/heatmaps", exist_ok=True, )
+                    plt.savefig(f"results/heatmaps/{i}.png")
+                    plt.close()
 
             i += 1
 
@@ -179,21 +186,19 @@ for i, (masked_data, mask, date_range) in enumerate(anomalous):
     filled_ts = loaded_model.impute(masked_data.unsqueeze(0), mask)
     cleaned_anomalies.append((filled_ts, date_range))
 
-    # save imputation visualization
-    # plt.plot(masked_data.squeeze(0).squeeze(-1), label="serie with missing values")
-    # plt.plot(mask.squeeze(0).squeeze(-1), label="mask")
-    # plt.plot(filled_ts, label="serie with filled values")
-    # plt.legend()
-    # plt.savefig(os.path.join(save_imputation_path, f"{i}.png"))
-    # plt.clf()
+    if save_figs:
+        # save imputation visualization
+        plt.plot(masked_data.squeeze(0).squeeze(-1), label="serie with missing values")
+        plt.plot(mask.squeeze(0).squeeze(-1), label="mask")
+        plt.plot(filled_ts, label="serie with filled values")
+        plt.legend()
+        plt.savefig(os.path.join(save_imputation_path, f"{i}.png"))
+        plt.clf()
 
 
 # ---
 # save data for forecasting model
 # ---
-
-# target LF stride and window size should also be used for AD/AI
-    
   
 # transform to single day samples to train Imputation model
 # we will then reconstruct a continuous timeserie 
@@ -224,19 +229,10 @@ merged_dataset = []
 for timeserie, date in cleaned_dataset:
     for j in range(len(timeserie)):
         merged_dataset.append((timeserie[j].item(), date[j]))
-print(merged_dataset)
+
 cleaned_load_serie = pd.DataFrame(merged_dataset, columns=["timeserie", "date"])
+cleaned_load_serie.rename(columns={'timeserie': 'TOTALDEMAND'}, inplace=True)
+cleaned_load_serie.to_csv("dataset/processed/AEMO/test/load_cleaned.csv", columns=["date", 'TOTALDEMAND'], index=False)
 
-# forecasting_train_contam_path = "dataset/processed/AEMO/test/lf_train_contam/data"
-# forecasting_train_cleaned_path = "dataset/processed/AEMO/test/lf_train_cleaned/data"
+print(f"saved cleaned load serie to dataset/processed/AEMO/test/load_cleaned.csv")
 
-# load_serie
-# clean_load_ serie should be split into windows And saved TODO
-
-# for timeserie, date_range in anomaly_free:
-#     date = str(date_range[0].date()) + "_" + str(date_range[-1].date())
-#     dates = ''
-#     for d in range(n_days):
-#         dates += str(date_range[d*day_size].date()) + "_"
-#     np.save(os.path.join(forecasting_train_cleaned_path, str(dates)+'.npy'), timeserie.squeeze(-1))
-    
