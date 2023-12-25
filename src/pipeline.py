@@ -25,8 +25,8 @@ day_size = 48
 n_days = 1
 window_size = day_size * n_days
 day_stride = 1 # days
-save_figs = False
-imp_trained = True
+save_figs = True
+imp_trained = False
 
 # ---
 # Generate synthetic data
@@ -82,7 +82,7 @@ coreset = AD_main.get_coreset(default_args, device)
 coreset.load_from_path("results/weights", device, AD_main.common.FaissNN(False, 4), )
 
 # infer AD model
-scores, heatmaps, labels_gt = coreset.predict(infer_dataloader)
+scores, heatmaps, gt_is_anom, gt_heatmaps = coreset.predict(infer_dataloader)
 scores = (scores - coreset.min_score) / (coreset.max_score - coreset.min_score + 1e-5)
 scores = np.mean(scores, axis=0)
 
@@ -173,6 +173,7 @@ from anomaly_imputation.model import LSTM_AE
 
 default_args = AI_parse_args()
 default_args.seq_len = window_size
+default_args.mask_size = patch_size
 
 if not imp_trained:
     AI_train(default_args)
@@ -213,13 +214,13 @@ cleaned_dataset = []
 for timeserie, date_range in cleaned_anomalies:
     for i in range(0, len(timeserie), day_size):
         day_serie = timeserie[i:i+day_size]
-        date = date_range #[i].date()
+        date = date_range
         cleaned_dataset.append((day_serie, date))
 
 for timeserie, date_range in anomaly_free:
     for i in range(0, len(timeserie), day_size):
         day_serie = timeserie[i:i+day_size].squeeze(-1)
-        date = date_range #[i].date()
+        date = date_range
         cleaned_dataset.append((day_serie, date))
 
 # remove stride-caused duplicates by first date in window, keeping the one with lower window variance (less anomalous)
