@@ -13,11 +13,11 @@ class TS_Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         data = np.load(self.data[idx])
-        anom_idx = np.load(self.gt[idx])
-        is_anom = anom_idx is not None and anom_idx.sum()>0
+        gt_heatmap = np.load(self.gt[idx])
+        is_anom = np.any(gt_heatmap)
         return {
             "data": torch.tensor(data, dtype=torch.float).unsqueeze(1),
-            # "anom_idx": anom_idx if np.any(anom_idx) else [], # define collate_func to handle lists of different sizes
+            "gt_heatmap": gt_heatmap,
             "is_anomaly": is_anom
         }
 
