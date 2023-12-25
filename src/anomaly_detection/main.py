@@ -43,10 +43,10 @@ def parse_args():
     parser.add_argument("--nbr_features", default=3, type=int)
     # feature extraction
     parser.add_argument("--alpha", default=0.2, type=float)
-    parser.add_argument("--feat_patch_size", default=8, type=int)   # TODO fix to be > 2 sequence length// TODO remove/replce
+    parser.add_argument("--feat_patch_size", default=8, type=int)
     # backbone
     parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
-    parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer1"])
+    parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer2"])
     # coreset sampler
     parser.add_argument("--sampler_name", type=str, default="approx_greedy_coreset")
     parser.add_argument("--sampling_ratio", type=float, default=0.1)
@@ -101,7 +101,7 @@ def get_backbone(args):
         args.backbone_name,
         pretrained=True,
         features_only=True,
-        out_indices=(2, 3) # TODO extract this from args.backbone_layers_to_extract_from
+        out_indices=[1, 2, 3]
     )
 
 
@@ -149,7 +149,7 @@ def run(args):
     train_end = time.time()
 
     # inference on test set
-    scores, heatmaps, labels_gt = coreset.predict(dataloaders["testing"])
+    scores, heatmaps, gt_is_anom, gt_heatmaps = coreset.predict(dataloaders["testing"])
     test_end = time.time()
 
     LOGGER.info(
@@ -171,7 +171,8 @@ def run(args):
     heatmaps = np.mean(heatmaps, axis=-1)
 
     LOGGER.info("Computing evaluation metrics.")
-    results = metrics.compute_timeseriewise_retrieval_metrics(scores, labels_gt)
+    # sequence wise evaluation
+    results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom)
     window_threshold = results["best_threshold"]
     # window_threshold = np.percentile(scores, 90); print(f"percentile threshold: {threshold}") # for unsupervised INPG dataset
     # window_threshold = 0.00008
@@ -179,73 +180,81 @@ def run(args):
     # anom_heatmaps = [heatmaps[i].max() for i in range(len(scores)) if scores[i]>window_threshold]
     # patch_threshold = np.percentile(anom_heatmaps, 80); print(f"percentile threshold: {patch_threshold}")
     # coreset.patch_threshold = patch_threshold
+    LOGGER.info(f"-> Sequence wise evaluation results:")
     LOGGER.info(f"AUROC: {results['auroc']:0.3f}")
     LOGGER.info(f"Best F1: {results['best_f1']:0.3f}")
     LOGGER.info(f"Best precision: {results['best_precision']:0.3f}")
     LOGGER.info(f"Best recall: {results['best_recall']:0.3f}")
+    # patchtwise evaluation
+    pointwise_results = metrics.compute_pointwise_retrieval_metrics(heatmaps, gt_heatmaps)
+    LOGGER.info(f"-> Pointwise evaluation results:")
+    LOGGER.info(f"AUROC: {pointwise_results['auroc']:0.3f}")
+    LOGGER.info(f"Best F1: {pointwise_results['best_f1']:0.3f}")
+    LOGGER.info(f"Best precision: {pointwise_results['best_precision']:0.3f}")
+    LOGGER.info(f"Best recall: {pointwise_results['best_recall']:0.3f}")
 
     # save results to experiment log file
     print(f"\nanomaly detection results:\n\
           AUROC: {results['auroc']:0.3f}, best f1: {results['best_f1']:0.3f}, best precision: {results['best_precision']:0.3f}, best recall: {results['best_recall']:0.3f}",
           file=open(args.results_file, "a"))
 
-    # save filtered data
-    if args.filter_anomalies:
-        os.makedirs(os.path.join(args.filtered_data_path, "data"), exist_ok=True)
-        os.makedirs(os.path.join(args.filtered_data_path, "gt"), exist_ok=True)
+    # # save filtered data
+    # if args.filter_anomalies:
+    #     os.makedirs(os.path.join(args.filtered_data_path, "data"), exist_ok=True)
+    #     os.makedirs(os.path.join(args.filtered_data_path, "gt"), exist_ok=True)
 
-        for f in os.listdir(os.path.join(args.filtered_data_path, "data")):
-            os.remove(os.path.join(args.filtered_data_path, "data", f))
-        for f in os.listdir(os.path.join(args.filtered_data_path, "gt")):
-            os.remove(os.path.join(args.filtered_data_path, "gt", f))
+    #     for f in os.listdir(os.path.join(args.filtered_data_path, "data")):
+    #         os.remove(os.path.join(args.filtered_data_path, "data", f))
+    #     for f in os.listdir(os.path.join(args.filtered_data_path, "gt")):
+    #         os.remove(os.path.join(args.filtered_data_path, "gt", f))
 
-        with tqdm.tqdm(dataloaders["testing"], desc="Saving filtered data...", leave=True) as data_iterator:
-            k = 0 # number of anomaly free timeserie
-            i = 0 # index of timeserie
-            for timeserie_batch in data_iterator:
-                for timeserie, gt in zip(timeserie_batch["data"], timeserie_batch["is_anomaly"]):
-                    if scores[i]<=window_threshold:
-                        np.save(os.path.join(args.filtered_data_path, "data", str(i)+'.npy'), timeserie)
-                        np.save(os.path.join(args.filtered_data_path, "gt", str(i)+'.npy'), gt)
-                    elif args.save_heatmaps:
-                        # save heatmap of anomalous samples
-                        heatmap = heatmaps[i].reshape(1, -1)
-                        heatmap_data = np.repeat(heatmap, len(timeserie)//heatmap.shape[1], axis=1)
-                        fig, ax1 = plt.subplots(figsize=(10, 6))
-                        ax2 = ax1.twinx()
-                        ax1.imshow(heatmap_data, cmap="YlOrRd", aspect='auto')
-                        ax2.plot(timeserie, label='Time Series', color='blue')
-                        ax2.set_xlabel('Time')
-                        ax2.set_ylabel('Value', color='blue')
-                        ax2.tick_params('y', colors='blue')
-                        plt.title('Time Series with Anomaly Score Heatmap')
-                        plt.savefig(f"{args.heatmaps_save_path}/{i}.png")
-                        plt.close()
-                        k += 1
-                    i += 1
+    #     with tqdm.tqdm(dataloaders["testing"], desc="Saving filtered data...", leave=True) as data_iterator:
+    #         k = 0 # number of anomaly free timeserie
+    #         i = 0 # index of timeserie
+    #         for timeserie_batch in data_iterator:
+    #             for timeserie, gt in zip(timeserie_batch["data"], timeserie_batch["is_anomaly"]):
+    #                 if scores[i]<=window_threshold:
+    #                     np.save(os.path.join(args.filtered_data_path, "data", str(i)+'.npy'), timeserie)
+    #                     np.save(os.path.join(args.filtered_data_path, "gt", str(i)+'.npy'), gt)
+    #                 elif args.save_heatmaps:
+    #                     # save heatmap of anomalous samples
+    #                     heatmap = heatmaps[i].reshape(1, -1)
+    #                     heatmap_data = np.repeat(heatmap, len(timeserie)//heatmap.shape[1], axis=1)
+    #                     fig, ax1 = plt.subplots(figsize=(10, 6))
+    #                     ax2 = ax1.twinx()
+    #                     ax1.imshow(heatmap_data, cmap="YlOrRd", aspect='auto')
+    #                     ax2.plot(timeserie, label='Time Series', color='blue')
+    #                     ax2.set_xlabel('Time')
+    #                     ax2.set_ylabel('Value', color='blue')
+    #                     ax2.tick_params('y', colors='blue')
+    #                     plt.title('Time Series with Anomaly Score Heatmap')
+    #                     plt.savefig(f"{args.heatmaps_save_path}/{i}.png")
+    #                     plt.close()
+    #                     k += 1
+    #                 i += 1
 
-        # save contaminated data
-        with tqdm.tqdm(dataloaders["testing"], desc="Saving contaminated data...", leave=True) as data_iterator:
-            os.makedirs(os.path.join(args.contaminated_data_path, "data"), exist_ok=True)
-            os.makedirs(os.path.join(args.contaminated_data_path, "gt"), exist_ok=True)
+    #     # save contaminated data
+    #     with tqdm.tqdm(dataloaders["testing"], desc="Saving contaminated data...", leave=True) as data_iterator:
+    #         os.makedirs(os.path.join(args.contaminated_data_path, "data"), exist_ok=True)
+    #         os.makedirs(os.path.join(args.contaminated_data_path, "gt"), exist_ok=True)
 
-            for f in os.listdir(os.path.join(args.contaminated_data_path, "data")):
-                os.remove(os.path.join(args.contaminated_data_path, "data", f))
-            for f in os.listdir(os.path.join(args.contaminated_data_path, "gt")):
-                os.remove(os.path.join(args.contaminated_data_path, "gt", f))
+    #         for f in os.listdir(os.path.join(args.contaminated_data_path, "data")):
+    #             os.remove(os.path.join(args.contaminated_data_path, "data", f))
+    #         for f in os.listdir(os.path.join(args.contaminated_data_path, "gt")):
+    #             os.remove(os.path.join(args.contaminated_data_path, "gt", f))
 
-            done = False
-            j = 0 # index of timeserie
-            for timeserie_batch in data_iterator:
-                for timeserie, gt in zip(timeserie_batch["data"], timeserie_batch["is_anomaly"]):
-                    np.save(os.path.join(args.contaminated_data_path, "data", str(j)+'.npy'), timeserie)
-                    np.save(os.path.join(args.contaminated_data_path, "gt", str(j)+'.npy'), gt)
-                    j += 1
-                # # save with same size as filterd data
-                #     if j==k:
-                #         done = True
-                #         break
-                # if done: break
+    #         done = False
+    #         j = 0 # index of timeserie
+    #         for timeserie_batch in data_iterator:
+    #             for timeserie, gt in zip(timeserie_batch["data"], timeserie_batch["is_anomaly"]):
+    #                 np.save(os.path.join(args.contaminated_data_path, "data", str(j)+'.npy'), timeserie)
+    #                 np.save(os.path.join(args.contaminated_data_path, "gt", str(j)+'.npy'), gt)
+    #                 j += 1
+    #             # # save with same size as filterd data
+    #             #     if j==k:
+    #             #         done = True
+    #             #         break
+    #             # if done: break
 
     # saving model
     if args.save_model:
