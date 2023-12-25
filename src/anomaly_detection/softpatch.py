@@ -44,7 +44,7 @@ class SoftPatch(torch.nn.Module):
         lof_k=5,
         threshold=0.15,
         weight_method="lof",
-        soft_weight_flag=True, # TODO revert to True and include in save()  TODO also save global min/max of heatmaps
+        soft_weight_flag=True,
         coreset_weight = None,
         min_score=None,
         max_score=None,
@@ -349,19 +349,21 @@ class SoftPatch(torch.nn.Module):
 
         scores = []
         masks = []
-        labels_gt = []
+        gt_is_anom = []
+        gt_heatmaps = []
         with tqdm.tqdm(dataloader, desc="Inferring...", leave=True) as data_iterator:
             for timeserie in data_iterator: 
                 if isinstance(timeserie, dict):
-                    labels_gt.extend(timeserie["is_anomaly"].numpy().tolist())
+                    gt_is_anom.extend(timeserie["is_anomaly"].numpy().tolist())
+                    gt_heatmaps.extend(timeserie["gt_heatmap"].numpy().tolist())
                     timeserie = timeserie["data"]
-                if isinstance(timeserie, list):
+                if isinstance(timeserie, list): # TODO remove this
                     timeserie = timeserie[0]
                 _scores, _masks = self._predict(timeserie) # timeserie -> torch.Size([32, 240, 1])
                 for score, mask in zip(_scores, _masks):
                     scores.append(score)
                     masks.append(mask)
-        return scores, masks, labels_gt
+        return scores, masks, gt_is_anom, gt_heatmaps
 
     def _predict(self, timeseries):
         """Infer score and mask for a batch of timeseries."""
