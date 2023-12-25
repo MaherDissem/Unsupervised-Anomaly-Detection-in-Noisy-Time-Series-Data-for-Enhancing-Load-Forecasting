@@ -25,8 +25,8 @@ day_size = 48
 n_days = 1
 window_size = day_size * n_days
 day_stride = 1 # days
-save_figs = True
-imp_trained = False
+save_figs = False
+imp_trained = True
 
 # ---
 # Generate synthetic data
@@ -35,7 +35,9 @@ from data.prepare_data_AD import run as prepare_data_AD_run
 from data.prepare_data_AD import parse_args as prepare_data_AD_parse_args
 
 default_prepare_data_AD_args = prepare_data_AD_parse_args()
-default_prepare_data_AD_args.nbr_timesteps = window_size
+default_prepare_data_AD_args.day_size = day_size
+default_prepare_data_AD_args.n_days = n_days
+default_prepare_data_AD_args.day_stride = day_stride
 
 prepare_data_AD_run(default_prepare_data_AD_args)
 

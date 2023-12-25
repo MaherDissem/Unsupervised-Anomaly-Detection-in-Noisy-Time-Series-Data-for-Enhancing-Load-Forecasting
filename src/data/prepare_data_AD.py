@@ -20,6 +20,7 @@ def parse_args():
     parser.add_argument("--date_feature_name",    type=str,   default="SETTLEMENTDATE", help="Name of the date_time feature")
     parser.add_argument("--day_size",             type=int,   default=48, help="Size of a day")
     parser.add_argument("--n_days",               type=int,   default=1, help="Number of days")
+    parser.add_argument("--day_stride",           type=int,   default=1, help="Day stride for sliding window")
     parser.add_argument("--contam_ratio",         type=float, default=0.1, help="Contamination ratio (percentage of days with anomalies))") # train data contam depends on window size (nbr of days in a window)
     parser.add_argument("--contam_clean_ratio",   type=float, default=0.8, help="Clean data save ratio (forcasting model is later evaluated on this clean data)")
     parser.add_argument("--ad_split_ratio",       type=float, default=0.7, help="Anomaly detection train-test split ratio")
@@ -62,6 +63,7 @@ def run(args):
     ad_train_load = contaminated_load[:M]
     ad_test_load = contaminated_load[M:]
 
+    # contaminate data with synthetic anomalies
     anomaly_generator = SynthLoadAnomaly()
     def contam_load(load, contam_ratio, feature_name, day_size):
         gt = []
@@ -69,16 +71,18 @@ def run(args):
         n_contam_days = int(contam_ratio*len(load)//day_size)
         contam_days = np.random.choice(range(0, len(load)//day_size), n_contam_days, replace=False)
         for i in range(n_days):
+            seq_gt = [0]*day_size
             contam = i in contam_days
             if contam:
                 day_st = i*day_size
                 day_end = day_st + day_size
                 sequence = load[feature_name].values[day_st: day_end]
-                # TODO store exact position of anomaly for evaluating AD model
-                load[feature_name].values[day_st: day_end] = anomaly_generator.inject_anomaly(sequence)
-                gt.extend([1]*day_size)
+                anomalous_sequence, anom_idx = anomaly_generator.inject_anomaly(sequence)
+                load[feature_name].values[day_st: day_end] = anomalous_sequence
+                for anom_id in anom_idx: seq_gt[anom_id] = 1 
+                gt.extend(seq_gt)
             else:
-                gt.extend([0]*day_size)
+                gt.extend(seq_gt)
         return load, gt
 
     def extract_consec_days(load, gt_load, day0, n_days, day_size):
@@ -95,13 +99,13 @@ def run(args):
             end += day_size
         return np.array(sequence), np.array(gt)
 
-    def build_dataset(load, n_days, day_size, contam_ratio, contam_data=True):
+    def build_dataset(load, n_days, day_size, day_stride, contam_ratio, contam_data=True):
         """
             build a dataset from load dataframe using a sliding window of size n_days and stride of 1 day 
             while contamining the data with synthetic anomalies
         """
         if contam_data:
-            load, gt_load = contam_load(load, contam_ratio, args.load_feature_name, day_size) #  # TODO store exact position of anomaly
+            load, gt_load = contam_load(load, contam_ratio, args.load_feature_name, day_size)
         else:
             gt_load = [[0]*day_size]*(len(load)//day_size)
         
@@ -109,8 +113,9 @@ def run(args):
         gt_time_wind = []
         datetime_wind = []
 
-        for i in range(len(load)//day_size - n_days): # stride of 1 day
-            day0 = i*day_size
+        day_idx = 0
+        while day_idx < len(load)//day_size - n_days:
+            day0 = day_idx*day_size
             sequence, gt = extract_consec_days(load, gt_load, day0, n_days, day_size)
 
             time_wind.append(sequence)
@@ -118,13 +123,14 @@ def run(args):
             first_date = str(load.index[day0]).replace(':', '')
             last_date = str(load.index[day0 + n_days*day_size]).replace(':', '')
             datetime_wind.append(f"{first_date} - {last_date}")
+            day_idx += day_stride
 
         return time_wind, gt_time_wind, datetime_wind
 
 
-    ad_train_windows, gt_ad_train_windows, date_ad_train_windows = build_dataset(ad_train_load, args.n_days, args.day_size, args.contam_ratio, contam_data=True)
-    ad_test_windows, gt_ad_test_windows, date_ad_test_windows = build_dataset(ad_test_load, args.n_days, args.day_size, args.contam_ratio, contam_data=True)
-    clean_windows, gt_clean_windows, date_clean_windows = build_dataset(clean_load, args.n_days, args.day_size, args.contam_ratio, contam_data=False)
+    ad_train_windows, gt_ad_train_windows, date_ad_train_windows = build_dataset(ad_train_load, args.n_days, args.day_size, args.day_stride, args.contam_ratio, contam_data=True)
+    ad_test_windows, gt_ad_test_windows, date_ad_test_windows = build_dataset(ad_test_load, args.n_days, args.day_size, args.day_stride, args.contam_ratio, contam_data=True)
+    clean_windows, gt_clean_windows, date_clean_windows = build_dataset(clean_load, args.n_days, args.day_size, args.day_stride, args.contam_ratio, contam_data=False)
 
     day_contam_ratio = args.contam_ratio*1/args.n_days
     datapoint_contam_ratio = 1/args.day_size*day_contam_ratio

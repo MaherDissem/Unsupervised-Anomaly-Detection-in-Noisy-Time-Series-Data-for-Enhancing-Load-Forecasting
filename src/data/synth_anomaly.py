@@ -79,32 +79,36 @@ class SynthLoadAnomaly():
         return target
 
 
-    def inject_anomaly(self, sequence, anom_type=0, n_anom=1, minimum_length=10):
+    def inject_anomaly(self, sequence, anom_type=0, n_anom=1):
         sequence = sequence.copy()
         n = len(sequence)
-        # TODO add handling multiple number of anomalies per sequence
-
+        
         if anom_type==0:
             anom_type = np.random.randint(1, 4)
 
         if anom_type==1:
             position = np.random.randint(n//4, (len(sequence)-1)//2)
-            remaining_length = len(sequence)-1-position
-            # length = np.random.randint(max(3, (remaining_length//3*2)), remaining_length)
             length = np.random.randint(3, 8)
-            return self._anomaly_type1(sequence.copy(), [position], [length]) # TODO add returning exact anom position 
+            anom_idx = range(position, position+length)
+            anomalous_sequence = self._anomaly_type1(sequence.copy(), [position], [length])
+            return anomalous_sequence, anom_idx
         
         if anom_type==2:
             position = np.random.randint(n//4, (len(sequence)-1)//2)
-            remaining_length = len(sequence)-1-position
-            # length = np.random.randint(max(2, (remaining_length//3*2)), remaining_length)
             length = np.random.randint(2, 8)
-            return self._anomaly_type2(sequence.copy(), [position], [length])
+            anom_idx = range(position, position+length)
+            anomalous_sequence = self._anomaly_type2(sequence.copy(), [position], [length])
+            return anomalous_sequence, anom_idx
         
         if anom_type==3:
             position = np.random.randint(n//4, (len(sequence)-1)//3*2)
-            return self._anomaly_type3(sequence, [position], [1])
+            anom_idx = range(position, position+1)
+            anomalous_sequence = self._anomaly_type3(sequence.copy(), [position], [1])
+            return anomalous_sequence, anom_idx
         
         if anom_type==4:
             position = np.random.randint(n//4, (len(sequence)-1)//3*2)
-            return self._anomaly_type4(sequence, position, [1])
+            anom_idx = range(position, position+1)
+            anomalous_sequence = self._anomaly_type4(sequence.copy(), [position], [1])
+            return anomalous_sequence, anom_idx
+        
