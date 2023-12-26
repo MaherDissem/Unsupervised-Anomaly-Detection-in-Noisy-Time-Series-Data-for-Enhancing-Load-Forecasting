@@ -351,19 +351,21 @@ class SoftPatch(torch.nn.Module):
         heatmaps = []
         gt_is_anom = []
         gt_heatmaps = []
+        timeseries = []
         with tqdm.tqdm(dataloader, desc="Inferring...", leave=True) as data_iterator:
             for timeserie_batch in data_iterator: 
                 if isinstance(timeserie_batch, dict):
                     gt_is_anom.extend(timeserie_batch["is_anomaly"].numpy().tolist())
                     gt_heatmaps.extend(timeserie_batch["gt_heatmap"].numpy().tolist())
                     timeserie_batch = timeserie_batch["data"]
-                if isinstance(timeserie_batch, list): # TODO remove this
+                if isinstance(timeserie_batch, list):
                     timeserie_batch = timeserie_batch[0]
-                _scores, _heatmap = self._predict(timeserie_batch) # timeserie -> torch.Size([32, 240, 1])
-                for score, heatmap in zip(_scores, _heatmap):
+                _scores, _heatmap = self._predict(timeserie_batch)
+                for timeserie, score, heatmap in zip(timeserie_batch, _scores, _heatmap):
+                    timeseries.append(timeserie)
                     scores.append(score)
                     heatmaps.append(heatmap)
-        return scores, heatmaps, gt_is_anom, gt_heatmaps # TODO also return timeserie and call function get_heatmap() TODO like pipeline.py
+        return scores, heatmaps, gt_is_anom, gt_heatmaps, timeseries
 
     def _predict(self, timeseries):
         """Infer score and mask for a batch of timeseries."""

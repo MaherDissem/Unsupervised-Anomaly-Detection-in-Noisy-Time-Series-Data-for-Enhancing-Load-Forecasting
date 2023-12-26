@@ -35,6 +35,12 @@ def compute_timeseriewise_retrieval_metrics(
     )
     k = f1_scores.argmax() # idx of best f1 score / threshold
     draw_curve(fpr, tpr, auroc)
+
+    tn, fp, fn, tp = metrics.confusion_matrix(
+        anomaly_ground_truth_labels, (anomaly_prediction_weights > thresholds[k]).astype(int)
+    ).ravel()
+    print(f"tp: {tp}, fp: {fp}, \nfn: {fn}, tn: {tn}")
+
     return {
         "auroc": auroc, 
         "fpr": fpr, 
@@ -53,26 +59,38 @@ def compute_pointwise_retrieval_metrics(predicted_masks, ground_truth_masks):
     and ground truth segmentation masks.
 
     Args:
-        predicted_masks: [list of np.arrays or np.array] [N x L/P] Contains
+        predicted_masks: [list of np.arrays or np.array] [N x L] Contains
                                 generated segmentation masks.
         ground_truth_masks: [list of np.arrays or np.array] [N x L] Contains
                             predefined ground truth segmentation masks
     """
     if isinstance(predicted_masks, list):
-        predicted_masks = np.stack(predicted_masks)
+        predicted_masks = np.stack(predicted_masks).squeeze(-1)
     if isinstance(ground_truth_masks, list):
         ground_truth_masks = np.stack(ground_truth_masks)
 
     n_seq, pred_seq_len = predicted_masks.shape[:2]
     n_seq, gt_seq_len = ground_truth_masks.shape[:2]
-    patch_size = gt_seq_len//pred_seq_len
-    ground_truth_masks_patched = np.zeros((n_seq, pred_seq_len)) 
-    for i, ground_truth_mask in enumerate(ground_truth_masks):
-        patched_mask = np.array([np.any(ground_truth_mask[i:i+patch_size]) for i in range(0, len(ground_truth_mask), patch_size)])
-        ground_truth_masks_patched[i] = patched_mask
+    patch_size = 8 # gt_seq_len//pred_seq_len
+    pred_masks_patched = np.zeros((n_seq, pred_seq_len//patch_size))
+    ground_truth_masks_patched = np.zeros((n_seq, pred_seq_len//patch_size))
 
-    flat_predicted_masks = predicted_masks.ravel()
+    for i, (pred_mask, ground_truth_mask) in enumerate(zip(predicted_masks, ground_truth_masks)):
+        patched_pred_mask = np.array([np.any(pred_mask[i:i+patch_size]) for i in range(0, len(pred_mask), patch_size)])
+        patched_gt_mask = np.array([np.any(ground_truth_mask[i:i+patch_size]) for i in range(0, len(ground_truth_mask), patch_size)])
+        pred_masks_patched[i] = patched_pred_mask
+        ground_truth_masks_patched[i] = patched_gt_mask
+        # plt.plot(patched_pred_mask, label="pred")
+        # plt.plot(patched_gt_mask, label="gt")
+        # plt.legend()
+        # os.makedirs("results/debug", exist_ok=True)
+        # plt.savefig(f"results/debug/patched_masks_{i}.png")
+        # plt.clf()
+    flat_predicted_masks = pred_masks_patched.ravel()
     flat_ground_truth_masks_patched = ground_truth_masks_patched.ravel()
+
+    # flat_predicted_masks = predicted_masks.ravel()
+    # flat_ground_truth_masks_patched = ground_truth_masks.ravel()
     
     fpr, tpr, thresholds = metrics.roc_curve(
         flat_ground_truth_masks_patched.astype(int), flat_predicted_masks
@@ -90,9 +108,10 @@ def compute_pointwise_retrieval_metrics(predicted_masks, ground_truth_masks):
         where=(precision + recall) != 0,
     )
     k = f1_scores.argmax() # idx of best f1 score / threshold
-    
-    tp, fp, fn, tn = metrics.confusion_matrix(
-        (flat_predicted_masks > thresholds[k]).astype(int), flat_ground_truth_masks_patched.astype(int)
+
+    tn, fp, fn, tp = metrics.confusion_matrix(
+        # flat_ground_truth_masks_patched.astype(int), (flat_predicted_masks > thresholds[k]).astype(int)
+        flat_ground_truth_masks_patched.astype(int), flat_predicted_masks.astype(int)
     ).ravel()
     print(f"tp: {tp}, fp: {fp}, \nfn: {fn}, tn: {tn}")
 

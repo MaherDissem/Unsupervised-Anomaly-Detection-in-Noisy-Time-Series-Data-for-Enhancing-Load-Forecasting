@@ -74,15 +74,15 @@ def sliding_windows(load_serie, window_size, day_stride, day_size):
 load_windows, dates = sliding_windows(load_serie, window_size, day_stride, day_size)
 load_windows = np.array(load_windows)
 load_dataset = TensorDataset(torch.tensor(load_windows, dtype=torch.float)) # batch_size x seq_len x 1=feature_dim
-infer_dataloader = DataLoader(load_dataset, batch_size=32, shuffle=False)
+infer_dataloader = DataLoader(load_dataset, batch_size=32, shuffle=False) # GT not needed
 
 # load AD model
 default_args = AD_main.parse_args()
 coreset = AD_main.get_coreset(default_args, device)
-coreset.load_from_path("results/weights", device, AD_main.common.FaissNN(False, 4), )
+coreset.load_from_path("results/weights", device, AD_main.common.FaissNN(False, 4))
 
 # infer AD model
-scores, heatmaps, gt_is_anom, gt_heatmaps = coreset.predict(infer_dataloader)
+scores, heatmaps, _, _, _ = coreset.predict(infer_dataloader)
 scores = (scores - coreset.min_score) / (coreset.max_score - coreset.min_score + 1e-5)
 scores = np.mean(scores, axis=0)
 

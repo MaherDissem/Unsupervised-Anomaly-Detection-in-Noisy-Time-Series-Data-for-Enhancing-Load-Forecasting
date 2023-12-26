@@ -14,6 +14,7 @@ import common as common
 import metrics as metrics
 import sampler as sampler
 import softpatch as softpatch
+from postprocessing import heatmap_postprocess
 from dataset import TS_Dataset
 
 sys.path.insert(0, os.getcwd()) 
@@ -46,7 +47,7 @@ def parse_args():
     parser.add_argument("--feat_patch_size", default=8, type=int)
     # backbone
     parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
-    parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer2"])
+    parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer1"])
     # coreset sampler
     parser.add_argument("--sampler_name", type=str, default="approx_greedy_coreset")
     parser.add_argument("--sampling_ratio", type=float, default=0.1)
@@ -149,7 +150,7 @@ def run(args):
     train_end = time.time()
 
     # inference on test set
-    scores, heatmaps, gt_is_anom, gt_heatmaps = coreset.predict(dataloaders["testing"])
+    scores, heatmaps, gt_is_anom, gt_heatmaps, timeseries = coreset.predict(dataloaders["testing"])
     test_end = time.time()
 
     LOGGER.info(
@@ -169,7 +170,7 @@ def run(args):
     coreset.max_heatmap_scores = heatmaps.reshape(len(heatmaps), -1).max()
     heatmaps = (heatmaps - coreset.min_heatmap_scores) / (coreset.max_heatmap_scores - coreset.min_heatmap_scores)
     heatmaps = np.mean(heatmaps, axis=-1)
-
+    
     LOGGER.info("Computing evaluation metrics.")
     # sequence wise evaluation
     results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom)
@@ -186,12 +187,19 @@ def run(args):
     LOGGER.info(f"Best precision: {results['best_precision']:0.3f}")
     LOGGER.info(f"Best recall: {results['best_recall']:0.3f}")
     # patchtwise evaluation
-    pointwise_results = metrics.compute_pointwise_retrieval_metrics(heatmaps, gt_heatmaps)
+    pred_masks = []
+    for timeserie, score, heatmap in zip(timeseries, scores, heatmaps):
+        if score>coreset.window_threshold:
+            pred_mask = heatmap_postprocess(timeserie, heatmap, flag_highest_patch=False, extend_to_patch=True)
+        else:
+            pred_mask = torch.zeros_like(timeserie)    
+        pred_masks.append(pred_mask)
+    patchwise_results = metrics.compute_pointwise_retrieval_metrics(pred_masks, gt_heatmaps) 
     LOGGER.info(f"-> Pointwise evaluation results:")
-    LOGGER.info(f"AUROC: {pointwise_results['auroc']:0.3f}")
-    LOGGER.info(f"Best F1: {pointwise_results['best_f1']:0.3f}")
-    LOGGER.info(f"Best precision: {pointwise_results['best_precision']:0.3f}")
-    LOGGER.info(f"Best recall: {pointwise_results['best_recall']:0.3f}")
+    LOGGER.info(f"AUROC: {patchwise_results['auroc']:0.3f}")
+    LOGGER.info(f"Best F1: {patchwise_results['best_f1']:0.3f}")
+    LOGGER.info(f"Best precision: {patchwise_results['best_precision']:0.3f}")
+    LOGGER.info(f"Best recall: {patchwise_results['best_recall']:0.3f}")
 
     # save results to experiment log file
     print(f"\nanomaly detection results:\n\
