@@ -131,9 +131,10 @@ class LSTM_AE(nn.Module):
                 optimizer.zero_grad()
                 encoded, decoded = self(masked_ts)
 
-                # running_loss = self.criterion(clean_ts , decoded)
+                running_loss = self.criterion(clean_ts , decoded)
+
                 # loss is difference between clean_ts and decoded for the masked_ts
-                running_loss = self.criterion(clean_ts * mask, decoded * mask)
+                # running_loss = self.criterion(clean_ts * mask, decoded * mask)
                 
                 epoch_loss += running_loss.item()
                 # Backward pass

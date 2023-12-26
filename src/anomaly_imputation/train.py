@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument("--patience",            type=int,   default=20,                                     help="Patience for early stopping")
     parser.add_argument("--max_grad_norm",       type=float, default=0.05,                                   help="Maximum gradient norm for gradient clipping")
     # logging params
-    parser.add_argument("--every_epoch_print",   type=int,   default=1,                                      help="Print results every n epochs")
+    parser.add_argument("--every_epoch_print",   type=int,   default=10,                                     help="Print results every n epochs")
     parser.add_argument("--save_eval_plots",     type=bool,  default=True,                                   help="Save evaluation plots")
     parser.add_argument("--save_folder",         type=str,   default="results/ai_eval_plots",                help="Folder to save evaluation plots")
     return parser.parse_args()
@@ -41,13 +41,13 @@ def get_data_loaders(dataset_root, split_ratio, mask_size, batch_size):
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=batch_size,
-        shuffle=False,
+        shuffle=True,
         pin_memory=True,
     )
     test_dataloader = torch.utils.data.DataLoader(
         test_dataset,
         batch_size=1,
-        shuffle=False,
+        shuffle=True,
         pin_memory=True,
     )
     return train_dataloader, test_dataloader
