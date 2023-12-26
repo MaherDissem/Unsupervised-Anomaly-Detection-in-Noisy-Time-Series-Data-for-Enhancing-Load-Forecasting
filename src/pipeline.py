@@ -117,7 +117,7 @@ with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Impu
                 patch_size = timeserie.shape[0] // heatmap.shape[0] 
                 patch_start = highest_patch_score_idx * patch_size 
                 patch_end = patch_start + patch_size
-                anom_idx = list(range(patch_start, patch_end+1))
+                anom_idx = list(range(patch_start, patch_end))
                 # consecutive values, anomaly type 2 replaces values by 0 before spike
                 anom_idx += find_consec_values(timeserie, min_consecutive=2, indices_only=True, pad=patch_size//2)
                 # outliers
@@ -128,7 +128,7 @@ with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Impu
                 # extend point to patch for smoother imputation
                 for point in spike_anom_idx:
                     if point not in anom_idx:
-                        anom_idx += list(range(max(0, point-patch_size//2), min(point+patch_size//2+1, len(timeserie))))             
+                        anom_idx += list(range(max(0, point-patch_size//2), min(point+patch_size//2+1, len(timeserie)-1)))             
 
                 anom_idx = list(set(anom_idx)) 
                 masked_data = timeserie.clone()
