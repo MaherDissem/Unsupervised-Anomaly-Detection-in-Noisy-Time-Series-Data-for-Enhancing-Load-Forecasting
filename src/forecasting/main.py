@@ -58,8 +58,8 @@ set_seed(args.seed)
 N_input = int(args.sequence_split*args.timesteps)  # input length
 N_output = args.timesteps - N_input                # target length
 
-train_data = TS_Dataset(args.train_dataset_path, ts_split=args.sequence_split)  
-test_data = TS_Dataset(args.test_dataset_path, ts_split=args.sequence_split)   # forecast target should be anomaly free, otherwise metric is not fair
+train_data = F_Dataset(args.train_dataset_path, ts_split=args.sequence_split)  
+test_data = F_Dataset(args.test_dataset_path, ts_split=args.sequence_split)   # forecast target should be anomaly free, otherwise metric is not fair
 
 trainloader = DataLoader(
     train_data,
