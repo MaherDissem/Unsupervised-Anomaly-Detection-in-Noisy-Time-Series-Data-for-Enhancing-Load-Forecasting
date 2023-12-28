@@ -31,7 +31,7 @@ day_stride = 1 # days
 contam_ratio = 0.1
 forecast_window_size = 5
 save_figs = False
-imp_trained = False
+imp_trained = True
 
 # ---
 # Generate synthetic data
@@ -259,18 +259,17 @@ from src.data.prepare_data_LF import run as prepare_data_LF_run
 from src.data.prepare_data_LF import parse_args as prepare_data_LF_parse_args
 
 default_prepare_data_LF_args = prepare_data_LF_parse_args()
-# clean test data
+default_prepare_data_LF_args.n_days = forecast_window_size
 default_prepare_data_LF_args.raw_test_data_csv = f"dataset/processed/{data_folder}/load_clean_lf_test.csv"
-default_prepare_data_LF_args.trg_test_save_data = f"dataset/processed/{data_folder}/lf_cleaned"
+default_prepare_data_LF_args.trg_test_save_data = f"dataset/processed/{data_folder}/lf_test_clean"
+
 # cleaned data
 default_prepare_data_LF_args.raw_train_data_csv = f"dataset/processed/{data_folder}/load_cleaned.csv"
 default_prepare_data_LF_args.trg_train_save_data = f"dataset/processed/{data_folder}/lf_cleaned"
-default_prepare_data_LF_args.n_days = forecast_window_size
 prepare_data_LF_run(default_prepare_data_LF_args)
 
 # contamined data
 default_prepare_data_LF_args.raw_train_data_csv = f"dataset/processed/{data_folder}/load_contam.csv"
 default_prepare_data_LF_args.trg_train_save_data = f"dataset/processed/{data_folder}/lf_contam"
-default_prepare_data_LF_args.n_days = forecast_window_size
 prepare_data_LF_run(default_prepare_data_LF_args)
 
