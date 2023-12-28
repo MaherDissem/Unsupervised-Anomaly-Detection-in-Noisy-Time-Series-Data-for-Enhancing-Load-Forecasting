@@ -27,17 +27,17 @@ def parse_args():
     parser = argparse.ArgumentParser(description="SoftPatch")
     # project
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--filter_anomalies", default=False)
-    parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/AEMO/test/lf_train_filter")      # data path
-    parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/AEMO/test/lf_train_contam")  # data path
-    parser.add_argument("--save_heatmaps", default=False)
-    parser.add_argument("--heatmaps_save_path", type=str, default="results/heatmaps")
+    # parser.add_argument("--filter_anomalies", default=False)
+    # parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/AEMO/test/lf_train_filter")      # data path
+    # parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/AEMO/test/lf_train_contam")  # data path
+    # parser.add_argument("--save_heatmaps", default=False)
+    # parser.add_argument("--heatmaps_save_path", type=str, default="results/heatmaps")
     parser.add_argument("--save_model", default=True)
     parser.add_argument("--model_save_path", type=str, default="results/weights")
     parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
     # dataset
-    parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/test/ad_train_contam", "dataset/processed/AEMO/test/ad_test_contam"], help="List of training data paths") # we do training and testing on the whole dataset
-    parser.add_argument("--test_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/test/ad_train_contam", "dataset/processed/AEMO/test/ad_test_contam"], help="List of training data paths")
+    parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/NSW/ad_train_contam", "dataset/processed/AEMO/NSW/ad_test_contam"], help="List of training data paths") # we do training and testing on the whole dataset
+    parser.add_argument("--test_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/NSW/ad_train_contam", "dataset/processed/AEMO/NSW/ad_test_contam"], help="List of training data paths")
     parser.add_argument("--batch_size", default=32, type=int)
     parser.add_argument("--nbr_timesteps", default=48*1, type=int)       # sequence length
     parser.add_argument("--nbr_variables", default=1, type=int)

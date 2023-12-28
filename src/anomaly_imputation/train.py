@@ -14,7 +14,7 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser(description="Define hyperparameters for training")
     # data params
-    parser.add_argument("--dataset_root",        type=str,   default="dataset/processed/AEMO/test/ai_train", help="Root directory of the dataset")
+    parser.add_argument("--dataset_root",        type=str,   default="dataset/processed/AEMO/NSW/ai_train",  help="Root directory of the dataset")
     parser.add_argument("--split_ratio",         type=float, default=0.9,                                    help="Ratio for train-test split")
     parser.add_argument("--seq_len",             type=int,   default=48*1,                                   help="Sequence length")
     parser.add_argument("--no_features",         type=int,   default=1,                                      help="Number of features")
