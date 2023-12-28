@@ -28,6 +28,6 @@ class AI_Dataset(torch.utils.data.Dataset):
         return len(self.data)
 
     def load_data(self):
-        data = glob.glob(os.path.join(self.root_dir, "data", "*.npy"))
+        data = glob.glob(os.path.join(self.root_dir, "*.npy"))
         return data
     
