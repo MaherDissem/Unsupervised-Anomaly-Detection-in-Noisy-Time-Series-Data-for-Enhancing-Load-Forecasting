@@ -10,21 +10,25 @@ import numpy as np
 import tqdm
 import matplotlib.pyplot as plt
 import torch
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 from torch.utils.data import TensorDataset, DataLoader
 
 from anomaly_detection import main as AD_main
+from anomaly_detection.postprocessing import heatmap_postprocess
 from utils.utils import find_consec_values
 from utils.utils import make_clean_folder
 from utils.utils import set_seed
 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 set_seed(0)
 
 # parameters
+data_folder = "AEMO/NSW"
 day_size = 48
 n_days = 1
 window_size = day_size * n_days
 day_stride = 1 # days
+contam_ratio = 0.1
 save_figs = True
 imp_trained = False
 
@@ -35,6 +39,8 @@ from data.prepare_data_AD import run as prepare_data_AD_run
 from data.prepare_data_AD import parse_args as prepare_data_AD_parse_args
 
 default_prepare_data_AD_args = prepare_data_AD_parse_args()
+default_prepare_data_AD_args.raw_data_csv = raw_data_root = f"dataset/{data_folder}"
+default_prepare_data_AD_args.trg_save_data = f"dataset/processed/{data_folder}"
 default_prepare_data_AD_args.day_size = day_size
 default_prepare_data_AD_args.n_days = n_days
 default_prepare_data_AD_args.day_stride = day_stride
@@ -48,7 +54,10 @@ from anomaly_detection.main import run as AD_run
 from anomaly_detection.main import parse_args as AD_parse_args
 
 default_AD_args = AD_parse_args()
+default_AD_args.train_data_path = [f"dataset/processed/{data_folder}/ad_train_contam", f"dataset/processed/{data_folder}/ad_test_contam"]
+default_AD_args.test_data_path = [f"dataset/processed/{data_folder}/ad_train_contam", f"dataset/processed/{data_folder}/ad_test_contam"]
 default_AD_args.nbr_timesteps = window_size
+default_AD_args.contam_ratio = contam_ratio
 
 AD_run(default_AD_args)
 
@@ -57,8 +66,8 @@ AD_run(default_AD_args)
 # ---
 
 # load continuous "load.csv" data
-load_serie = pd.read_csv("dataset/processed/AEMO/test/load_contam.csv", index_col=0, parse_dates=True)
-gt_serie = pd.read_csv("dataset/processed/AEMO/test/load_contam_gt.csv", index_col=0)
+load_serie = pd.read_csv(f"dataset/processed/{data_folder}/load_contam.csv", index_col=0, parse_dates=True)
+gt_serie = pd.read_csv(f"dataset/processed/{data_folder}/load_contam_gt.csv", index_col=0)
 
 # transform into sliding windows (same parameters as AD training)
 def sliding_windows(load_serie, window_size, day_stride, day_size):
@@ -90,8 +99,7 @@ heatmaps = np.array(heatmaps)
 heatmaps = (heatmaps - coreset.min_heatmap_scores) / (coreset.max_heatmap_scores - coreset.min_heatmap_scores)
 heatmaps = np.mean(heatmaps, axis=-1)
 
-# save anomaly free samples to train Imputation model and anomalous samples to impute
-save_imputation_train_path = "dataset/processed/AEMO/test/ai_train/data"
+save_imputation_train_path = f"dataset/processed/{data_folder}/ai_train/data"
 path_list = [save_imputation_train_path, "results/heatmaps", "results/imputation", ]
 for path in path_list:
     make_clean_folder(path)
@@ -171,9 +179,10 @@ from anomaly_imputation.train import parse_args as AI_parse_args
 from anomaly_imputation.train import train as AI_train
 from anomaly_imputation.model import LSTM_AE
 
-default_args = AI_parse_args()
-default_args.seq_len = window_size
-default_args.mask_size = patch_size
+default_AI_args = AI_parse_args()
+default_AI_args.seq_len = window_size
+default_AI_args.mask_size = patch_size
+default_AI_args.dataset_root = save_imputation_train_path
 
 if not imp_trained:
     AI_train(default_args)
@@ -203,13 +212,10 @@ for i, (masked_data, mask, date_range) in enumerate(anomalous):
 
 
 # ---
-# save data for forecasting model
+# save cleaned (imputed) data for forecasting model
 # ---
+# we reconstruct a continuous timeserie from individually imputed windows          
   
-# transform to single day samples to train Imputation model
-# we will then reconstruct a continuous timeserie 
-# and run a sliding window with the forecasting model's target stride and window size
-            
 cleaned_dataset = []
 for timeserie, date_range in cleaned_anomalies:
     for i in range(0, len(timeserie), day_size):
@@ -223,7 +229,7 @@ for timeserie, date_range in anomaly_free:
         date = date_range
         cleaned_dataset.append((day_serie, date))
 
-# remove stride-caused duplicates by first date in window, keeping the one with lower window variance (less anomalous)
+# remove stride-caused duplicates, keeping imputed days with lower window variance (intuitively less anomalous)
 df = pd.DataFrame(cleaned_dataset, columns=["timeserie", "date"])
 df["var"] = df["timeserie"].apply(lambda x: x.var())
 df["first_date"] = df["date"].apply(lambda x: x[0])
@@ -236,9 +242,29 @@ for timeserie, date in cleaned_dataset:
     for j in range(len(timeserie)):
         continuous_serie.append((timeserie[j].item(), date[j]))
 
+# save cleaned data
 cleaned_load_serie = pd.DataFrame(continuous_serie, columns=["timeserie", "date"])
 cleaned_load_serie.rename(columns={'timeserie': 'TOTALDEMAND'}, inplace=True)
-cleaned_load_serie.to_csv("dataset/processed/AEMO/test/load_cleaned.csv", columns=["date", 'TOTALDEMAND'], index=False)
+cleaned_load_serie.to_csv(f"dataset/processed/{data_folder}/load_cleaned.csv", columns=["date", 'TOTALDEMAND'], index=False)
 
-print(f"saved cleaned load serie to dataset/processed/AEMO/test/load_cleaned.csv")
+print(f"saved cleaned load serie to dataset/processed/{data_folder}/load_cleaned.csv")
+
+
+# ---
+# prepare data for forecasting    
+# ---
+
+from src.data.prepare_data_LF import run as prepare_data_LF_run
+from src.data.prepare_data_LF import parse_args as prepare_data_LF_parse_args
+
+default_prepare_data_LF_args = prepare_data_LF_parse_args()
+# cleaned data
+default_prepare_data_LF_args.raw_data_csv = f"dataset/processed/{data_folder}/load_cleaned.csv"
+default_prepare_data_LF_args.trg_save_data = f"dataset/processed/{data_folder}/lf_cleaned"
+prepare_data_LF_run(default_prepare_data_LF_args)
+
+# contamined data
+default_prepare_data_LF_args.raw_data_csv = f"dataset/processed/{data_folder}/load_contam.csv"
+default_prepare_data_LF_args.trg_save_data = f"dataset/processed/{data_folder}/lf_contam"
+prepare_data_LF_run(default_prepare_data_LF_args)
 
