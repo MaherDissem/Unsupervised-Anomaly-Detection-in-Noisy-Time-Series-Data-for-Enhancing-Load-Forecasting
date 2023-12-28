@@ -29,8 +29,9 @@ n_days = 1
 window_size = day_size * n_days
 day_stride = 1 # days
 contam_ratio = 0.1
-save_figs = True
-imp_trained = False
+forecast_window_size = 3
+save_figs = False
+imp_trained = True
 
 # ---
 # Generate synthetic data
@@ -185,10 +186,10 @@ default_AI_args.mask_size = patch_size
 default_AI_args.dataset_root = save_imputation_train_path
 
 if not imp_trained:
-    AI_train(default_args)
+    AI_train(default_AI_args)
 
 # infer anomaly detection and impute anomalies on anomalous samples
-loaded_model = LSTM_AE(default_args.seq_len, default_args.no_features, default_args.embedding_dim, default_args.learning_rate, default_args.every_epoch_print, default_args.epochs, default_args.patience, default_args.max_grad_norm)
+loaded_model = LSTM_AE(default_AI_args.seq_len, default_AI_args.no_features, default_AI_args.embedding_dim, default_AI_args.learning_rate, default_AI_args.every_epoch_print, default_AI_args.epochs, default_AI_args.patience, default_AI_args.max_grad_norm)
 loaded_model.load()
 
 save_imputation_path = os.path.join("results", "imputation")
@@ -259,12 +260,15 @@ from src.data.prepare_data_LF import parse_args as prepare_data_LF_parse_args
 
 default_prepare_data_LF_args = prepare_data_LF_parse_args()
 # cleaned data
+default_prepare_data_LF_args.raw_test_data_csv = f"dataset/processed/{data_folder}/load_clean_lf_test.csv"
 default_prepare_data_LF_args.raw_data_csv = f"dataset/processed/{data_folder}/load_cleaned.csv"
 default_prepare_data_LF_args.trg_save_data = f"dataset/processed/{data_folder}/lf_cleaned"
+default_prepare_data_LF_args.n_days = forecast_window_size
 prepare_data_LF_run(default_prepare_data_LF_args)
 
 # contamined data
-default_prepare_data_LF_args.raw_data_csv = f"dataset/processed/{data_folder}/load_contam.csv"
+default_prepare_data_LF_args.raw_train_data_csv = f"dataset/processed/{data_folder}/load_contam.csv"
 default_prepare_data_LF_args.trg_save_data = f"dataset/processed/{data_folder}/lf_contam"
+default_prepare_data_LF_args.n_days = forecast_window_size
 prepare_data_LF_run(default_prepare_data_LF_args)
 

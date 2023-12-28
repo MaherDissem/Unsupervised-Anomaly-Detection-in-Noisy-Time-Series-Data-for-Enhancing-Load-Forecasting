@@ -11,8 +11,11 @@ from utils.utils import set_seed
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Prepare data for anomaly detection model training and evaluation.")
-    parser.add_argument("--raw_data_csv",         type=str,   default="dataset/processed/AEMO/NSW/load_cleaned.csv", help="Path to raw data root")
-    parser.add_argument("--trg_save_data",        type=str,   default="dataset/processed/AEMO/NSW/lf_cleaned", help="Path to save processed data")
+    parser.add_argument("--raw_train_data_csv",   type=str,   default="dataset/processed/AEMO/NSW/load_cleaned.csv", help="Path to raw data root")
+    parser.add_argument("--trg_train_save_data",  type=str,   default="dataset/processed/AEMO/NSW/lf_cleaned", help="Path to save processed data")
+    
+    parser.add_argument("--raw_test_data_csv",    type=str,   default="dataset/processed/AEMO/NSW/load_clean_lf_test.csv", help="Path to raw data root")
+    parser.add_argument("--trg_test_save_data",   type=str,   default="dataset/processed/AEMO/NSW/lf_test_clean", help="Path to save processed data")
     
     parser.add_argument("--feat_feature_name",    type=str,   default="TOTALDEMAND", help="Name of the feat feature")
     parser.add_argument("--date_feature_name",    type=str,   default="date", help="Name of the date_time feature")
@@ -29,7 +32,8 @@ def parse_args():
 
 def run(args):
     set_seed(args.seed)
-    data = pd.read_csv(args.raw_data_csv)
+    train_data = pd.read_csv(args.raw_train_data_csv)
+    test_data = pd.read_csv(args.raw_test_data_csv)
 
     def extract_consec_days(feat, day0, n_days, day_size):
         """return n_days consecutive days starting at day0 from feat dataframe"""
@@ -65,7 +69,8 @@ def run(args):
         return time_wind, gt_time_wind
 
 
-    windows, gt_windows = build_dataset(data, args.n_days, args.day_size, args.day_stride)
+    train_windows, gt_train_windows = build_dataset(train_data, args.n_days, args.day_size, args.day_stride)
+    test_windows, _ = build_dataset(test_data, args.n_days, args.day_size, args.day_stride)
 
     # save data
     # remove existing files in save target root folder
@@ -74,18 +79,24 @@ def run(args):
         os.remove(f)
 
     # crete save target folders if they don't exist
-    os.makedirs(os.path.join(args.trg_save_data, "data"), exist_ok=True)
-    # os.makedirs(os.path.join(args.trg_save_data, "gt"), exist_ok=True)
+    os.makedirs(os.path.join(args.trg_test_save_data, "data"), exist_ok=True)
+    os.makedirs(os.path.join(args.trg_train_save_data, "data"), exist_ok=True)
+    # os.makedirs(os.path.join(args.trg_train_save_data, "gt"), exist_ok=True)
 
     # save data
-    for i, (sample, sample_gt) in enumerate(zip(windows, gt_windows)):
+    for i, sample in enumerate(test_windows):
         if np.isnan(sample).any(): continue
-        np.save(os.path.join(args.trg_save_data, "data", f"{i}.npy"), sample)
-        # np.save(os.path.join(args.trg_save_data, "gt", f"{i}.npy"), sample_gt)
+        np.save(os.path.join(args.trg_test_save_data, "data", f"{i}.npy"), sample)
+
+    for i, (sample, sample_gt) in enumerate(zip(train_windows, gt_train_windows)):
+        if np.isnan(sample).any(): continue
+        np.save(os.path.join(args.trg_train_save_data, "data", f"{i}.npy"), sample)
+        # np.save(os.path.join(args.trg_train_save_data, "gt", f"{i}.npy"), sample_gt)
 
     # log results
     print(args, file=open(args.log_file, "a"))
-    print(f"Number of train windows: {len(windows)}", file=open(args.log_file, "a"))
+    print(f"Number of train windows: {len(train_windows)}", file=open(args.log_file, "a"))
+    print(f"Number of test windows: {len(test_windows)}", file=open(args.log_file, "a"))
 
 
 if __name__ == "__main__":

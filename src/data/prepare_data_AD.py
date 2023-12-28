@@ -130,7 +130,6 @@ def run(args):
 
     ad_train_windows, gt_ad_train_windows, date_ad_train_windows = build_dataset(ad_train_load, args.n_days, args.day_size, args.day_stride, args.contam_ratio, contam_data=True)
     ad_test_windows, gt_ad_test_windows, date_ad_test_windows = build_dataset(ad_test_load, args.n_days, args.day_size, args.day_stride, args.contam_ratio, contam_data=True)
-    clean_windows, gt_clean_windows, date_clean_windows = build_dataset(clean_load, args.n_days, args.day_size, args.day_stride, args.contam_ratio, contam_data=False)
 
     day_contam_ratio = args.contam_ratio*1/args.n_days
     datapoint_contam_ratio = 1/args.day_size*day_contam_ratio
@@ -149,7 +148,6 @@ def run(args):
             scaled_windows.append(window)
         return scaled_windows
 
-    clean_windows = scale_windows(clean_windows, min_q_val, max_q_val)
     ad_train_windows = scale_windows(ad_train_windows, min_q_val, max_q_val)
     ad_test_windows = scale_windows(ad_test_windows, min_q_val, max_q_val)
 
@@ -166,11 +164,6 @@ def run(args):
     os.makedirs(os.path.join(args.trg_save_data, "ad_test_contam", "data"), exist_ok=True)
     os.makedirs(os.path.join(args.trg_save_data, "ad_test_contam", "gt"), exist_ok=True)
 
-    # save clean lf data
-    for i, (sample, sample_date) in enumerate(zip(clean_windows, date_clean_windows)):
-        if np.isnan(sample).any(): continue
-        np.save(os.path.join(args.trg_save_data, "lf_test_clean", "data", sample_date), sample) # or save with id instead of date for AD model training
-
     # save contam ad train data
     for i, (sample, sample_gt, sample_date) in enumerate(zip(ad_train_windows, gt_ad_train_windows, date_ad_train_windows)):
         if np.isnan(sample).any(): continue
@@ -185,7 +178,6 @@ def run(args):
 
     # log results
     print(args, file=open(args.log_file, "a"))
-    print(f"Number of clean windows: {len(clean_windows)}", file=open(args.log_file, "a"))
     print(f"Number of ad_train_contam windows: {len(ad_train_windows)}", file=open(args.log_file, "a"))
     print(f"Number of ad_test_contam windows: {len(ad_test_windows)}", file=open(args.log_file, "a"))
 
@@ -195,7 +187,12 @@ def run(args):
     print(f"min_quantile={min_quantile:0.3f} -> value={min_q_val}", file=open(args.log_file, "a"))
     print(f"max_quantile={max_quantile:0.3f} -> value={max_q_val}", file=open(args.log_file, "a"))
 
-    # save load serie
+    # save clean load for forecasting model evaluation
+    clean_load = (clean_load - min_q_val) / (max_q_val - min_q_val)
+    clean_load.rename_axis("date", inplace=True)
+    clean_load.to_csv(os.path.join(args.trg_save_data, "load_clean_lf_test.csv"))
+
+    # save contaminated load serie to infer AD/AI models after training
     contam_full_load, gt_full_load = contam_load(load, args.contam_ratio, args.load_feature_name, args.day_size) # anomaly contamination is different than for AD model training
     scaled_load = (contam_full_load - min_q_val) / (max_q_val - min_q_val)
     scaled_load.rename_axis("date", inplace=True)
