@@ -74,7 +74,8 @@ def run(args):
 
     # save data
     # remove existing files in save target root folder
-    existing_files = glob.glob(os.path.join(args.trg_save_data, "*", "*.npy"))
+    existing_files = glob.glob(os.path.join(args.trg_test_save_data, "*", "*.npy"))
+    existing_files.extend(glob.glob(os.path.join(args.trg_train_save_data, "*", "*.npy")))
     for f in existing_files:
         os.remove(f)
 

@@ -29,9 +29,9 @@ n_days = 1
 window_size = day_size * n_days
 day_stride = 1 # days
 contam_ratio = 0.1
-forecast_window_size = 3
+forecast_window_size = 5
 save_figs = False
-imp_trained = True
+imp_trained = False
 
 # ---
 # Generate synthetic data
