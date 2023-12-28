@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 
-class TS_Dataset(torch.utils.data.Dataset):
+class F_Dataset(torch.utils.data.Dataset):
 
     def __init__(self, root_dir, ts_split=0.7):
         super().__init__()

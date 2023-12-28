@@ -67,8 +67,8 @@ def get_dataloaders(args):
     train_data_path = args.train_data_path
     test_data_path = args.test_data_path
 
-    train_dataset = TS_Dataset(train_data_path)
-    test_dataset = TS_Dataset(test_data_path)
+    train_dataset = AD_Dataset(train_data_path)
+    test_dataset = AD_Dataset(test_data_path)
     
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,

@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 
-class TS_Dataset(torch.utils.data.Dataset):
+class AD_Dataset(torch.utils.data.Dataset):
 
     def __init__(self, data_folders_paths):
         super().__init__()
