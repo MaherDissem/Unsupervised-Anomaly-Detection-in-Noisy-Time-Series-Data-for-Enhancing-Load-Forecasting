@@ -19,15 +19,16 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 set_seed(0)
 
 # parameters
-data_folder = "AEMO/QLD"
-day_size = 48
-n_days = 1
-window_size = day_size * n_days
-day_stride = 1 # days
-contam_ratio = 0.1
-forecast_window_size = 5
-save_figs = True
-imp_trained = False
+data_folder = "AEMO/QLD"            # dataset folder, must be in dataset/processed/
+day_size = 48                       # dataset resolution
+n_days = 1                          # window size for anomaly detection
+window_size = day_size * n_days     # window size for anomaly detection
+day_stride = 1                      # for anomaly detection, seperate stride for forecasting
+contam_ratio = 0.1                  # contamination ratio for anomaly detection (% of days with anomalies, one anomaly per day)
+forecast_window_size = 5            # window size for forecasting
+forecast_day_stride = 1             # stride for forecasting
+save_figs = True                    # save plots of anomaly detection and imputation
+imp_trained = False                 # if True, skip training of anomaly imputation model
 
 # prepare directories for results/plots/weights saving
 save_imputation_train_path = f"dataset/processed/{data_folder}/ai_train/data"
@@ -245,6 +246,8 @@ from data.prepare_data_LF import parse_args as prepare_data_LF_parse_args
 
 default_prepare_data_LF_args = prepare_data_LF_parse_args()
 default_prepare_data_LF_args.n_days = forecast_window_size
+default_prepare_data_LF_args.day_size = day_size
+default_prepare_data_LF_args.day_stride = forecast_day_stride
 default_prepare_data_LF_args.raw_test_data_csv = f"dataset/processed/{data_folder}/load_clean_lf_test.csv"
 default_prepare_data_LF_args.trg_test_save_data = f"dataset/processed/{data_folder}/lf_test_clean"
 default_prepare_data_LF_args.log_file = f"results/{data_folder}/log.txt"
