@@ -180,7 +180,7 @@ if not imp_trained:
     AI_train(default_AI_args)
 
 # infer anomaly detection and impute anomalies on anomalous samples
-loaded_model = LSTM_AE(default_AI_args.seq_len, default_AI_args.no_features, default_AI_args.embedding_dim, default_AI_args.learning_rate, default_AI_args.every_epoch_print, default_AI_args.epochs, default_AI_args.patience, default_AI_args.max_grad_norm)
+loaded_model = LSTM_AE(default_AI_args.seq_len, default_AI_args.no_features, default_AI_args.embedding_dim, default_AI_args.learning_rate, default_AI_args.every_epoch_print, default_AI_args.epochs, default_AI_args.patience, default_AI_args.max_grad_norm, default_AI_args.checkpoint_path, default_AI_args.seed)
 loaded_model.load()
 
 cleaned_anomalies = []
