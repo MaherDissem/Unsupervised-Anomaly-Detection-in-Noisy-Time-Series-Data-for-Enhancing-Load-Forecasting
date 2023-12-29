@@ -35,6 +35,7 @@ def parse_args():
     parser.add_argument("--save_model", default=True)
     parser.add_argument("--model_save_path", type=str, default="results/weights")
     parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
+    parser.add_argument("--eval_plots_path", default="results/AEMO/NSW", help="Path to file to save results in")
     # dataset
     parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/NSW/ad_train_contam", "dataset/processed/AEMO/NSW/ad_test_contam"], help="List of training data paths") # we do training and testing on the whole dataset
     parser.add_argument("--test_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/NSW/ad_train_contam", "dataset/processed/AEMO/NSW/ad_test_contam"], help="List of training data paths")
@@ -173,7 +174,7 @@ def run(args):
     
     LOGGER.info("Computing evaluation metrics.")
     # sequence wise evaluation
-    results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.results_file)
+    results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.eval_plots_path)
     window_threshold = results["best_threshold"]
     # window_threshold = np.percentile(scores, 90); print(f"percentile threshold: {threshold}") # for unsupervised INPG dataset
     # window_threshold = 0.00008
