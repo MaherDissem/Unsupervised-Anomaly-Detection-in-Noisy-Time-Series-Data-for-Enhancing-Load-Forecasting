@@ -14,9 +14,8 @@ from torch.utils.data import TensorDataset, DataLoader
 
 from anomaly_detection import main as AD_main
 from anomaly_detection.postprocessing import heatmap_postprocess
-from utils.utils import find_consec_values
-from utils.utils import make_clean_folder
 from utils.utils import set_seed
+from utils.utils import make_clean_folder
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -126,27 +125,13 @@ with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Impu
                 anomaly_free.append((timeserie, date_range)) # each timeseries[k] has a date_range[k] associated
 
             else:
-                # high anomaly score patch
-                highest_patch_score_idx = np.argmax(heatmap) 
-                patch_size = timeserie.shape[0] // heatmap.shape[0] 
-                patch_start = highest_patch_score_idx * patch_size 
-                patch_end = patch_start + patch_size
-                anom_idx = list(range(patch_start, patch_end))
-                # consecutive values, anomaly type 2 replaces values by 0 before spike
-                anom_idx += find_consec_values(timeserie, min_consecutive=2, indices_only=True, pad=patch_size//2)
-                # outliers
-                timeserie_ = timeserie.clone()
-                timeserie_ = (timeserie_ - timeserie_.mean()) / timeserie_.std()
-                spike_anom_idx = torch.nonzero(timeserie_ > 2.5*timeserie_.std())[:, 0].tolist()
-                spike_anom_idx += torch.nonzero(timeserie_ < -2.5*timeserie_.std())[:, 0].tolist()
-                # extend point to patch for smoother imputation
-                for point in spike_anom_idx:
-                    if point not in anom_idx:
-                        anom_idx += list(range(max(0, point-patch_size//2), min(point+patch_size//2+1, len(timeserie)-1)))             
-
-                anom_idx = list(set(anom_idx)) 
+                anom_idx = heatmap_postprocess(timeserie, heatmap, 
+                                               flag_highest_patch=False, extend_to_patch=True, 
+                                               anom_idx_only=True)
+                
                 masked_data = timeserie.clone()
                 masked_data[anom_idx] = 0
+
                 mask = torch.ones_like(masked_data)
                 mask[anom_idx] = 0 
                 anomalous.append((masked_data, mask, date_range))
@@ -186,7 +171,7 @@ from anomaly_imputation.model import LSTM_AE
 
 default_AI_args = AI_parse_args()
 default_AI_args.seq_len = window_size
-default_AI_args.mask_size = patch_size
+default_AI_args.mask_size = window_size // heatmaps[0].shape[0] 
 default_AI_args.dataset_root = save_imputation_train_path
 default_AI_args.checkpoint_path = f"results/{data_folder}/weights/checkpoint_ai.pt"
 default_AD_args.save_folder = f"results/{data_folder}/ai_eval_plots"
