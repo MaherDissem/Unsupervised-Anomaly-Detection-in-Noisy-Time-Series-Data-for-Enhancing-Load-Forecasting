@@ -173,7 +173,7 @@ default_AI_args.seq_len = window_size
 default_AI_args.mask_size = window_size // heatmaps[0].shape[0] 
 default_AI_args.dataset_root = save_imputation_train_path
 default_AI_args.checkpoint_path = f"results/{data_folder}/weights/checkpoint_ai.pt"
-default_AD_args.save_folder = f"results/{data_folder}/ai_eval_plots"
+default_AI_args.save_folder = f"results/{data_folder}/ai_eval_plots"
 
 if not imp_trained:
     AI_train(default_AI_args)
