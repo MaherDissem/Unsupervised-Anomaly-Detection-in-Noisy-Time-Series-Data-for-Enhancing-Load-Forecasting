@@ -274,7 +274,7 @@ from forecasting.main import parse_args as LF_parse_args
 default_LF_args = LF_parse_args()
 default_LF_args.timesteps = day_size * forecast_window_size
 default_LF_args.sequence_split = (forecast_window_size-1)/forecast_window_size
-default_LF_args.results_file = f"results/results.txt"
+default_LF_args.results_file = f"results/{data_folder}/log.txt"
 
 # run forecasting model on cleaned data
 default_LF_args.train_dataset_path = f"dataset/processed/{data_folder}/lf_cleaned"
