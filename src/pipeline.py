@@ -1,10 +1,10 @@
 import sys
-sys.path.append("src") # /src directory
-sys.path.append("src/anomaly_detection") # AD module
-sys.path.append("src/anomaly_imputation") # AI module
+sys.path.append("src/data")                 # data preparation module
+sys.path.append("src/anomaly_detection")    # AD module
+sys.path.append("src/anomaly_imputation")   # AI module
+sys.path.append("src/forecasting")          # LF module
 
 import os
-import glob
 import pandas as pd
 import numpy as np
 import tqdm
@@ -23,15 +23,24 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 set_seed(0)
 
 # parameters
-data_folder = "AEMO/NSW"
+data_folder = "AEMO/QLD"
 day_size = 48
 n_days = 1
 window_size = day_size * n_days
 day_stride = 1 # days
 contam_ratio = 0.1
 forecast_window_size = 5
-save_figs = False
-imp_trained = True
+save_figs = True
+imp_trained = False
+
+# prepare directories for results/plots/weights saving
+save_imputation_train_path = f"dataset/processed/{data_folder}/ai_train/data"
+save_heatmaps_path = f"results/{data_folder}/heatmaps"
+save_imputation_path = f"results/{data_folder}/imputation"
+
+path_list = [save_imputation_train_path, save_heatmaps_path, save_imputation_path]
+for path in path_list:
+    make_clean_folder(path)
 
 # ---
 # Generate synthetic data
@@ -42,6 +51,7 @@ from data.prepare_data_AD import parse_args as prepare_data_AD_parse_args
 default_prepare_data_AD_args = prepare_data_AD_parse_args()
 default_prepare_data_AD_args.raw_data_csv = raw_data_root = f"dataset/{data_folder}"
 default_prepare_data_AD_args.trg_save_data = f"dataset/processed/{data_folder}"
+default_prepare_data_AD_args.log_file = f"results/{data_folder}/log.txt"
 default_prepare_data_AD_args.day_size = day_size
 default_prepare_data_AD_args.n_days = n_days
 default_prepare_data_AD_args.day_stride = day_stride
@@ -59,6 +69,7 @@ default_AD_args.train_data_path = [f"dataset/processed/{data_folder}/ad_train_co
 default_AD_args.test_data_path = [f"dataset/processed/{data_folder}/ad_train_contam", f"dataset/processed/{data_folder}/ad_test_contam"]
 default_AD_args.nbr_timesteps = window_size
 default_AD_args.contam_ratio = contam_ratio
+default_AD_args.model_save_path = f"results/{data_folder}/weights"
 
 AD_run(default_AD_args)
 
@@ -89,7 +100,7 @@ infer_dataloader = DataLoader(load_dataset, batch_size=32, shuffle=False) # GT n
 # load AD model
 default_args = AD_main.parse_args()
 coreset = AD_main.get_coreset(default_args, device)
-coreset.load_from_path("results/weights", device, AD_main.common.FaissNN(False, 4))
+coreset.load_from_path(default_AD_args.model_save_path, device, AD_main.common.FaissNN(False, 4))
 
 # infer AD model
 scores, heatmaps, _, _, _ = coreset.predict(infer_dataloader)
@@ -99,11 +110,6 @@ scores = np.mean(scores, axis=0)
 heatmaps = np.array(heatmaps)
 heatmaps = (heatmaps - coreset.min_heatmap_scores) / (coreset.max_heatmap_scores - coreset.min_heatmap_scores)
 heatmaps = np.mean(heatmaps, axis=-1)
-
-save_imputation_train_path = f"dataset/processed/{data_folder}/ai_train/data"
-path_list = [save_imputation_train_path, "results/heatmaps", "results/imputation", ]
-for path in path_list:
-    make_clean_folder(path)
 
 anomaly_free = []
 anomalous = []
@@ -118,7 +124,6 @@ with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Impu
 
             if score<=coreset.window_threshold:
                 anomaly_free.append((timeserie, date_range)) # each timeseries[k] has a date_range[k] associated
-                # TODO save anomaly free samples to train Imputation model HERE
 
             else:
                 # high anomaly score patch
@@ -160,8 +165,7 @@ with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Impu
                     ax2.tick_params('y', colors='blue')
                     plt.title('Time Series with Anomaly Score Heatmap')
                     plt.legend()
-                    os.makedirs("results/heatmaps", exist_ok=True, )
-                    plt.savefig(f"results/heatmaps/{i}.png")
+                    plt.savefig(f"{save_heatmaps_path}/{i}.png")
                     plt.close()
 
             i += 1
@@ -184,6 +188,8 @@ default_AI_args = AI_parse_args()
 default_AI_args.seq_len = window_size
 default_AI_args.mask_size = patch_size
 default_AI_args.dataset_root = save_imputation_train_path
+default_AI_args.checkpoint_path = f"results/{data_folder}/weights/checkpoint_ai.pt"
+default_AD_args.save_folder = f"results/{data_folder}/ai_eval_plots"
 
 if not imp_trained:
     AI_train(default_AI_args)
@@ -191,11 +197,6 @@ if not imp_trained:
 # infer anomaly detection and impute anomalies on anomalous samples
 loaded_model = LSTM_AE(default_AI_args.seq_len, default_AI_args.no_features, default_AI_args.embedding_dim, default_AI_args.learning_rate, default_AI_args.every_epoch_print, default_AI_args.epochs, default_AI_args.patience, default_AI_args.max_grad_norm)
 loaded_model.load()
-
-save_imputation_path = os.path.join("results", "imputation")
-os.makedirs(save_imputation_path, exist_ok=True)
-for f in glob.glob(os.path.join(save_imputation_path, "*")):
-    os.remove(f)
 
 cleaned_anomalies = []
 for i, (masked_data, mask, date_range) in enumerate(anomalous):
@@ -255,13 +256,14 @@ print(f"saved cleaned load serie to dataset/processed/{data_folder}/load_cleaned
 # prepare data for forecasting    
 # ---
 
-from src.data.prepare_data_LF import run as prepare_data_LF_run
-from src.data.prepare_data_LF import parse_args as prepare_data_LF_parse_args
+from data.prepare_data_LF import run as prepare_data_LF_run
+from data.prepare_data_LF import parse_args as prepare_data_LF_parse_args
 
 default_prepare_data_LF_args = prepare_data_LF_parse_args()
 default_prepare_data_LF_args.n_days = forecast_window_size
 default_prepare_data_LF_args.raw_test_data_csv = f"dataset/processed/{data_folder}/load_clean_lf_test.csv"
 default_prepare_data_LF_args.trg_test_save_data = f"dataset/processed/{data_folder}/lf_test_clean"
+default_prepare_data_LF_args.log_file = f"results/{data_folder}/log.txt"
 
 # cleaned data
 default_prepare_data_LF_args.raw_train_data_csv = f"dataset/processed/{data_folder}/load_cleaned.csv"
@@ -273,3 +275,32 @@ default_prepare_data_LF_args.raw_train_data_csv = f"dataset/processed/{data_fold
 default_prepare_data_LF_args.trg_train_save_data = f"dataset/processed/{data_folder}/lf_contam"
 prepare_data_LF_run(default_prepare_data_LF_args)
 
+
+# ---
+# run forecasting model
+# ---
+
+# run forecasting model on cleaned data
+from forecasting.main import run as LF_run
+from forecasting.main import parse_args as LF_parse_args
+
+default_LF_args = LF_parse_args()
+default_LF_args.timesteps = day_size * forecast_window_size
+default_LF_args.sequence_split = (forecast_window_size-1)/forecast_window_size
+default_LF_args.results_file = f"results/results.txt"
+
+# run forecasting model on cleaned data
+default_LF_args.train_dataset_path = f"dataset/processed/{data_folder}/lf_cleaned"
+default_LF_args.test_dataset_path = f"dataset/processed/{data_folder}/lf_test_clean"
+default_LF_args.save_plots_path = f"results/{data_folder}/forecasting/cleaned"
+default_LF_args.checkpoint_path = f"results/{data_folder}/weights/checkpoint_lf_clean.pt"
+
+LF_run(default_LF_args)
+
+# run forecasting model on contamined data
+default_LF_args.train_dataset_path = f"dataset/processed/{data_folder}/lf_contam"
+default_LF_args.test_dataset_path = f"dataset/processed/{data_folder}/lf_test_clean"
+default_LF_args.save_plots_path = f"results/{data_folder}/forecasting/contam"
+default_LF_args.checkpoint_path = f"results/{data_folder}/weights/checkpoint_lf_contam.pt"
+
+LF_run(default_LF_args)

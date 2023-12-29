@@ -173,7 +173,7 @@ def run(args):
     
     LOGGER.info("Computing evaluation metrics.")
     # sequence wise evaluation
-    results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom)
+    results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.results_file)
     window_threshold = results["best_threshold"]
     # window_threshold = np.percentile(scores, 90); print(f"percentile threshold: {threshold}") # for unsupervised INPG dataset
     # window_threshold = 0.00008

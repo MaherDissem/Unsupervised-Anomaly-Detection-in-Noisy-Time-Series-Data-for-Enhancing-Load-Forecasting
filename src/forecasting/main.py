@@ -22,12 +22,12 @@ import warnings; warnings.simplefilter('ignore')
 # ---
 parser = argparse.ArgumentParser(description="Runs Load Forecasting experiments")
 # dataset
-parser.add_argument("--train_dataset_path", default="dataset/processed/AEMO/NSW/lf_cleaned", help="Path to train dataset") # dataset parameter
+parser.add_argument("--train_dataset_path", default="dataset/processed/AEMO/NSW/lf_contam", help="Path to train dataset") # dataset parameter
 parser.add_argument("--test_dataset_path", default="dataset/processed/AEMO/NSW/lf_test_clean", help="Path to clean dataset for testing") # dataset parameter
 # sequence
-parser.add_argument("--timesteps", type=int, default=48*3, help="Number of timesteps")          # dataset parameter
+parser.add_argument("--timesteps", type=int, default=48*5, help="Number of timesteps")          # dataset parameter
 parser.add_argument("--nbr_var", type=int, default=1, help="Number of variables")
-parser.add_argument("--sequence_split", type=float, default=2/3, help="Sequence split ratio")   # dataset parameter
+parser.add_argument("--sequence_split", type=float, default=4/5, help="Sequence split ratio")   # dataset parameter
 # model parameters
 parser.add_argument("--loss_type", type=str, default="mse", help="Loss function to optimize (mse/dilate)")
 parser.add_argument("--hidden_size", type=int, default=128, help="Hidden size of the model")
@@ -43,7 +43,7 @@ parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--checkpoint_path", default="src/forecasting/checkpoint.pt", help="Path to save checkpoint")
 # visualization
 parser.add_argument("--n_plots", type=int, default=32, help="Number of plots")
-parser.add_argument("--save_plots_path", default="results/forecasting/cleaned", help="Path to save plots") # dataset parameter
+parser.add_argument("--save_plots_path", default="results/forecasting/contam", help="Path to save plots") # dataset parameter
 parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
 args = parser.parse_args()
 
@@ -59,19 +59,19 @@ N_input = int(args.sequence_split*args.timesteps)  # input length
 N_output = args.timesteps - N_input                # target length
 
 train_data = F_Dataset(args.train_dataset_path, ts_split=args.sequence_split)  
-test_data = F_Dataset(args.test_dataset_path, ts_split=args.sequence_split)   # forecast target should be anomaly free, otherwise metric is not fair
+test_data = F_Dataset(args.test_dataset_path, ts_split=args.sequence_split)   # forecast target of test data should be anomaly free, otherwise metric is not fair
 
 trainloader = DataLoader(
     train_data,
     batch_size=args.batch_size,
-    shuffle=False,
+    shuffle=True,
     pin_memory=True,
     drop_last=True,
 )
 testloader = DataLoader(
     test_data,
     batch_size=args.batch_size,
-    shuffle=False,
+    shuffle=True,
     pin_memory=True,
     drop_last=True,
 ) 
@@ -106,6 +106,7 @@ train_loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss
     verbose=1,
 )
 
+os.makedirs(os.path.dirname(args.results_file), exist_ok=True)
 print(
     f"train_dataset_path: {args.train_dataset_path}\n\
     Final: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}",

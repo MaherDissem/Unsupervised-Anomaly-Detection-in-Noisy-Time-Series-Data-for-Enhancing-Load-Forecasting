@@ -14,24 +14,25 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser(description="Define hyperparameters for training")
     # data params
-    parser.add_argument("--dataset_root",        type=str,   default="dataset/processed/AEMO/NSW/ai_train",  help="Root directory of the dataset")
-    parser.add_argument("--split_ratio",         type=float, default=0.9,                                    help="Ratio for train-test split")
-    parser.add_argument("--seq_len",             type=int,   default=48*1,                                   help="Sequence length")
-    parser.add_argument("--no_features",         type=int,   default=1,                                      help="Number of features")
+    parser.add_argument("--dataset_root",        type=str,   default="dataset/processed/AEMO/NSW/ai_train/data",    help="Root directory of the dataset")
+    parser.add_argument("--split_ratio",         type=float, default=0.9,                                           help="Ratio for train-test split")
+    parser.add_argument("--seq_len",             type=int,   default=48*1,                                          help="Sequence length")
+    parser.add_argument("--no_features",         type=int,   default=1,                                             help="Number of features")
     # model params
-    parser.add_argument("--mask_size",           type=int,   default=8,                                      help="Length of the mask")
-    parser.add_argument("--embedding_dim",       type=int,   default=128,                                    help="Dimension of embedding")
-    parser.add_argument("--learning_rate",       type=float, default=1e-3,                                   help="Learning rate for the optimizer")
-    parser.add_argument("--batch_size",          type=float, default=32,                                     help="Batch size for training")
-    parser.add_argument("--seed",                type=int,   default=0,                                      help="Random seed")
+    parser.add_argument("--mask_size",           type=int,   default=8,                                             help="Length of the mask")
+    parser.add_argument("--embedding_dim",       type=int,   default=128,                                           help="Dimension of embedding")
+    parser.add_argument("--learning_rate",       type=float, default=1e-3,                                          help="Learning rate for the optimizer")
+    parser.add_argument("--batch_size",          type=float, default=32,                                            help="Batch size for training")
+    parser.add_argument("--seed",                type=int,   default=0,                                             help="Random seed")
+    parser.add_argument("--checkpoint_path",     type=str,   default="src/anomaly_imputation/checkpoint.pt",        help="Path to save checkpoint")
     # training params
-    parser.add_argument("--epochs",              type=int,   default=200,                                    help="Number of training epochs")
-    parser.add_argument("--patience",            type=int,   default=20,                                     help="Patience for early stopping")
-    parser.add_argument("--max_grad_norm",       type=float, default=0.05,                                   help="Maximum gradient norm for gradient clipping")
+    parser.add_argument("--epochs",              type=int,   default=200,                                           help="Number of training epochs")
+    parser.add_argument("--patience",            type=int,   default=20,                                            help="Patience for early stopping")
+    parser.add_argument("--max_grad_norm",       type=float, default=0.05,                                          help="Maximum gradient norm for gradient clipping")
     # logging params
-    parser.add_argument("--every_epoch_print",   type=int,   default=10,                                     help="Print results every n epochs")
-    parser.add_argument("--save_eval_plots",     type=bool,  default=True,                                   help="Save evaluation plots")
-    parser.add_argument("--save_folder",         type=str,   default="results/ai_eval_plots",                help="Folder to save evaluation plots")
+    parser.add_argument("--every_epoch_print",   type=int,   default=10,                                            help="Print results every n epochs")
+    parser.add_argument("--save_eval_plots",     type=bool,  default=True,                                          help="Save evaluation plots")
+    parser.add_argument("--save_folder",         type=str,   default="results/ai_eval_plots",                       help="Folder to save evaluation plots")
     return parser.parse_args()
 
 def get_data_loaders(dataset_root, split_ratio, mask_size, batch_size):
@@ -54,7 +55,7 @@ def get_data_loaders(dataset_root, split_ratio, mask_size, batch_size):
 
 def train(args):
     train_dataloader, test_dataloader = get_data_loaders(args.dataset_root, args.split_ratio, args.mask_size, args.batch_size)
-    model = LSTM_AE(args.seq_len, args.no_features, args.embedding_dim, args.learning_rate, args.every_epoch_print, args.epochs, args.patience, args.max_grad_norm)
+    model = LSTM_AE(args.seq_len, args.no_features, args.embedding_dim, args.learning_rate, args.every_epoch_print, args.epochs, args.patience, args.max_grad_norm, args.checkpoint_path, args.seed)
     loss_history = model.fit(train_dataloader)
 
     if args.save_eval_plots:
@@ -64,7 +65,7 @@ def train(args):
         plt.clf()
 
         del model
-        loaded_model = LSTM_AE(args.seq_len, args.no_features, args.embedding_dim, args.learning_rate, args.every_epoch_print, args.epochs, args.patience, args.max_grad_norm)
+        loaded_model = LSTM_AE(args.seq_len, args.no_features, args.embedding_dim, args.learning_rate, args.every_epoch_print, args.epochs, args.patience, args.max_grad_norm, args.checkpoint_path, args.seed)
         loaded_model.load()
 
         for i, batch in enumerate(test_dataloader): # batch_size=1

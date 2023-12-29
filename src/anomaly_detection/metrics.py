@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 def compute_timeseriewise_retrieval_metrics(
-    anomaly_prediction_weights, anomaly_ground_truth_labels
+    anomaly_prediction_weights, anomaly_ground_truth_labels, results_file
 ):
     """
     Computes retrieval statistics (AUROC, FPR, TPR).
@@ -34,7 +34,7 @@ def compute_timeseriewise_retrieval_metrics(
         where=(precision + recall) != 0,
     )
     k = f1_scores.argmax() # idx of best f1 score / threshold
-    draw_curve(fpr, tpr, auroc)
+    draw_curve(fpr, tpr, auroc, results_file)
 
     tn, fp, fn, tp = metrics.confusion_matrix(
         anomaly_ground_truth_labels, (anomaly_prediction_weights > thresholds[k]).astype(int)
@@ -127,7 +127,7 @@ def compute_pointwise_retrieval_metrics(predicted_masks, ground_truth_masks):
     }
 
 
-def draw_curve(fpr, tpr, auroc):
+def draw_curve(fpr, tpr, auroc, results_file):
     plt.plot(fpr, tpr, 'k--', label='ROC (area = {0:.4f})'.format(auroc), lw=2)
 
     plt.xlim([-0.05, 1.05])
@@ -152,6 +152,8 @@ def draw_curve(fpr, tpr, auroc):
     # plt.text(error, error_y, "({0}, {1:.4f})".format(error, error_y), color='k')
     # plt.text(miss_x, 1-miss, "({0:.4f}, {1})".format(miss_x, 1-miss), color='k')
     # plt.show()
-    path = 'results/out_figs/roc.png' 
+    
+    parent_dir = os.path.dirname(results_file)
+    path = parent_dir + "/roc_curve.png"
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    plt.savefig(path) # TODO make path a parameter
+    plt.savefig(path)

@@ -3,7 +3,6 @@ import torch.nn as nn
 from utils.early_stop import EarlyStopping
 from utils.utils import set_seed
 
-set_seed(0) # TODO move to parent caller
 
 # (1) Encoder
 class Encoder(nn.Module):
@@ -80,9 +79,10 @@ class LSTM_AE(nn.Module):
         final_loss: The final mean squared error of the autoencoder on the training set.
 
     """
-    def __init__(self, seq_len, no_features, embedding_dim, learning_rate=1e-3, every_epoch_print=100, epochs=10000, patience=20, max_grad_norm=0.005):
+    def __init__(self, seq_len, no_features, embedding_dim, learning_rate=1e-3, every_epoch_print=100, epochs=10000, patience=20, max_grad_norm=0.005, checkpoint_path='./checkpoint.pt', seed=0):
         super().__init__()
-        
+        set_seed(seed)
+
         self.seq_len = seq_len
         self.no_features = no_features
         self.embedding_dim = embedding_dim
@@ -98,7 +98,7 @@ class LSTM_AE(nn.Module):
         self.patience = patience
         self.max_grad_norm = max_grad_norm
         self.every_epoch_print = every_epoch_print
-        
+        self.checkpoint_path = checkpoint_path
     
     def forward(self, x):
         torch.manual_seed(0)
@@ -116,7 +116,7 @@ class LSTM_AE(nn.Module):
         optimizer = torch.optim.Adam(self.parameters(), lr = self.learning_rate)
         self.train()
         # initialize the early_stopping object
-        early_stopping = EarlyStopping(patience=self.patience, verbose=False)
+        early_stopping = EarlyStopping(patience=self.patience, verbose=False, checkpoint_path=self.checkpoint_path)
         loss_history = []
 
         for epoch in range(1 , self.epochs+1):
@@ -131,12 +131,10 @@ class LSTM_AE(nn.Module):
                 optimizer.zero_grad()
                 encoded, decoded = self(masked_ts)
 
-                running_loss = self.criterion(clean_ts , decoded)
-
-                # loss is difference between clean_ts and decoded for the masked_ts
-                # running_loss = self.criterion(clean_ts * mask, decoded * mask)
-                
+                running_loss = self.criterion(clean_ts , decoded)                   # option 1: calculate loss for the whole sequence
+                # running_loss = self.criterion(clean_ts * mask, decoded * mask)    # option 2: only calculate loss for the masked part
                 epoch_loss += running_loss.item()
+
                 # Backward pass
                 running_loss.backward()
                 nn.utils.clip_grad_norm_(self.parameters(), max_norm = self.max_grad_norm) # clipping avoids exploding gradients
@@ -155,17 +153,19 @@ class LSTM_AE(nn.Module):
             loss_history.append(epoch_loss)
         
         # load the last checkpoint with the best model (saved by EarlyStopping)
-        self.load_state_dict(torch.load('./checkpoint.pt'))
+        self.load_state_dict(torch.load(self.checkpoint_path))
         self.is_fitted = True
 
         return loss_history
     
-    def load(self, PATH='./checkpoint.pt'):
+    def load(self, PATH=None):
         """
         Loads the model's parameters from the path mentioned
         :param PATH: Should contain pickle file
         :return: None
         """
+        if PATH is None:
+            PATH = self.checkpoint_path
         self.is_fitted = True
         self.load_state_dict(torch.load(PATH))
 
