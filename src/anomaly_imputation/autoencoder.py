@@ -4,7 +4,6 @@ from utils.early_stop import EarlyStopping
 from utils.utils import set_seed
 
 
-# (1) Encoder
 class Encoder(nn.Module):
     def __init__(self, seq_len, no_features, embedding_size):
         super().__init__()
@@ -30,7 +29,6 @@ class Encoder(nn.Module):
         return torch.mean(x, dim=1)
     
     
-# (2) Decoder
 class Decoder(nn.Module):
     def __init__(self, seq_len, no_features, output_size):
         super().__init__()
@@ -58,7 +56,7 @@ class Decoder(nn.Module):
         out = self.fc(x)
         return out
     
-# (3) Autoencoder : putting the encoder and decoder together
+
 class LSTM_AE(nn.Module):
     """
     Parameters

@@ -1,15 +1,14 @@
 import sys
-sys.path.append("./src") # TODO: fix this hack
-
+sys.path.append("./src")
 import os
+import argparse
 import torch
 import matplotlib.pyplot as plt
 
-from .dataset import AI_Dataset # .dataset if called from pipeline.py
-from model import LSTM_AE
+from dataset_ai import AI_Dataset
+from autoencoder import LSTM_AE
 from utils.utils import set_seed
 
-import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Define hyperparameters for training")

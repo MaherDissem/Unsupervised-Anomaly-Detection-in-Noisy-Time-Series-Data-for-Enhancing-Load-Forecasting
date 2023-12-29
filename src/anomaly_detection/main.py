@@ -15,7 +15,7 @@ import metrics as metrics
 import sampler as sampler
 import softpatch as softpatch
 from postprocessing import heatmap_postprocess
-from dataset import AD_Dataset
+from dataset_ad import AD_Dataset
 
 sys.path.insert(0, os.getcwd()) 
 from src.utils.utils import set_seed

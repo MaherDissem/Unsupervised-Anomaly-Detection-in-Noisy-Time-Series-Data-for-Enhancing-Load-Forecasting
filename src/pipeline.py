@@ -12,11 +12,8 @@ import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 
-from anomaly_detection import main as AD_main
-from anomaly_detection.postprocessing import heatmap_postprocess
 from utils.utils import set_seed
 from utils.utils import make_clean_folder
-
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 set_seed(0)
@@ -62,6 +59,9 @@ prepare_data_AD_run(default_prepare_data_AD_args)
 # ---
 from anomaly_detection.main import run as AD_run
 from anomaly_detection.main import parse_args as AD_parse_args
+from anomaly_detection.main import get_coreset
+from anomaly_detection.common import FaissNN
+from anomaly_detection.postprocessing import heatmap_postprocess
 
 default_AD_args = AD_parse_args()
 default_AD_args.train_data_path = [f"dataset/processed/{data_folder}/ad_train_contam", f"dataset/processed/{data_folder}/ad_test_contam"]
@@ -93,13 +93,12 @@ def sliding_windows(load_serie, window_size, day_stride, day_size):
 
 load_windows, dates = sliding_windows(load_serie, window_size, day_stride, day_size)
 load_windows = np.array(load_windows)
-load_dataset = TensorDataset(torch.tensor(load_windows, dtype=torch.float)) # batch_size x seq_len x 1=feature_dim
-infer_dataloader = DataLoader(load_dataset, batch_size=32, shuffle=False) # GT not needed
+load_dataset = TensorDataset(torch.tensor(load_windows, dtype=torch.float))  # batch_size x seq_len x 1=feature_dim
+infer_dataloader = DataLoader(load_dataset, batch_size=32, shuffle=False)    # GT not needed
 
 # load AD model
-default_args = AD_main.parse_args()
-coreset = AD_main.get_coreset(default_args, device)
-coreset.load_from_path(default_AD_args.model_save_path, device, AD_main.common.FaissNN(False, 4))
+coreset = get_coreset(default_AD_args, device)
+coreset.load_from_path(default_AD_args.model_save_path, device, FaissNN(False, 4))
 
 # infer AD model
 scores, heatmaps, _, _, _ = coreset.predict(infer_dataloader)
@@ -165,9 +164,9 @@ for timeserie, date_range in anomaly_free:
 print(f"saved impuation plots to {save_imputation_train_path}.npy")
 
 # train anomaly imputation model on anomaly free samples
-from anomaly_imputation.train import parse_args as AI_parse_args
-from anomaly_imputation.train import train as AI_train
-from anomaly_imputation.model import LSTM_AE
+from anomaly_imputation.main import parse_args as AI_parse_args
+from anomaly_imputation.main import train as AI_train
+from anomaly_imputation.autoencoder import LSTM_AE
 
 default_AI_args = AI_parse_args()
 default_AI_args.seq_len = window_size
