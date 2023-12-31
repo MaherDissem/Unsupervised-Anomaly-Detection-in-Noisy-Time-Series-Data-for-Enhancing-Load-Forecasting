@@ -42,18 +42,18 @@ for path in path_list:
 # ---
 # Generate synthetic data
 # ---
-from data.prepare_data_AD import run as prepare_data_AD_run
-from data.prepare_data_AD import parse_args as prepare_data_AD_parse_args
+from data_processing.process_aemo import run as prepare_data_AD_run
+from data_processing.process_aemo import parse_args as prepare_data_AD_parse_args
 
-default_prepare_data_AD_args = prepare_data_AD_parse_args()
-default_prepare_data_AD_args.raw_data_csv = raw_data_root = f"dataset/{data_folder}"
-default_prepare_data_AD_args.trg_save_data = f"dataset/processed/{data_folder}"
-default_prepare_data_AD_args.log_file = f"results/{data_folder}/log.txt"
-default_prepare_data_AD_args.day_size = day_size
-default_prepare_data_AD_args.n_days = n_days
-default_prepare_data_AD_args.day_stride = day_stride
+default_process_data_AD_args = prepare_data_AD_parse_args()
+default_process_data_AD_args.raw_data_csv = raw_data_root = f"dataset/{data_folder}"
+default_process_data_AD_args.trg_save_data = f"dataset/processed/{data_folder}"
+default_process_data_AD_args.log_file = f"results/{data_folder}/log.txt"
+default_process_data_AD_args.day_size = day_size
+default_process_data_AD_args.n_days = n_days
+default_process_data_AD_args.day_stride = day_stride
 
-prepare_data_AD_run(default_prepare_data_AD_args)
+prepare_data_AD_run(default_process_data_AD_args)
 
 # ---
 # train AD model
@@ -241,26 +241,26 @@ print(f"saved cleaned load serie to dataset/processed/{data_folder}/load_cleaned
 # prepare data for forecasting    
 # ---
 
-from data.prepare_data_LF import run as prepare_data_LF_run
-from data.prepare_data_LF import parse_args as prepare_data_LF_parse_args
+from data_processing.process_LF import run as prepare_data_LF_run
+from data_processing.process_LF import parse_args as prepare_data_LF_parse_args
 
-default_prepare_data_LF_args = prepare_data_LF_parse_args()
-default_prepare_data_LF_args.n_days = forecast_window_size
-default_prepare_data_LF_args.day_size = day_size
-default_prepare_data_LF_args.day_stride = forecast_day_stride
-default_prepare_data_LF_args.raw_test_data_csv = f"dataset/processed/{data_folder}/load_clean_lf_test.csv"
-default_prepare_data_LF_args.trg_test_save_data = f"dataset/processed/{data_folder}/lf_test_clean"
-default_prepare_data_LF_args.log_file = f"results/{data_folder}/log.txt"
+default_process_data_LF_args = prepare_data_LF_parse_args()
+default_process_data_LF_args.n_days = forecast_window_size
+default_process_data_LF_args.day_size = day_size
+default_process_data_LF_args.day_stride = forecast_day_stride
+default_process_data_LF_args.raw_test_data_csv = f"dataset/processed/{data_folder}/load_clean_lf_test.csv"
+default_process_data_LF_args.trg_test_save_data = f"dataset/processed/{data_folder}/lf_test_clean"
+default_process_data_LF_args.log_file = f"results/{data_folder}/log.txt"
 
 # cleaned data
-default_prepare_data_LF_args.raw_train_data_csv = f"dataset/processed/{data_folder}/load_cleaned.csv"
-default_prepare_data_LF_args.trg_train_save_data = f"dataset/processed/{data_folder}/lf_cleaned"
-prepare_data_LF_run(default_prepare_data_LF_args)
+default_process_data_LF_args.raw_train_data_csv = f"dataset/processed/{data_folder}/load_cleaned.csv"
+default_process_data_LF_args.trg_train_save_data = f"dataset/processed/{data_folder}/lf_cleaned"
+prepare_data_LF_run(default_process_data_LF_args)
 
 # contamined data
-default_prepare_data_LF_args.raw_train_data_csv = f"dataset/processed/{data_folder}/load_contam.csv"
-default_prepare_data_LF_args.trg_train_save_data = f"dataset/processed/{data_folder}/lf_contam"
-prepare_data_LF_run(default_prepare_data_LF_args)
+default_process_data_LF_args.raw_train_data_csv = f"dataset/processed/{data_folder}/load_contam.csv"
+default_process_data_LF_args.trg_train_save_data = f"dataset/processed/{data_folder}/lf_contam"
+prepare_data_LF_run(default_process_data_LF_args)
 
 
 # ---
