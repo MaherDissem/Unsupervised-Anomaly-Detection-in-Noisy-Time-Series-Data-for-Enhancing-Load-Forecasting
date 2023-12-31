@@ -7,7 +7,7 @@ import pandas as pd
 import sys
 sys.path.append("./src") # TODO: fix this hack
 
-from data.synth_anomaly import SynthLoadAnomaly
+from data_processing.synth_anomaly import SynthLoadAnomaly
 from utils.utils import set_seed
 
 
