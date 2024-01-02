@@ -43,9 +43,9 @@ def run(args):
             csv_file = pd.read_excel(csv_path)
             csv_file = csv_file[[args.date_feature_name, args.load_feature_name]]
             csv_file[args.date_feature_name] = pd.to_datetime(csv_file[args.date_feature_name], format="%Y-%m-%d %H:%M:%S")
-            # drop days with high percentage of missing values
-            aonm_perc = csv_file[args.load_feature_name].isna().sum()/len(csv_file[args.load_feature_name])*100
-            if aonm_perc > 10: continue
+            aonm_perc = csv_file[args.load_feature_name].isna().sum()/len(csv_file[args.load_feature_name])
+            zeros_perc = (csv_file[args.load_feature_name] == 0).sum()/len(csv_file[args.load_feature_name])
+            if aonm_perc > 0 or zeros_perc>0.05: continue
         except Exception as e:
             print(e)
         load = pd.concat([load, csv_file], axis=0)
@@ -59,9 +59,9 @@ def run(args):
     load = load[~load.index.duplicated()]
 
     # replace missing values (if any) by the value of the previous week
-    idx = pd.date_range(load.index[0], load.index[-1], freq="30T")
-    load = load.reindex(idx, fill_value=np.nan)
-    load = load.fillna(load.shift(args.day_size*7))
+    # idx = pd.date_range(load.index[0], load.index[-1], freq="30T")
+    # load = load.reindex(idx, fill_value=np.nan)
+    # load = load.fillna(load.shift(args.day_size*7))
 
     # split contam data into train and test sets for anomaly detection model
     N = int(args.contam_clean_ratio*len(load))//args.day_size*args.day_size
