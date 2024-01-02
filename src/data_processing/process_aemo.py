@@ -134,7 +134,7 @@ def run(args):
     ad_test_windows, gt_ad_test_windows, date_ad_test_windows = build_dataset(ad_test_load, args.n_days, args.day_size, args.day_stride, args.contam_ratio, contam_data=True)
 
     day_contam_ratio = args.contam_ratio*1/args.n_days
-    datapoint_contam_ratio = 1/args.day_size*day_contam_ratio
+    datapoint_contam_ratio = np.array(gt_ad_train_windows+gt_ad_test_windows).sum() / (len(gt_ad_train_windows+gt_ad_test_windows)*args.day_size)
 
     # normalize data
     min_quantile = 0.01

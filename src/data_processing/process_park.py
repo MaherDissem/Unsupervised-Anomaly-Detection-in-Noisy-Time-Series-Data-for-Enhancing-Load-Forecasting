@@ -43,6 +43,9 @@ def run(args):
             csv_file = pd.read_excel(csv_path)
             csv_file = csv_file[[args.date_feature_name, args.load_feature_name]]
             csv_file[args.date_feature_name] = pd.to_datetime(csv_file[args.date_feature_name], format="%Y-%m-%d %H:%M:%S")
+            # drop days with high percentage of missing values
+            aonm_perc = csv_file[args.load_feature_name].isna().sum()/len(csv_file[args.load_feature_name])*100
+            if aonm_perc > 10: continue
         except Exception as e:
             print(e)
         load = pd.concat([load, csv_file], axis=0)
@@ -137,7 +140,7 @@ def run(args):
     ad_test_windows, gt_ad_test_windows, date_ad_test_windows = build_dataset(ad_test_load, args.n_days, args.day_size, args.day_stride, args.contam_ratio, contam_data=True)
 
     day_contam_ratio = args.contam_ratio*1/args.n_days
-    datapoint_contam_ratio = 1/args.day_size*day_contam_ratio
+    datapoint_contam_ratio = np.array(gt_ad_train_windows+gt_ad_test_windows).sum() / (len(gt_ad_train_windows+gt_ad_test_windows)*args.day_size)
 
     # normalize data
     min_quantile = 0.01
@@ -207,7 +210,6 @@ def run(args):
     gt_full_load = pd.Series(gt_full_load, index=scaled_load.index[:len(gt_full_load)]).rename("gt", inplace=True)
     pd.Series(gt_full_load).to_csv(os.path.join(args.trg_save_data, "load_contam_gt.csv"))
     print('Dataset ready!')
-    print(f'percentage of nan values: {scaled_load.isna().sum()[args.load_feature_name]/len(scaled_load)*100:.2f}%')
 
 
 if __name__ == "__main__":
