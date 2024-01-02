@@ -19,7 +19,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 set_seed(0)
 
 # parameters
-data_folder = "AEMO/QLD"            # dataset folder, must be in dataset/processed/
+data_folder = "Park/Commercial/30_minutes"            # dataset folder, must be in dataset/processed/
 day_size = 48                       # dataset resolution
 n_days = 1                          # window size for anomaly detection
 window_size = day_size * n_days     # window size for anomaly detection
@@ -46,7 +46,7 @@ from data_processing.process_aemo import run as prepare_data_AD_run
 from data_processing.process_aemo import parse_args as prepare_data_AD_parse_args
 
 default_process_data_AD_args = prepare_data_AD_parse_args()
-default_process_data_AD_args.raw_data_csv = raw_data_root = f"dataset/{data_folder}"
+default_process_data_AD_args.raw_data_root = raw_data_root = f"dataset/{data_folder}"
 default_process_data_AD_args.trg_save_data = f"dataset/processed/{data_folder}"
 default_process_data_AD_args.log_file = f"results/{data_folder}/log.txt"
 default_process_data_AD_args.day_size = day_size
