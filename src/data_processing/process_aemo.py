@@ -45,6 +45,8 @@ def run(args):
             continue
         load = pd.concat([load, csv_file], axis=0)
 
+    if len(load) == 0: raise Exception("No data found!")
+
     load.set_index(args.date_feature_name, inplace=True)
 
     # remove duplicate indices
