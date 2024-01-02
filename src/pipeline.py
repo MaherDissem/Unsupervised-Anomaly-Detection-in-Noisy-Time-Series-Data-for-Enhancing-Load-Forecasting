@@ -19,16 +19,16 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 set_seed(0)
 
 # parameters
-data_folder = "Park/Commercial/30_minutes"            # dataset folder, must be in dataset/processed/
-day_size = 48                       # dataset resolution
-n_days = 1                          # window size for anomaly detection
-window_size = day_size * n_days     # window size for anomaly detection
-day_stride = 1                      # for anomaly detection, seperate stride for forecasting
-contam_ratio = 0.1                  # contamination ratio for anomaly detection (% of days with anomalies, one anomaly per day)
-forecast_window_size = 5            # window size for forecasting
-forecast_day_stride = 1             # stride for forecasting
-save_figs = True                    # save plots of anomaly detection and imputation
-imp_trained = False                 # if True, skip training of anomaly imputation model
+data_folder = "Park/Commercial/30_minutes"      # dataset folder, must be in dataset/processed/
+day_size = 48                                   # dataset resolution
+n_days = 1                                      # window size for anomaly detection
+window_size = day_size * n_days                 # window size for anomaly detection
+day_stride = 1                                  # for anomaly detection, seperate stride for forecasting
+contam_ratio = 0.1                              # contamination ratio for anomaly detection (% of days with anomalies, one anomaly per day)
+forecast_window_size = 5                        # window size for forecasting
+forecast_day_stride = 1                         # stride for forecasting
+save_figs = True                                # save plots of anomaly detection and imputation
+imp_trained = False                             # if True, skip training of anomaly imputation model
 
 # prepare directories for results/plots/weights saving
 save_imputation_train_path = f"dataset/processed/{data_folder}/ai_train/data"
@@ -42,11 +42,14 @@ for path in path_list:
 # ---
 # Generate synthetic data
 # ---
-from data_processing.process_aemo import run as prepare_data_AD_run
-from data_processing.process_aemo import parse_args as prepare_data_AD_parse_args
+# from data_processing.process_aemo import run as prepare_data_AD_run
+# from data_processing.process_aemo import parse_args as prepare_data_AD_parse_args
+
+from data_processing.process_park import run as prepare_data_AD_run
+from data_processing.process_park import parse_args as prepare_data_AD_parse_args
 
 default_process_data_AD_args = prepare_data_AD_parse_args()
-default_process_data_AD_args.raw_data_root = raw_data_root = f"dataset/{data_folder}"
+default_process_data_AD_args.raw_data_root = f"dataset/raw/{data_folder}"
 default_process_data_AD_args.trg_save_data = f"dataset/processed/{data_folder}"
 default_process_data_AD_args.log_file = f"results/{data_folder}/log.txt"
 default_process_data_AD_args.day_size = day_size
@@ -70,6 +73,7 @@ default_AD_args.test_data_path = [f"dataset/processed/{data_folder}/ad_train_con
 default_AD_args.nbr_timesteps = window_size
 default_AD_args.contam_ratio = contam_ratio
 default_AD_args.model_save_path = f"results/{data_folder}/weights"
+# default_AD_args.without_soft_weight = True # set true in case of nan values in data
 
 AD_run(default_AD_args)
 
@@ -126,7 +130,7 @@ with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Impu
 
             else:
                 anom_idx = heatmap_postprocess(timeserie, heatmap, 
-                                               flag_highest_patch=False, extend_to_patch=True, 
+                                               flag_highest_patch=True, extend_to_patch=True, 
                                                anom_idx_only=True)
                 
                 masked_data = timeserie.clone()
@@ -231,8 +235,9 @@ for timeserie, date in cleaned_dataset:
 
 # save cleaned data
 cleaned_load_serie = pd.DataFrame(continuous_serie, columns=["timeserie", "date"])
-cleaned_load_serie.rename(columns={'timeserie': 'TOTALDEMAND'}, inplace=True)
-cleaned_load_serie.to_csv(f"dataset/processed/{data_folder}/load_cleaned.csv", columns=["date", 'TOTALDEMAND'], index=False)
+feat_name = pd.read_csv(f"dataset/processed/{data_folder}/load_clean_lf_test.csv", index_col=0).columns[0]
+cleaned_load_serie.rename(columns={'timeserie': feat_name}, inplace=True)
+cleaned_load_serie.to_csv(f"dataset/processed/{data_folder}/load_cleaned.csv", columns=["date", feat_name], index=False)
 
 print(f"saved cleaned load serie to dataset/processed/{data_folder}/load_cleaned.csv")
 
@@ -248,6 +253,7 @@ default_process_data_LF_args = prepare_data_LF_parse_args()
 default_process_data_LF_args.n_days = forecast_window_size
 default_process_data_LF_args.day_size = day_size
 default_process_data_LF_args.day_stride = forecast_day_stride
+default_process_data_LF_args.feat_feature_name = feat_name
 default_process_data_LF_args.raw_test_data_csv = f"dataset/processed/{data_folder}/load_clean_lf_test.csv"
 default_process_data_LF_args.trg_test_save_data = f"dataset/processed/{data_folder}/lf_test_clean"
 default_process_data_LF_args.log_file = f"results/{data_folder}/log.txt"
