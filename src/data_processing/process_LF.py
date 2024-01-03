@@ -35,6 +35,12 @@ def run(args):
     train_data = pd.read_csv(args.raw_train_data_csv)
     test_data = pd.read_csv(args.raw_test_data_csv)
 
+    train_data[args.date_feature_name] = pd.to_datetime(train_data[args.date_feature_name], format="%Y-%m-%d %H:%M:%S")
+    test_data[args.date_feature_name] = pd.to_datetime(test_data[args.date_feature_name], format="%Y-%m-%d %H:%M:%S")
+
+    train_data.set_index(args.date_feature_name, inplace=True)
+    test_data.set_index(args.date_feature_name, inplace=True)
+
     def extract_consec_days(data, day0, n_days, day_size):
         """return n_days consecutive days starting at day0 from feat dataframe"""
 
