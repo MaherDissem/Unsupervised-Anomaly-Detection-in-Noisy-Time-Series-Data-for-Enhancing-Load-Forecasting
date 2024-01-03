@@ -35,7 +35,7 @@ def run(args):
     train_data = pd.read_csv(args.raw_train_data_csv)
     test_data = pd.read_csv(args.raw_test_data_csv)
 
-    def extract_consec_days(feat, day0, n_days, day_size):
+    def extract_consec_days(data, day0, n_days, day_size):
         """return n_days consecutive days starting at day0 from feat dataframe"""
 
         sequence, gt = [], []
@@ -43,34 +43,40 @@ def run(args):
         end = start + day_size
 
         for day in range(n_days):
-            sequence.extend(feat[start: end])
+            sequence.extend(data[args.load_feature_name].values[start: end])
             start += day_size
             end += day_size
         return np.array(sequence), np.array(gt)
 
     def build_dataset(data, n_days, day_size, day_stride):
+        # TODO add exclusind corrupt data
+        # TODO save dates
         """
             build a dataset from feat dataframe using a sliding window of size n_days and stride of 1 day 
             while contamining the data with synthetic anomalies
         """        
         time_wind = []
         gt_time_wind = []
-        feat = data[args.feat_feature_name].values
+        datetime_wind = []
 
         day_idx = 0
-        while day_idx < len(feat)//day_size - n_days:
+        while day_idx < len(data)//day_size - n_days:
             day0 = day_idx*day_size
-            sequence, gt = extract_consec_days(feat, day0, n_days, day_size)
+            sequence, gt = extract_consec_days(data, day0, n_days, day_size)
 
             time_wind.append(sequence)
             gt_time_wind.append(gt)
+            first_date = str(data.index[day0]).replace(':', '')
+            last_date = str(data.index[day0 + n_days*day_size]).replace(':', '')
+            datetime_wind.append(f"{first_date} - {last_date}")
+
             day_idx += day_stride
 
-        return time_wind, gt_time_wind
+        return time_wind, gt_time_wind, datetime_wind
 
 
-    train_windows, gt_train_windows = build_dataset(train_data, args.n_days, args.day_size, args.day_stride)
-    test_windows, _ = build_dataset(test_data, args.n_days, args.day_size, args.day_stride)
+    train_windows, gt_train_windows, date_train_windows = build_dataset(train_data, args.n_days, args.day_size, args.day_stride)
+    test_windows, _, date_test_windows = build_dataset(test_data, args.n_days, args.day_size, args.day_stride)
 
     # save data
     # remove existing files in save target root folder
@@ -85,14 +91,14 @@ def run(args):
     # os.makedirs(os.path.join(args.trg_train_save_data, "gt"), exist_ok=True)
 
     # save data
-    for i, sample in enumerate(test_windows):
+    for i, sample, sample_date in enumerate(zip(test_windows, date_test_windows)):
         if np.isnan(sample).any(): continue
-        np.save(os.path.join(args.trg_test_save_data, "data", f"{i}.npy"), sample)
+        np.save(os.path.join(args.trg_test_save_data, "data", sample_date), sample)
 
-    for i, (sample, sample_gt) in enumerate(zip(train_windows, gt_train_windows)):
+    for i, (sample, sample_gt, sample_date) in enumerate(zip(train_windows, gt_train_windows, date_train_windows)):
         if np.isnan(sample).any(): continue
-        np.save(os.path.join(args.trg_train_save_data, "data", f"{i}.npy"), sample)
-        # np.save(os.path.join(args.trg_train_save_data, "gt", f"{i}.npy"), sample_gt)
+        np.save(os.path.join(args.trg_train_save_data, "data", sample_date), sample)
+        # np.save(os.path.join(args.trg_train_save_data, "gt", sample_date), sample_gt)
 
     # log results
     print(args, file=open(args.log_file, "a"))
@@ -103,5 +109,5 @@ def run(args):
 if __name__ == "__main__":
     args = parse_args()
     run(args)
-    print("Done!")
+    print("Forecasting data ready!")
 
