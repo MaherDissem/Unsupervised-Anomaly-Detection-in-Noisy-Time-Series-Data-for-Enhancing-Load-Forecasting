@@ -23,8 +23,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 set_seed(0)
 
 # parameters
-data_folder = "Park/Office/30_minutes"          # dataset folder, must be in dataset/processed/
-day_size = 48                                   # dataset resolution
+data_folder = "INPG"          # dataset folder, must be in dataset/processed/
+day_size = 24                                   # dataset resolution
 n_days = 1                                      # window size for anomaly detection
 window_size = day_size * n_days                 # window size for anomaly detection
 day_stride = 1                                  # for anomaly detection, seperate stride for forecasting
@@ -38,8 +38,10 @@ imp_trained = False                             # if True, skip training of anom
 save_imputation_train_path = f"dataset/processed/{data_folder}/ai_train/data"
 save_heatmaps_path = f"results/{data_folder}/heatmaps"
 save_imputation_path = f"results/{data_folder}/imputation"
+save_forecasting_cleaned_path = f"results/{data_folder}/forecasting/cleaned"
+save_forecasting_contam_path = f"results/{data_folder}/forecasting/contam"
 
-path_list = [save_imputation_train_path, save_heatmaps_path, save_imputation_path]
+path_list = [save_imputation_train_path, save_heatmaps_path, save_imputation_path, save_forecasting_cleaned_path, save_forecasting_contam_path]
 for path in path_list:
     make_clean_folder(path)
 
@@ -49,8 +51,11 @@ for path in path_list:
 # from data_processing.process_aemo import run as prepare_data_AD_run
 # from data_processing.process_aemo import parse_args as prepare_data_AD_parse_args
 
-from data_processing.process_park import run as prepare_data_AD_run
-from data_processing.process_park import parse_args as prepare_data_AD_parse_args
+# from data_processing.process_park import run as prepare_data_AD_run
+# from data_processing.process_park import parse_args as prepare_data_AD_parse_args
+    
+from data_processing.process_INPG import run as prepare_data_AD_run
+from data_processing.process_INPG import parse_args as prepare_data_AD_parse_args
 
 default_process_data_AD_args = prepare_data_AD_parse_args()
 default_process_data_AD_args.raw_data_root = f"dataset/raw/{data_folder}"
@@ -87,7 +92,6 @@ AD_run(default_AD_args)
 
 # load continuous "load.csv" data
 load_serie = pd.read_csv(f"dataset/processed/{data_folder}/load_contam.csv", index_col=0, parse_dates=True)
-gt_serie = pd.read_csv(f"dataset/processed/{data_folder}/load_contam_gt.csv", index_col=0)
 
 # transform into sliding windows (same parameters as AD training)
 def sliding_windows(load_serie, window_size, day_stride, day_size):
@@ -250,8 +254,11 @@ print(f"saved cleaned load serie to dataset/processed/{data_folder}/load_cleaned
 # prepare data for forecasting    
 # ---
 
-from data_processing.process_LF import run as prepare_data_LF_run
-from data_processing.process_LF import parse_args as prepare_data_LF_parse_args
+# from data_processing.process_LF import run as prepare_data_LF_run
+# from data_processing.process_LF import parse_args as prepare_data_LF_parse_args
+
+from data_processing.process_LF_INPG import run as prepare_data_LF_run
+from data_processing.process_LF_INPG import parse_args as prepare_data_LF_parse_args
 
 default_process_data_LF_args = prepare_data_LF_parse_args()
 default_process_data_LF_args.n_days = forecast_window_size
@@ -293,7 +300,7 @@ default_LF_args.save_plots_path = f"results/{data_folder}/forecasting/cleaned"
 default_LF_args.checkpoint_path = f"results/{data_folder}/weights/checkpoint_lf_clean.pt"
 
 smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = LF_run(default_LF_args)
-print(f"Cleaned data: smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+print(f"Cleaned data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
 
 # run forecasting model on contamined data
 default_LF_args.train_dataset_path = f"dataset/processed/{data_folder}/lf_contam"
@@ -302,4 +309,4 @@ default_LF_args.save_plots_path = f"results/{data_folder}/forecasting/contam"
 default_LF_args.checkpoint_path = f"results/{data_folder}/weights/checkpoint_lf_contam.pt"
 
 smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = LF_run(default_LF_args)
-print(f"Contamined data: smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+print(f"Contamined data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
