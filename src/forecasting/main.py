@@ -20,7 +20,7 @@ import warnings; warnings.simplefilter('ignore')
 def parse_args():
     parser = argparse.ArgumentParser(description="Runs Load Forecasting experiments")
     # dataset
-    parser.add_argument("--train_dataset_path", default="dataset/processed/AEMO/NSW/lf_contam", help="Path to train dataset") # dataset parameter
+    parser.add_argument("--train_dataset_path", default="dataset/processed/AEMO/NSW/lf_cleaned", help="Path to train dataset") # dataset parameter
     parser.add_argument("--test_dataset_path", default="dataset/processed/AEMO/NSW/lf_test_clean", help="Path to clean dataset for testing") # dataset parameter
     # sequence
     parser.add_argument("--timesteps", type=int, default=48*5, help="Number of timesteps")          # dataset parameter
@@ -63,7 +63,7 @@ def get_data_loaders(args):
     testloader = DataLoader(
         test_data,
         batch_size=args.batch_size,
-        shuffle=True,
+        shuffle=False,
         pin_memory=True,
         drop_last=True,
     ) 

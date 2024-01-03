@@ -35,10 +35,10 @@ def parse_args():
     parser.add_argument("--save_model", default=True)
     parser.add_argument("--model_save_path", type=str, default="results/weights")
     parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
-    parser.add_argument("--eval_plots_path", default="results/AEMO/NSW", help="Path to file to save results in")
+    parser.add_argument("--eval_plots_path", default="results/Park/Commercial/30_minutes", help="Path to file to save results in")
     # dataset
-    parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/NSW/ad_train_contam", "dataset/processed/AEMO/NSW/ad_test_contam"], help="List of training data paths") # we do training and testing on the whole dataset
-    parser.add_argument("--test_data_path", type=str, nargs='+', default=["dataset/processed/AEMO/NSW/ad_train_contam", "dataset/processed/AEMO/NSW/ad_test_contam"], help="List of training data paths")
+    parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths") # we do training and testing on the whole dataset
+    parser.add_argument("--test_data_path", type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths")
     parser.add_argument("--batch_size", default=32, type=int)
     parser.add_argument("--nbr_timesteps", default=48*1, type=int)       # sequence length
     parser.add_argument("--nbr_variables", default=1, type=int)
@@ -173,97 +173,46 @@ def run(args):
     heatmaps = np.mean(heatmaps, axis=-1)
     
     LOGGER.info("Computing evaluation metrics.")
-    # sequence wise evaluation
-    results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.eval_plots_path)
-    window_threshold = results["best_threshold"]
-    # window_threshold = np.percentile(scores, 90); print(f"percentile threshold: {threshold}") # for unsupervised INPG dataset
+
+    # # sequence wise evaluation
+    # results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.eval_plots_path)
+    # window_threshold = results["best_threshold"]
+    window_threshold = np.percentile(scores, 98) # TODO test 98
+    print(f"percentile threshold: {window_threshold}") # for unsupervised INPG dataset
     # window_threshold = 0.00008
     coreset.window_threshold = window_threshold
     # anom_heatmaps = [heatmaps[i].max() for i in range(len(scores)) if scores[i]>window_threshold]
     # patch_threshold = np.percentile(anom_heatmaps, 80); print(f"percentile threshold: {patch_threshold}")
     # coreset.patch_threshold = patch_threshold
-    LOGGER.info(f"-> Sequence wise evaluation results:")
-    LOGGER.info(f"AUROC: {results['auroc']:0.3f}")
-    LOGGER.info(f"Best F1: {results['best_f1']:0.3f}")
-    LOGGER.info(f"Best precision: {results['best_precision']:0.3f}")
-    LOGGER.info(f"Best recall: {results['best_recall']:0.3f}")
-    # patchtwise evaluation
-    pred_masks = []
-    for timeserie, score, heatmap in zip(timeseries, scores, heatmaps):
-        if score>coreset.window_threshold:
-            pred_mask = heatmap_postprocess(timeserie, heatmap, flag_highest_patch=False, extend_to_patch=True)
-        else:
-            pred_mask = torch.zeros_like(timeserie)    
-        pred_masks.append(pred_mask)
-    patchwise_results = metrics.compute_pointwise_retrieval_metrics(pred_masks, gt_heatmaps) 
-    LOGGER.info(f"-> Pointwise evaluation results:")
-    LOGGER.info(f"AUROC: {patchwise_results['auroc']:0.3f}")
-    LOGGER.info(f"Best F1: {patchwise_results['best_f1']:0.3f}")
-    LOGGER.info(f"Best precision: {patchwise_results['best_precision']:0.3f}")
-    LOGGER.info(f"Best recall: {patchwise_results['best_recall']:0.3f}")
+    # LOGGER.info(f"-> Sequence wise evaluation results:")
+    # LOGGER.info(f"AUROC: {results['auroc']:0.3f}")
+    # LOGGER.info(f"Best F1: {results['best_f1']:0.3f}")
+    # LOGGER.info(f"Best precision: {results['best_precision']:0.3f}")
+    # LOGGER.info(f"Best recall: {results['best_recall']:0.3f}")
+
+    # # patchtwise evaluation
+    # pred_masks = []
+    # for timeserie, score, heatmap in zip(timeseries, scores, heatmaps):
+    #     if score>coreset.window_threshold:
+    #         pred_mask = heatmap_postprocess(timeserie, heatmap, flag_highest_patch=False, extend_to_patch=True)
+    #     else:
+    #         pred_mask = torch.zeros_like(timeserie)    
+    #     pred_masks.append(pred_mask)
+    # patchwise_results = metrics.compute_pointwise_retrieval_metrics(pred_masks, gt_heatmaps) 
+    # LOGGER.info(f"-> Pointwise evaluation results:")
+    # LOGGER.info(f"AUROC: {patchwise_results['auroc']:0.3f}")
+    # LOGGER.info(f"Best F1: {patchwise_results['best_f1']:0.3f}")
+    # LOGGER.info(f"Best precision: {patchwise_results['best_precision']:0.3f}")
+    # LOGGER.info(f"Best recall: {patchwise_results['best_recall']:0.3f}")
 
     # save results to experiment log file
-    print(f"\nanomaly detection results:\n\
-          AUROC: {results['auroc']:0.3f}, best f1: {results['best_f1']:0.3f}, best precision: {results['best_precision']:0.3f}, best recall: {results['best_recall']:0.3f}",
-          file=open(args.results_file, "a"))
+    # print(f"\nanomaly detection results: (day wise)\n\
+    #       AUROC: {results['auroc']:0.3f}, best f1: {results['best_f1']:0.3f}, best precision: {results['best_precision']:0.3f}, best recall: {results['best_recall']:0.3f}",
+    #       file=open(args.results_file, "a"))
+    # # print(f"\nanomaly detection results: (patch wise)\n\
+    #       AUROC: {patchwise_results['auroc']:0.3f}, best f1: {patchwise_results['best_f1']:0.3f}, best precision: {patchwise_results['best_precision']:0.3f}, best recall: {patchwise_results['best_recall']:0.3f}",
+    #       file=open(args.results_file, "a"))
 
-    # # save filtered data
-    # if args.filter_anomalies:
-    #     os.makedirs(os.path.join(args.filtered_data_path, "data"), exist_ok=True)
-    #     os.makedirs(os.path.join(args.filtered_data_path, "gt"), exist_ok=True)
-
-    #     for f in os.listdir(os.path.join(args.filtered_data_path, "data")):
-    #         os.remove(os.path.join(args.filtered_data_path, "data", f))
-    #     for f in os.listdir(os.path.join(args.filtered_data_path, "gt")):
-    #         os.remove(os.path.join(args.filtered_data_path, "gt", f))
-
-    #     with tqdm.tqdm(dataloaders["testing"], desc="Saving filtered data...", leave=True) as data_iterator:
-    #         k = 0 # number of anomaly free timeserie
-    #         i = 0 # index of timeserie
-    #         for timeserie_batch in data_iterator:
-    #             for timeserie, gt in zip(timeserie_batch["data"], timeserie_batch["is_anomaly"]):
-    #                 if scores[i]<=window_threshold:
-    #                     np.save(os.path.join(args.filtered_data_path, "data", str(i)+'.npy'), timeserie)
-    #                     np.save(os.path.join(args.filtered_data_path, "gt", str(i)+'.npy'), gt)
-    #                 elif args.save_heatmaps:
-    #                     # save heatmap of anomalous samples
-    #                     heatmap = heatmaps[i].reshape(1, -1)
-    #                     heatmap_data = np.repeat(heatmap, len(timeserie)//heatmap.shape[1], axis=1)
-    #                     fig, ax1 = plt.subplots(figsize=(10, 6))
-    #                     ax2 = ax1.twinx()
-    #                     ax1.imshow(heatmap_data, cmap="YlOrRd", aspect='auto')
-    #                     ax2.plot(timeserie, label='Time Series', color='blue')
-    #                     ax2.set_xlabel('Time')
-    #                     ax2.set_ylabel('Value', color='blue')
-    #                     ax2.tick_params('y', colors='blue')
-    #                     plt.title('Time Series with Anomaly Score Heatmap')
-    #                     plt.savefig(f"{args.heatmaps_save_path}/{i}.png")
-    #                     plt.close()
-    #                     k += 1
-    #                 i += 1
-
-    #     # save contaminated data
-    #     with tqdm.tqdm(dataloaders["testing"], desc="Saving contaminated data...", leave=True) as data_iterator:
-    #         os.makedirs(os.path.join(args.contaminated_data_path, "data"), exist_ok=True)
-    #         os.makedirs(os.path.join(args.contaminated_data_path, "gt"), exist_ok=True)
-
-    #         for f in os.listdir(os.path.join(args.contaminated_data_path, "data")):
-    #             os.remove(os.path.join(args.contaminated_data_path, "data", f))
-    #         for f in os.listdir(os.path.join(args.contaminated_data_path, "gt")):
-    #             os.remove(os.path.join(args.contaminated_data_path, "gt", f))
-
-    #         done = False
-    #         j = 0 # index of timeserie
-    #         for timeserie_batch in data_iterator:
-    #             for timeserie, gt in zip(timeserie_batch["data"], timeserie_batch["is_anomaly"]):
-    #                 np.save(os.path.join(args.contaminated_data_path, "data", str(j)+'.npy'), timeserie)
-    #                 np.save(os.path.join(args.contaminated_data_path, "gt", str(j)+'.npy'), gt)
-    #                 j += 1
-    #             # # save with same size as filterd data
-    #             #     if j==k:
-    #             #         done = True
-    #             #         break
-    #             # if done: break
 
     # saving model
     if args.save_model:
