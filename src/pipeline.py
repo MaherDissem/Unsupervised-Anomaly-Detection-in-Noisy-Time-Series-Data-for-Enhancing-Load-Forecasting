@@ -1,3 +1,7 @@
+# TODO park office and inpg datasets need forecasting aggregation
+# maybe ignore 2016 in park data
+# problem is missing values
+
 import sys
 sys.path.append("src/data")                 # data preparation module
 sys.path.append("src/anomaly_detection")    # AD module
@@ -19,7 +23,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 set_seed(0)
 
 # parameters
-data_folder = "Park/Commercial/30_minutes"      # dataset folder, must be in dataset/processed/
+data_folder = "Park/Office/30_minutes"          # dataset folder, must be in dataset/processed/
 day_size = 48                                   # dataset resolution
 n_days = 1                                      # window size for anomaly detection
 window_size = day_size * n_days                 # window size for anomaly detection
@@ -56,7 +60,7 @@ default_process_data_AD_args.day_size = day_size
 default_process_data_AD_args.n_days = n_days
 default_process_data_AD_args.day_stride = day_stride
 
-prepare_data_AD_run(default_process_data_AD_args)
+min_q_val, max_q_val = prepare_data_AD_run(default_process_data_AD_args)
 
 # ---
 # train AD model
@@ -288,7 +292,8 @@ default_LF_args.test_dataset_path = f"dataset/processed/{data_folder}/lf_test_cl
 default_LF_args.save_plots_path = f"results/{data_folder}/forecasting/cleaned"
 default_LF_args.checkpoint_path = f"results/{data_folder}/weights/checkpoint_lf_clean.pt"
 
-LF_run(default_LF_args)
+smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = LF_run(default_LF_args)
+print(f"Cleaned data: smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
 
 # run forecasting model on contamined data
 default_LF_args.train_dataset_path = f"dataset/processed/{data_folder}/lf_contam"
@@ -296,4 +301,5 @@ default_LF_args.test_dataset_path = f"dataset/processed/{data_folder}/lf_test_cl
 default_LF_args.save_plots_path = f"results/{data_folder}/forecasting/contam"
 default_LF_args.checkpoint_path = f"results/{data_folder}/weights/checkpoint_lf_contam.pt"
 
-LF_run(default_LF_args)
+smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = LF_run(default_LF_args)
+print(f"Contamined data: smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))

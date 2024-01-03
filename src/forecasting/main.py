@@ -135,6 +135,8 @@ def run(args):
         plt.legend()
         plt.savefig(f"{args.save_plots_path}/{ind}.jpg")
 
+    return smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss
+
 
 if __name__ == "__main__":
     args = parse_args()

@@ -8,6 +8,7 @@ import sys
 sys.path.append("./src") # TODO: fix this hack
 
 from data_processing.synth_anomaly import SynthLoadAnomaly
+from data_processing.fill_missing_values import fill_missing_values
 from utils.utils import set_seed
 
 
@@ -58,11 +59,9 @@ def run(args):
     # remove duplicate indices
     load = load[~load.index.duplicated()]
 
-    # replace missing values (if any) by the value of the previous week
-    # idx = pd.date_range(load.index[0], load.index[-1], freq="30T")
-    # load = load.reindex(idx, fill_value=np.nan)
-    # load = load.fillna(load.shift(args.day_size*7))
-
+    # fill missing values
+    # load = fill_missing_values(load, args.day_size)
+    
     # split contam data into train and test sets for anomaly detection model
     N = int(args.contam_clean_ratio*len(load))//args.day_size*args.day_size
     M = int(args.ad_split_ratio*(len(load[:N])))//args.day_size*args.day_size
@@ -165,7 +164,7 @@ def run(args):
     for f in existing_files:
         os.remove(f)
 
-    # crete save target folders if they don't exist
+    # create save target folders if they don't exist
     os.makedirs(os.path.join(args.trg_save_data, "lf_test_clean", "data"), exist_ok=True)
     os.makedirs(os.path.join(args.trg_save_data, "ad_train_contam", "data"), exist_ok=True)
     os.makedirs(os.path.join(args.trg_save_data, "ad_train_contam", "gt"), exist_ok=True)
@@ -211,6 +210,8 @@ def run(args):
     pd.Series(gt_full_load).to_csv(os.path.join(args.trg_save_data, "load_contam_gt.csv"))
     print('Dataset ready!')
 
+    return min_q_val, max_q_val
+
 
 if __name__ == "__main__":
     args = parse_args()
@@ -234,3 +235,4 @@ if __name__ == "__main__":
 # percentage of nan values: 8.57%
 # Dataset saved to dataset/processed/Park\Public\1_hour
 # percentage of nan values: 31.90%
+
