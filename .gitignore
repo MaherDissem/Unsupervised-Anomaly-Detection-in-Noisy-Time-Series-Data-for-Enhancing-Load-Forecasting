@@ -1,23 +1,28 @@
 __pycache__/
-*dataset
-results/
-experiments/
 # data
-*.csv
 *.npy
+*.csv
+*.xlsx
+*.xls
+*.txt
+*.json
 # archives
 *.zip
 *.tar.gz
 # weights
 *.pth
 *.pt
+*.pkl
+*.faiss
 # outputs
+results/
+experiments/
 *.txt
 *.log
 *.png
 *.jpg
 *.jpeg
 # refrences
+ressources/
 *.pdf
 *.webp
-ressources/
