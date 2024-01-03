@@ -1,7 +1,3 @@
-# TODO park office and inpg datasets need forecasting aggregation
-# maybe ignore 2016 in park data
-# problem is missing values
-
 import sys
 sys.path.append("src/data")                 # data preparation module
 sys.path.append("src/anomaly_detection")    # AD module
@@ -310,3 +306,5 @@ default_LF_args.checkpoint_path = f"results/{data_folder}/weights/checkpoint_lf_
 
 smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = LF_run(default_LF_args)
 print(f"Contamined data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+
+# sMAPE is large for the INPG dataset, because the load is sometimes very low (~0), other metrics are more relevant in this case.

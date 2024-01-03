@@ -142,4 +142,7 @@ if __name__ == "__main__":
     args = parse_args()
     run(args)
 
-    
+# TODO park office and inpg datasets `may` need series clustering first
+# TODO save dates in final plots
+# TODO save all test plots
+# size should be 48*6 not 5.
