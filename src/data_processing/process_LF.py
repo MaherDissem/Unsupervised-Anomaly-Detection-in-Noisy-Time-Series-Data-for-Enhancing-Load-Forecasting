@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument("--raw_test_data_csv",    type=str,   default="dataset/processed/AEMO/NSW/load_clean_lf_test.csv", help="Path to raw data root")
     parser.add_argument("--trg_test_save_data",   type=str,   default="dataset/processed/AEMO/NSW/lf_test_clean", help="Path to save processed data")
     
-    parser.add_argument("--feat_feature_name",    type=str,   default="TOTALDEMAND", help="Name of the feat feature")
+    parser.add_argument("--trg_feature_name",    type=str,   default="TOTALDEMAND", help="Name of the feat feature")
     parser.add_argument("--date_feature_name",    type=str,   default="date", help="Name of the date_time feature")
 
     parser.add_argument("--day_size",             type=int,   default=48, help="Size of a day")
@@ -43,7 +43,7 @@ def run(args):
         end = start + day_size
 
         for day in range(n_days):
-            sequence.extend(data[args.load_feature_name].values[start: end])
+            sequence.extend(data[args.trg_feature_name].values[start: end])
             start += day_size
             end += day_size
         return np.array(sequence), np.array(gt)
@@ -91,7 +91,7 @@ def run(args):
     # os.makedirs(os.path.join(args.trg_train_save_data, "gt"), exist_ok=True)
 
     # save data
-    for i, sample, sample_date in enumerate(zip(test_windows, date_test_windows)):
+    for i, (sample, sample_date) in enumerate(zip(test_windows, date_test_windows)):
         if np.isnan(sample).any(): continue
         np.save(os.path.join(args.trg_test_save_data, "data", sample_date), sample)
 
