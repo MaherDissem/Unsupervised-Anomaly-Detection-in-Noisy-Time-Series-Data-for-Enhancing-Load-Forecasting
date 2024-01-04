@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument("--num_grulstm_layers",   type=int,       default=1,        help="Number of GRU/LSTM layers")
     parser.add_argument("--fc_units",             type=int,       default=16,       help="Number of fully connected units")
     # training
-    parser.add_argument("--epochs",               type=int,       default=1,      help="Number of epochs") # 300
+    parser.add_argument("--epochs",               type=int,       default=300,      help="Number of epochs") # 300
     parser.add_argument("--patience",             type=int,       default=20,       help="Patience for early stopping")
     parser.add_argument("--batch_size",           type=int,       default=32,       help="Batch size")
     parser.add_argument("--lr",                   type=float,     default=1e-3,     help="Learning rate")
