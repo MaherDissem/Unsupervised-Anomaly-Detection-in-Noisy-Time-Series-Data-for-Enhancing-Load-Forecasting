@@ -1,14 +1,12 @@
 import argparse
-import logging
 import os
 import sys
 import time
+import logging
 
 import numpy as np
-import matplotlib.pyplot as plt
-import timm
 import torch
-import tqdm
+import timm
 
 import common as common
 import metrics as metrics
@@ -177,13 +175,9 @@ def run(args):
     # # sequence wise evaluation
     # results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.eval_plots_path)
     # window_threshold = results["best_threshold"]
-    window_threshold = np.percentile(scores, 98) # TODO test 98
+    window_threshold = np.percentile(scores, 98)
     print(f"percentile threshold: {window_threshold}") # for unsupervised INPG dataset
-    # window_threshold = 0.00008
     coreset.window_threshold = window_threshold
-    # anom_heatmaps = [heatmaps[i].max() for i in range(len(scores)) if scores[i]>window_threshold]
-    # patch_threshold = np.percentile(anom_heatmaps, 80); print(f"percentile threshold: {patch_threshold}")
-    # coreset.patch_threshold = patch_threshold
     # LOGGER.info(f"-> Sequence wise evaluation results:")
     # LOGGER.info(f"AUROC: {results['auroc']:0.3f}")
     # LOGGER.info(f"Best F1: {results['best_f1']:0.3f}")

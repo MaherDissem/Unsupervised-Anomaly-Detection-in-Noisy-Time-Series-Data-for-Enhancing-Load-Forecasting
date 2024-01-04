@@ -36,7 +36,7 @@ def find_consec_values(lst, min_consecutive=3, indices_only=True, pad=2):
     return out_map
 
 
-def heatmap_postprocess(timeserie, heatmap, flag_highest_patch=True, extend_to_patch=True, anom_idx_only=False):
+def heatmap_postprocess(timeserie, heatmap, flag_highest_patch=True, flag_consec= True, flag_outliers=True, extend_to_patch=True, anom_idx_only=False):
     anom_idx = []
     patch_size = timeserie.shape[0] // heatmap.shape[0]
 
@@ -48,19 +48,23 @@ def heatmap_postprocess(timeserie, heatmap, flag_highest_patch=True, extend_to_p
         anom_idx = list(range(patch_start, patch_end))
 
     # consecutive values, for when power drops to 0 before spike (anomaly type 2)
-    anom_idx += find_consec_values(timeserie, min_consecutive=2, indices_only=True, pad=patch_size//2)
+    if flag_consec:
+        anom_idx += find_consec_values(timeserie, min_consecutive=2, indices_only=True, pad=patch_size//2)
 
     # outliers in anomalous samples
-    timeserie_ = timeserie.clone()
-    timeserie_ = (timeserie_ - timeserie_.mean()) / timeserie_.std()
-    spike_anom_idx = torch.nonzero(timeserie_ > 2.5*timeserie_.std())[:, 0].tolist()
-    spike_anom_idx += torch.nonzero(timeserie_ < -2.5*timeserie_.std())[:, 0].tolist()
+    if flag_outliers:
+        timeserie_ = timeserie.clone()
+        timeserie_ = (timeserie_ - timeserie_.mean()) / timeserie_.std()
+        spike_anom_idx = torch.nonzero(timeserie_ > 2.5*timeserie_.std())[:, 0].tolist()
+        spike_anom_idx += torch.nonzero(timeserie_ < -2.5*timeserie_.std())[:, 0].tolist()
 
     # extend point to patch for smoother imputation
     if extend_to_patch:
         for point in spike_anom_idx:
             if point not in anom_idx:
-                anom_idx += list(range(max(0, point-patch_size//2), min(point+patch_size//2+1, len(timeserie)-1)))             
+                anom_idx += list(range(max(0, point-patch_size//2), min(point+patch_size//2+1, len(timeserie)-1)))   
+    else:
+        anom_idx += spike_anom_idx          
 
     anom_idx = list(set(anom_idx)) 
 

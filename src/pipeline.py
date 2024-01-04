@@ -1,5 +1,5 @@
 import sys
-sys.path.append("src/data")                 # data preparation module
+sys.path.append("src/data")                 # data processing module
 sys.path.append("src/anomaly_detection")    # AD module
 sys.path.append("src/anomaly_imputation")   # AI module
 sys.path.append("src/forecasting")          # LF module
@@ -19,27 +19,36 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 set_seed(0)
 
 # parameters
-data_folder = "INPG"          # dataset folder, must be in dataset/processed/
+data_folder = "INPG"                            # dataset folder, must be in dataset/processed/
 day_size = 24                                   # dataset resolution
 n_days = 1                                      # window size for anomaly detection
 window_size = day_size * n_days                 # window size for anomaly detection
 day_stride = 1                                  # for anomaly detection, seperate stride for forecasting
 contam_ratio = 0.1                              # contamination ratio for anomaly detection (% of days with anomalies, one anomaly per day)
-forecast_window_size = 5                        # window size for forecasting
+forecast_window_size = 6                        # window size for forecasting
 forecast_day_stride = 1                         # stride for forecasting
 save_figs = True                                # save plots of anomaly detection and imputation
 imp_trained = False                             # if True, skip training of anomaly imputation model
 
 # prepare directories for results/plots/weights saving
+# TODO for release, replace by deleting parent folder
+# data 
 save_imputation_train_path = f"dataset/processed/{data_folder}/ai_train/data"
+save_forecasting_clean_train_path = f"dataset/processed/{data_folder}/lf_train_clean/data"
+save_forecasting_contam_train_path = f"dataset/processed/{data_folder}/lf_train_contam/data"
+# plots
 save_heatmaps_path = f"results/{data_folder}/heatmaps"
 save_imputation_path = f"results/{data_folder}/imputation"
 save_forecasting_cleaned_path = f"results/{data_folder}/forecasting/cleaned"
 save_forecasting_contam_path = f"results/{data_folder}/forecasting/contam"
+save_ai_eval_plots_path = f"results/{data_folder}/ai_eval_plots"
+# weights
+save_weights_path = f"results/{data_folder}/weights"
 
-path_list = [save_imputation_train_path, save_heatmaps_path, save_imputation_path, save_forecasting_cleaned_path, save_forecasting_contam_path]
+path_list = [save_imputation_train_path, save_forecasting_clean_train_path, save_forecasting_contam_train_path,]# save_heatmaps_path, save_imputation_path, save_forecasting_cleaned_path, save_forecasting_contam_path, save_ai_eval_plots_path, save_weights_path]
 for path in path_list:
     make_clean_folder(path)
+
 
 # ---
 # Generate synthetic data
@@ -134,7 +143,10 @@ with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Impu
 
             else:
                 anom_idx = heatmap_postprocess(timeserie, heatmap, 
-                                               flag_highest_patch=True, extend_to_patch=True, 
+                                               flag_highest_patch=True,
+                                               flag_consec= False, # False for INPG dataset
+                                               flag_outliers=True,
+                                               extend_to_patch=True,
                                                anom_idx_only=True)
                 
                 masked_data = timeserie.clone()
@@ -152,6 +164,9 @@ with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Impu
                     ax2 = ax1.twinx()
                     ax1.imshow(heatmap_data, cmap="YlOrRd", aspect='auto')
                     ax2.plot(timeserie, label='Time Series', color='blue')
+                    # scale mask to timeserie
+                    # mask = [0.9*max(timeserie)*mask[i] for i in range(len(mask))]
+                    mask *= max(timeserie)/max(mask)
                     ax2.plot(mask, label='Mask', color='green')
                     ax2.set_xlabel('Time')
                     ax2.set_ylabel('Value', color='blue')
@@ -170,7 +185,7 @@ for timeserie, date_range in anomaly_free:
     for d in range(n_days):
         dates += str(date_range[d*day_size].date()) + "_"
     np.save(os.path.join(save_imputation_train_path, str(dates)+'.npy'), timeserie.squeeze(-1))
-print(f"saved impuation plots to {save_imputation_train_path}.npy")
+print(f"saved impuation training data to {save_imputation_train_path}.npy")
 
 # train anomaly imputation model on anomaly free samples
 from anomaly_imputation.main import parse_args as AI_parse_args
