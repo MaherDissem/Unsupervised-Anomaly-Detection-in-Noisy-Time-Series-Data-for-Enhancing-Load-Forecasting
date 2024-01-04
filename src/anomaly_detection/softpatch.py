@@ -106,7 +106,7 @@ class SoftPatch(torch.nn.Module):
         self.max_score = max_score
         self.min_heatmap_scores = min_heatmap_scores
         self.max_heatmap_scores = max_heatmap_scores
-        self.window_threshold = window_threshold # TODO rename to window_threshold
+        self.window_threshold = window_threshold
 
     def embed(self, data):
         if isinstance(data, torch.utils.data.DataLoader):

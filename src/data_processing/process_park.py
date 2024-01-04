@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 import sys
-sys.path.append("./src") # TODO: fix this hack
+sys.path.append("./src")
 
 from data_processing.synth_anomaly import SynthLoadAnomaly
 from data_processing.fill_missing_values import fill_missing_values

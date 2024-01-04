@@ -20,6 +20,7 @@ set_seed(0)
 
 # parameters
 data_folder = "INPG"                            # dataset folder, must be in dataset/processed/
+flag_consec = False                             # False for INPG dataset, True otherwise (anomaly type 1 and 2)
 day_size = 24                                   # dataset resolution
 n_days = 1                                      # window size for anomaly detection
 window_size = day_size * n_days                 # window size for anomaly detection
@@ -31,7 +32,6 @@ save_figs = True                                # save plots of anomaly detectio
 imp_trained = False                             # if True, skip training of anomaly imputation model
 
 # prepare directories for results/plots/weights saving
-# TODO for release, replace by deleting parent folder
 # data 
 save_imputation_train_path = f"dataset/processed/{data_folder}/ai_train/data"
 save_forecasting_clean_train_path = f"dataset/processed/{data_folder}/lf_train_clean/data"
@@ -143,8 +143,8 @@ with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Impu
 
             else:
                 anom_idx = heatmap_postprocess(timeserie, heatmap, 
-                                               flag_highest_patch=True,
-                                               flag_consec= False, # False for INPG dataset
+                                               flag_highest_patch=False,
+                                               flag_consec=flag_consec, # False for INPG dataset, True otherwise
                                                flag_outliers=True,
                                                extend_to_patch=True,
                                                anom_idx_only=True)

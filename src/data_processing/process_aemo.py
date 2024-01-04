@@ -4,18 +4,18 @@ import glob
 import numpy as np
 import pandas as pd
 
-import sys
-sys.path.append("./src") # TODO: fix this hack
-
 from data_processing.synth_anomaly import SynthLoadAnomaly
+
+import sys
+sys.path.append("./src")
 from utils.utils import set_seed
 
 
 # load parameters
 def parse_args():
     parser = argparse.ArgumentParser(description="Prepare data for anomaly detection model training and evaluation.")
-    parser.add_argument("--raw_data_root",        type=str,   default="dataset/raw/AEMO/NSW", help="Path to raw data root")
-    parser.add_argument("--trg_save_data",        type=str,   default="dataset/processed/AEMO/NSW", help="Path to save processed data")
+    parser.add_argument("--raw_data_root",        type=str,   default="dataset/raw/AEMO/QLD", help="Path to raw data root")
+    parser.add_argument("--trg_save_data",        type=str,   default="dataset/processed/AEMO/QLD", help="Path to save processed data")
     parser.add_argument("--load_feature_name",    type=str,   default="TOTALDEMAND", help="Name of the load feature")
     parser.add_argument("--date_feature_name",    type=str,   default="SETTLEMENTDATE", help="Name of the date_time feature")
     parser.add_argument("--day_size",             type=int,   default=48, help="Size of a day")

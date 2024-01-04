@@ -150,5 +150,3 @@ def run(args):
 if __name__ == "__main__":
     args = parse_args()
     run(args)
-
-# TODO park office and inpg datasets `might` need series clustering first
