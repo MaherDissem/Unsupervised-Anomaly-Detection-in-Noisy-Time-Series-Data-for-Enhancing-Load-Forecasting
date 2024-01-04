@@ -19,13 +19,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 set_seed(0)
 
 # parameters
-data_folder = "INPG"                            # dataset folder, must be in dataset/processed/
-flag_consec = False                             # False for INPG dataset, True otherwise (anomaly type 1 and 2)
-day_size = 24                                   # dataset resolution
+data_folder = "AEMO/SA"                         # dataset folder, must be in dataset/raw/
+day_size = 48                                   # dataset resolution
 n_days = 1                                      # window size for anomaly detection
 window_size = day_size * n_days                 # window size for anomaly detection
 day_stride = 1                                  # for anomaly detection, seperate stride for forecasting
 contam_ratio = 0.1                              # contamination ratio for anomaly detection (% of days with anomalies, one anomaly per day)
+flag_consec = "INPG" in data_folder             # False for INPG dataset, True otherwise (anomaly type 1 and 2)
 forecast_window_size = 6                        # window size for forecasting
 forecast_day_stride = 1                         # stride for forecasting
 save_figs = True                                # save plots of anomaly detection and imputation
@@ -45,7 +45,7 @@ save_ai_eval_plots_path = f"results/{data_folder}/ai_eval_plots"
 # weights
 save_weights_path = f"results/{data_folder}/weights"
 
-path_list = [save_imputation_train_path, save_forecasting_clean_train_path, save_forecasting_contam_train_path,]# save_heatmaps_path, save_imputation_path, save_forecasting_cleaned_path, save_forecasting_contam_path, save_ai_eval_plots_path, save_weights_path]
+path_list = [save_imputation_train_path, save_forecasting_clean_train_path, save_forecasting_contam_train_path, save_heatmaps_path, save_imputation_path, save_forecasting_cleaned_path, save_forecasting_contam_path, save_ai_eval_plots_path, save_weights_path]
 for path in path_list:
     make_clean_folder(path)
 
@@ -53,14 +53,18 @@ for path in path_list:
 # ---
 # Generate synthetic data
 # ---
-# from data_processing.process_aemo import run as prepare_data_AD_run
-# from data_processing.process_aemo import parse_args as prepare_data_AD_parse_args
-
-# from data_processing.process_park import run as prepare_data_AD_run
-# from data_processing.process_park import parse_args as prepare_data_AD_parse_args
     
-from data_processing.process_INPG import run as prepare_data_AD_run
-from data_processing.process_INPG import parse_args as prepare_data_AD_parse_args
+if "INPG" in data_folder:
+    from data_processing.process_INPG import run as prepare_data_AD_run
+    from data_processing.process_INPG import parse_args as prepare_data_AD_parse_args
+
+if "AEMO" in data_folder:
+    from data_processing.process_aemo import run as prepare_data_AD_run
+    from data_processing.process_aemo import parse_args as prepare_data_AD_parse_args
+
+if "Park" in data_folder:
+    from data_processing.process_park import run as prepare_data_AD_run
+    from data_processing.process_park import parse_args as prepare_data_AD_parse_args
 
 default_process_data_AD_args = prepare_data_AD_parse_args()
 default_process_data_AD_args.raw_data_root = f"dataset/raw/{data_folder}"
@@ -143,8 +147,8 @@ with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Impu
 
             else:
                 anom_idx = heatmap_postprocess(timeserie, heatmap, 
-                                               flag_highest_patch=False,
-                                               flag_consec=flag_consec, # False for INPG dataset, True otherwise
+                                               flag_highest_patch=False, # play with this param for INPG
+                                               flag_consec=flag_consec,  # False for INPG dataset, True otherwise
                                                flag_outliers=True,
                                                extend_to_patch=True,
                                                anom_idx_only=True)
@@ -266,11 +270,13 @@ print(f"saved cleaned load serie to dataset/processed/{data_folder}/load_cleaned
 # prepare data for forecasting    
 # ---
 
-# from data_processing.process_LF import run as prepare_data_LF_run
-# from data_processing.process_LF import parse_args as prepare_data_LF_parse_args
+if "INPG" in data_folder:
+    from data_processing.process_LF_INPG import run as prepare_data_LF_run
+    from data_processing.process_LF_INPG import parse_args as prepare_data_LF_parse_args
+else:
+    from data_processing.process_LF import run as prepare_data_LF_run
+    from data_processing.process_LF import parse_args as prepare_data_LF_parse_args
 
-from data_processing.process_LF_INPG import run as prepare_data_LF_run
-from data_processing.process_LF_INPG import parse_args as prepare_data_LF_parse_args
 
 default_process_data_LF_args = prepare_data_LF_parse_args()
 default_process_data_LF_args.n_days = forecast_window_size
