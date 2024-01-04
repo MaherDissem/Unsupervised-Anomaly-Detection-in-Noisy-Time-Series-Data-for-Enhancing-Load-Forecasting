@@ -105,6 +105,7 @@ def run(args):
         # np.save(os.path.join(args.trg_train_save_data, "gt", sample_date), sample_gt)
 
     # log results
+    os.makedirs(os.path.dirname(args.log_file), exist_ok=True)
     print(args, file=open(args.log_file, "a"))
     print(f"Number of train windows: {len(train_windows)}", file=open(args.log_file, "a"))
     print(f"Number of test windows: {len(test_windows)}", file=open(args.log_file, "a"))

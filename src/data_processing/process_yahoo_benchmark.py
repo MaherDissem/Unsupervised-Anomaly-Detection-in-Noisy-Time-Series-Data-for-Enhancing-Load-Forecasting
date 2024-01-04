@@ -130,6 +130,7 @@ def run(args):
         np.save(os.path.join(args.trg_save_data, "ad_test_contam", "gt", f"{i}.npy"), sample_gt)
 
     # log results
+    os.makedirs(os.path.dirname(args.log_file), exist_ok=True)
     print(args, file=open(args.log_file, "a"))
     print(f"Number of ad_train_contam windows: {len(ad_train_windows)}", file=open(args.log_file, "a"))
     print(f"Number of ad_test_contam windows: {len(ad_test_windows)}", file=open(args.log_file, "a"))
