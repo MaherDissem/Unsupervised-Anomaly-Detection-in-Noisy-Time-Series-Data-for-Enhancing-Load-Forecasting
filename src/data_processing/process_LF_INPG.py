@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument("--date_feature_name",    type=str,   default="date", help="Name of the date_time feature")
 
     parser.add_argument("--day_size",             type=int,   default=24, help="Size of a day")
-    parser.add_argument("--n_days",               type=int,   default=5, help="Number of days")
+    parser.add_argument("--n_days",               type=int,   default=6, help="Number of days")
     parser.add_argument("--day_stride",           type=int,   default=1, help="Day stride for sliding window")
 
     parser.add_argument("--seed",                 type=int,   default=0, help="Random seed")
@@ -56,6 +56,7 @@ def run(args):
     full_Holiday_date = [str(date) for date in sampled_dates]
 
     # remove lab holidays
+    # TODO switch to 1D frequency
     lab_holidays = []
     for year in range(2016, 2023):
         lab_holidays.extend(pd.date_range(f'{year}-07-31', f'{year}-08-16', freq='H')[:-1]) # summer holidays
@@ -77,7 +78,25 @@ def run(args):
     corrupt_data_dates.extend(pd.date_range('2019-08-23', '2019-08-24', freq="H")[:-1])
     corrupt_data_dates.extend(pd.date_range('2022-05-27', '2022-05-28', freq="H")[:-1])
 
-    to_remove = corrupt_data_dates + covid_dates + lab_holidays + full_Holiday_date
+    # empty days
+    # for some reason, the 5th of each month is missing in the training data
+    empty_days = []
+    days_in_train_index = pd.date_range(train_data.index[0], train_data.index[-1], freq="D")
+    for day in days_in_train_index:
+        date = str(day).split(' ')[0]
+        if len(train_data.loc[date]) == 0:
+            next_date = str(day + timedelta(days=1)).split(' ')[0]
+            hours = pd.date_range(date, next_date, freq="H")
+            empty_days.extend(hours)
+    days_in_test_index = pd.date_range(test_data.index[0], test_data.index[-1], freq="D")
+    for day in days_in_test_index:
+        date = str(day).split(' ')[0]
+        if len(test_data.loc[date]) == 0:
+            next_date = str(day + timedelta(days=1)).split(' ')[0]
+            hours = pd.date_range(date, next_date, freq="H")
+            empty_days.extend(hours)
+
+    to_remove = corrupt_data_dates + covid_dates + lab_holidays + full_Holiday_date + empty_days
     days_to_remove = []
     for date in to_remove:
         days_to_remove.append(str(date).split(' ')[0])
@@ -88,12 +107,12 @@ def run(args):
 
         # discard feeding time windows that contain corrupted data into the model
         start_date = str(load.index[day0]).split(' ')[0]
-        end_date = str(load.index[day0 + day_size*n_days-2]).split(' ')[0]
-        days = pd.date_range(start_date, end_date, freq="D")
-        days = [str(day).split(' ')[0] for day in days]
-        for day in days: 
+        end_date = str(load.index[day0 + day_size*n_days-1]).split(' ')[0]
+        days_in_seq = pd.date_range(start_date, end_date, freq="D")
+        days_in_seq = [str(day).split(' ')[0] for day in days_in_seq]
+        for day in days_in_seq: 
             if day in days_to_remove:
-                return None
+                return None, start_date, end_date
 
         sequence = []
         start = day0
@@ -104,7 +123,7 @@ def run(args):
             start += day_size
             end += day_size
 
-        return np.array(sequence)
+        return np.array(sequence), start_date, end_date
 
     def build_dataset(load, n_days, day_size, day_stride):
         """
@@ -118,11 +137,13 @@ def run(args):
         day_idx = 0
         while day_idx < len(load)//day_size - n_days:
             day0 = day_idx*day_size
-            sequence = extract_consec_days(load, day0, n_days, day_size)
+            sequence, first_date, last_date = extract_consec_days(load, day0, n_days, day_size)
+
+            if sequence is None:
+                day_idx += day_stride
+                continue
 
             time_wind.append(sequence)
-            first_date = str(load.index[day0]).replace(':', '')
-            last_date = str(load.index[day0 + n_days*day_size]).replace(':', '')
             datetime_wind.append(f"{first_date} - {last_date}")
             day_idx += day_stride
 
@@ -130,13 +151,7 @@ def run(args):
 
     train_windows, date_train_windows = build_dataset(train_data, args.n_days, args.day_size, args.day_stride)
     test_windows, date_test_windows = build_dataset(test_data, args.n_days, args.day_size, args.day_stride)
-
-    # remove None values
-    train_windows = [window for window in train_windows if window is not None]
-    date_train_windows = [date for date in date_train_windows if date is not None]
-    test_windows = [window for window in test_windows if window is not None]
-    date_test_windows = [date for date in date_test_windows if date is not None]
-
+    
     # save data
     # remove existing files in save target root folder
     existing_files = glob.glob(os.path.join(args.trg_test_save_data, "*", "*.npy"))

@@ -1,6 +1,8 @@
 import sys
 import os
 import argparse
+
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -17,25 +19,25 @@ from src.utils.utils import set_seed
 def parse_args():
     parser = argparse.ArgumentParser(description="Runs Load Forecasting experiments")
     # dataset
-    parser.add_argument("--train_dataset_path",   type=str,       default="dataset/processed/AEMO/NSW/lf_cleaned",       help="Path to train dataset") # dataset parameter
-    parser.add_argument("--test_dataset_path",    type=str,       default="dataset/processed/AEMO/NSW/lf_test_clean",    help="Path to clean dataset for testing") # dataset parameter
+    parser.add_argument("--train_dataset_path",   type=str,       default="dataset/processed/INPG/lf_cleaned",       help="Path to train dataset") # dataset parameter
+    parser.add_argument("--test_dataset_path",    type=str,       default="dataset/processed/INPG/lf_test_clean",    help="Path to clean dataset for testing") # dataset parameter
     # sequence
-    parser.add_argument("--timesteps",            type=int,       default=48*5,     help="Number of timesteps")    # dataset parameter
-    parser.add_argument("--sequence_split",       type=float,     default=4/5,      help="Sequence split ratio")   # dataset parameter
+    parser.add_argument("--timesteps",            type=int,       default=24*6,     help="Number of timesteps")    # dataset parameter
+    parser.add_argument("--sequence_split",       type=float,     default=5/6,      help="Sequence split ratio")   # dataset parameter
     parser.add_argument("--nbr_var",              type=int,       default=1,        help="Number of variables")
     # model parameters
     parser.add_argument("--hidden_size",          type=int,       default=128,      help="Hidden size of the model")
     parser.add_argument("--num_grulstm_layers",   type=int,       default=1,        help="Number of GRU/LSTM layers")
     parser.add_argument("--fc_units",             type=int,       default=16,       help="Number of fully connected units")
     # training
-    parser.add_argument("--epochs",               type=int,       default=300,        help="Number of epochs") # 300
+    parser.add_argument("--epochs",               type=int,       default=1,      help="Number of epochs") # 300
     parser.add_argument("--patience",             type=int,       default=20,       help="Patience for early stopping")
     parser.add_argument("--batch_size",           type=int,       default=32,       help="Batch size")
     parser.add_argument("--lr",                   type=float,     default=1e-3,     help="Learning rate")
     parser.add_argument("--seed",                 type=int,       default=0)
     parser.add_argument("--checkpoint_path",      type=str,       default="src/forecasting/checkpoint.pt",       help="Path to save checkpoint")
     # visualization
-    parser.add_argument("--n_plots",              type=int,       default=32, help="Number of plots")
+    parser.add_argument("--n_plots",              type=int,       default=32,                                    help="Number of plots")
     parser.add_argument("--save_plots_path",      type=str,       default="results/forecasting/contam",          help="Path to save plots") # dataset parameter
     parser.add_argument("--results_file",         type=str,       default="results/results.txt",                 help="Path to file to save results in")
     return parser.parse_args()
@@ -123,14 +125,17 @@ def run(args):
             for i in range(args.batch_size):
                 # if count == args.n_plots:
                 #     return smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss
-                date = dates[:,i]
                 input = inputs.detach().cpu().numpy()[i,:,:]
                 target = targets.detach().cpu().numpy()[i,:,:]
                 pred = preds.detach().cpu().numpy()[i,:,:]
                 plt.plot(range(0, N_input), input, label='Model Input', linewidth=3)
                 plt.plot(range(N_input-1, N_input+N_output), np.concatenate([input[N_input-1:N_input], target]), label='Target (GT)', linewidth=3)   
                 plt.plot(range(N_input-1, N_input+N_output),  np.concatenate([input[N_input-1:N_input], pred]), label='Prediction', linewidth=3)       
-                plt.xticks(range(0, N_input+N_output+1, N_output), date)
+                
+                date_list = dates[:,i]
+                next_date = str(pd.to_datetime(date_list[-1]) + pd.Timedelta(days=1)).split(' ')[0]
+                date_list = [str(d).split(' ')[0] for d in date_list] + [next_date]
+                plt.xticks(range(0, N_input+N_output+1, N_output), date_list)
                 plt.xlabel('Date')
                 plt.ylabel('Load (normalized)')
                 plt.title('Load Forecasting')
