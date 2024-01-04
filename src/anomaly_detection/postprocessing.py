@@ -36,12 +36,14 @@ def find_consec_values(lst, min_consecutive=3, indices_only=True, pad=2):
     return out_map
 
 
-def heatmap_postprocess(timeserie, heatmap, flag_highest_patch=True, flag_consec= True, flag_outliers=True, extend_to_patch=True, anom_idx_only=False):
+def heatmap_postprocess(timeserie, heatmap, 
+                        flag_highest_patch=True, flag_consec=True, flag_outliers=True, extend_to_patch=True, 
+                        anom_idx_only=False):
     anom_idx = []
     patch_size = timeserie.shape[0] // heatmap.shape[0]
 
     # high anomaly score patch
-    if flag_highest_patch: # this part is disbled for now, as it is not precise enough
+    if flag_highest_patch:
         highest_patch_score_idx = np.argmax(heatmap) 
         patch_start = highest_patch_score_idx * patch_size 
         patch_end = patch_start + patch_size

@@ -1,7 +1,7 @@
-import argparse
 import os
 import sys
 import time
+import argparse
 import logging
 
 import numpy as np
@@ -24,39 +24,34 @@ LOGGER = logging.getLogger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="SoftPatch")
     # project
-    parser.add_argument("--seed", type=int, default=0)
-    # parser.add_argument("--filter_anomalies", default=False)
-    # parser.add_argument("--filtered_data_path", type=str, default="dataset/processed/AEMO/test/lf_train_filter")      # data path
-    # parser.add_argument("--contaminated_data_path", type=str, default="dataset/processed/AEMO/test/lf_train_contam")  # data path
-    # parser.add_argument("--save_heatmaps", default=False)
-    # parser.add_argument("--heatmaps_save_path", type=str, default="results/heatmaps")
-    parser.add_argument("--save_model", default=True)
-    parser.add_argument("--model_save_path", type=str, default="results/weights")
-    parser.add_argument("--results_file", default="results/results.txt", help="Path to file to save results in")
-    parser.add_argument("--eval_plots_path", default="results/Park/Commercial/30_minutes", help="Path to file to save results in")
+    parser.add_argument("--seed",               type=int,            default=0)
+    parser.add_argument("--save_model",         type=bool,           default=True)
+    parser.add_argument("--model_save_path",    type=str,            default="results/weights")
+    parser.add_argument("--results_file",       type=str,            default="results/results.txt",                 help="Path to file to save results in")
+    parser.add_argument("--eval_plots_path",    type=str,            default="results/Park/Commercial/30_minutes",  help="Path to file to save results in")
     # dataset
-    parser.add_argument("--train_data_path", type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths") # we do training and testing on the whole dataset
-    parser.add_argument("--test_data_path", type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths")
-    parser.add_argument("--batch_size", default=32, type=int)
-    parser.add_argument("--nbr_timesteps", default=48*1, type=int)       # sequence length
-    parser.add_argument("--nbr_variables", default=1, type=int)
-    parser.add_argument("--nbr_features", default=3, type=int)
+    parser.add_argument("--train_data_path",    type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths") # we flag anomalies on the whole dataset for the pipeline
+    parser.add_argument("--test_data_path",     type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths")
+    parser.add_argument("--batch_size",         type=int,            default=32)
+    parser.add_argument("--nbr_timesteps",      type=int,            default=48*1) # sequence length
+    parser.add_argument("--nbr_variables",      type=int,            default=1)
+    parser.add_argument("--nbr_features",       type=int,            default=3)
     # feature extraction
-    parser.add_argument("--alpha", default=0.2, type=float)
-    parser.add_argument("--feat_patch_size", default=8, type=int)
+    parser.add_argument("--alpha",              type=float,          default=0.2)
+    parser.add_argument("--feat_patch_size",    type=int,            default=8)
     # backbone
-    parser.add_argument("--backbone_name", "-b", type=str, default="resnet50")
-    parser.add_argument("--backbone_layers_to_extract_from", "-le", type=str, action="append", default=["layer1"])
+    parser.add_argument("--backbone_name",      type=str,            default="resnet50")
+    parser.add_argument("--backbone_layers_to_extract_from", "-le",  type=str, action="append", default=["layer1"])
     # coreset sampler
-    parser.add_argument("--sampler_name", type=str, default="approx_greedy_coreset")
-    parser.add_argument("--sampling_ratio", type=float, default=0.1)
-    parser.add_argument("--faiss_on_gpu", action="store_true")
-    parser.add_argument("--faiss_num_workers", type=int, default=4)
+    parser.add_argument("--sampler_name",       type=str,            default="approx_greedy_coreset")
+    parser.add_argument("--sampling_ratio",     type=float,          default=0.1)
+    parser.add_argument("--faiss_on_gpu",       action="store_true")
+    parser.add_argument("--faiss_num_workers",  type=int,            default=4)
     # SoftPatch hyper-parameter
-    parser.add_argument("--weight_method", type=str, default="gaussian")
-    parser.add_argument("--threshold", type=float, default=0.2)          # denoising parameter
-    parser.add_argument("--lof_k", type=int, default=6)
-    parser.add_argument("--without_soft_weight", default=False)
+    parser.add_argument("--weight_method",      type=str,            default="gaussian")
+    parser.add_argument("--threshold",          type=float,          default=0.2) # denoising parameter
+    parser.add_argument("--lof_k",              type=int,            default=6)
+    parser.add_argument("--without_soft_weight",type=bool,           default=False)
 
     args = parser.parse_args()
     return args
@@ -170,43 +165,48 @@ def run(args):
     heatmaps = (heatmaps - coreset.min_heatmap_scores) / (coreset.max_heatmap_scores - coreset.min_heatmap_scores)
     heatmaps = np.mean(heatmaps, axis=-1)
     
-    LOGGER.info("Computing evaluation metrics.")
-
-    # # sequence wise evaluation
-    # results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.eval_plots_path)
-    # window_threshold = results["best_threshold"]
     window_threshold = np.percentile(scores, 98)
-    print(f"percentile threshold: {window_threshold}") # for unsupervised INPG dataset
+    print(f"percentile threshold: {window_threshold}") # for unsupervised INPG dataset (gt_is_anom is None)
     coreset.window_threshold = window_threshold
-    # LOGGER.info(f"-> Sequence wise evaluation results:")
-    # LOGGER.info(f"AUROC: {results['auroc']:0.3f}")
-    # LOGGER.info(f"Best F1: {results['best_f1']:0.3f}")
-    # LOGGER.info(f"Best precision: {results['best_precision']:0.3f}")
-    # LOGGER.info(f"Best recall: {results['best_recall']:0.3f}")
 
-    # # patchtwise evaluation
-    # pred_masks = []
-    # for timeserie, score, heatmap in zip(timeseries, scores, heatmaps):
-    #     if score>coreset.window_threshold:
-    #         pred_mask = heatmap_postprocess(timeserie, heatmap, flag_highest_patch=False, extend_to_patch=True)
-    #     else:
-    #         pred_mask = torch.zeros_like(timeserie)    
-    #     pred_masks.append(pred_mask)
-    # patchwise_results = metrics.compute_pointwise_retrieval_metrics(pred_masks, gt_heatmaps) 
-    # LOGGER.info(f"-> Pointwise evaluation results:")
-    # LOGGER.info(f"AUROC: {patchwise_results['auroc']:0.3f}")
-    # LOGGER.info(f"Best F1: {patchwise_results['best_f1']:0.3f}")
-    # LOGGER.info(f"Best precision: {patchwise_results['best_precision']:0.3f}")
-    # LOGGER.info(f"Best recall: {patchwise_results['best_recall']:0.3f}")
+    if not gt_is_anom is None:
+        LOGGER.info("Computing evaluation metrics.")
+        # sequence wise evaluation
+        results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.eval_plots_path)
+        window_threshold = results["best_threshold"]
+        coreset.window_threshold = window_threshold
+        LOGGER.info(f"-> Sequence wise evaluation results:")
+        LOGGER.info(f"AUROC: {results['auroc']:0.3f}")
+        LOGGER.info(f"Best F1: {results['best_f1']:0.3f}")
+        LOGGER.info(f"Best precision: {results['best_precision']:0.3f}")
+        LOGGER.info(f"Best recall: {results['best_recall']:0.3f}")
 
-    # save results to experiment log file
-    # print(f"\nanomaly detection results: (day wise)\n\
-    #       AUROC: {results['auroc']:0.3f}, best f1: {results['best_f1']:0.3f}, best precision: {results['best_precision']:0.3f}, best recall: {results['best_recall']:0.3f}",
-    #       file=open(args.results_file, "a"))
-    # # print(f"\nanomaly detection results: (patch wise)\n\
-    #       AUROC: {patchwise_results['auroc']:0.3f}, best f1: {patchwise_results['best_f1']:0.3f}, best precision: {patchwise_results['best_precision']:0.3f}, best recall: {patchwise_results['best_recall']:0.3f}",
-    #       file=open(args.results_file, "a"))
+        # patchtwise evaluation
+        pred_masks = []
+        for timeserie, score, heatmap in zip(timeseries, scores, heatmaps):
+            if score>coreset.window_threshold:
+                pred_mask = heatmap_postprocess(timeserie, heatmap, 
+                                                flag_highest_patch=False,  # disabling as it is not precise enough
+                                                flag_consec=True,          # True for synthetic data
+                                                flag_outliers=True,        # always True
+                                                extend_to_patch=True)      # True when imputing missing values, False for benchmarking (a bit more precise)
+            else:
+                pred_mask = torch.zeros_like(timeserie)
+            pred_masks.append(pred_mask)
+        patchwise_results = metrics.compute_pointwise_retrieval_metrics(pred_masks, gt_heatmaps)
+        LOGGER.info(f"-> Patchwise evaluation results:")
+        LOGGER.info(f"AUROC: {patchwise_results['auroc']:0.3f}")
+        LOGGER.info(f"Best F1: {patchwise_results['best_f1']:0.3f}")
+        LOGGER.info(f"Best precision: {patchwise_results['best_precision']:0.3f}")
+        LOGGER.info(f"Best recall: {patchwise_results['best_recall']:0.3f}")
 
+        # save results to experiment log file
+        print(f"\nanomaly detection results: (day wise)\n\
+              AUROC: {results['auroc']:0.3f}, best f1: {results['best_f1']:0.3f}, best precision: {results['best_precision']:0.3f}, best recall: {results['best_recall']:0.3f}",
+              file=open(args.results_file, "a"))
+        print(f"\nanomaly detection results: (patch wise)\n\
+              AUROC: {patchwise_results['auroc']:0.3f}, best f1: {patchwise_results['best_f1']:0.3f}, best precision: {patchwise_results['best_precision']:0.3f}, best recall: {patchwise_results['best_recall']:0.3f}",
+              file=open(args.results_file, "a"))
 
     # saving model
     if args.save_model:
