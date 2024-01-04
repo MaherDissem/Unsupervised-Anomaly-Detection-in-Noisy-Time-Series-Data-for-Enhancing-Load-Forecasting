@@ -28,7 +28,7 @@ def train_model(
         epoch_loss = 0.0
 
         for i, data in enumerate(trainloader):
-            inputs, target = data
+            _, inputs, target = data
             inputs = torch.tensor(inputs, dtype=torch.float32).to(device)
             target = torch.tensor(target, dtype=torch.float32).to(device)
             batch_size, N_output = target.shape[0:2]
@@ -79,7 +79,7 @@ def eval_model(net, loader, gamma, device):
 
     for i, data in enumerate(loader, 0):
         # run inference
-        inputs, target = data
+        _, inputs, target = data
         inputs = torch.tensor(inputs, dtype=torch.float32).to(device)
         target = torch.tensor(target, dtype=torch.float32).to(device)
         batch_size, N_output = target.shape[0:2]

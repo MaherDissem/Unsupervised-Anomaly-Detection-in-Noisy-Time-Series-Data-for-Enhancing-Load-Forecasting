@@ -1,7 +1,7 @@
 import sys
 import os
 import argparse
-
+import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument("--num_grulstm_layers", type=int, default=1, help="Number of GRU/LSTM layers")
     parser.add_argument("--fc_units", type=int, default=16, help="Number of fully connected units")
     # training
-    parser.add_argument("--epochs", type=int, default=300, help="Number of epochs")
+    parser.add_argument("--epochs", type=int, default=1, help="Number of epochs") # 300
     parser.add_argument("--patience", type=int, default=20, help="Patience for early stopping")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
@@ -117,23 +117,32 @@ def run(args):
     plt.savefig(args.save_plots_path + "/forecast_train_loss_evol.jpg")
 
     # plot predictions
-    gen_test = iter(testloader) 
-    inputs, targets = next(gen_test)
-    inputs  = torch.tensor(inputs, dtype=torch.float32).to(device)
-    targets = torch.tensor(targets, dtype=torch.float32).to(device)
-    preds = model(inputs).to(device)
-
-    for ind in range(1, min(args.batch_size, args.n_plots)):
-        plt.figure()
-        plt.rcParams['figure.figsize'] = (10.0, 5.0)  
-        input = inputs.detach().cpu().numpy()[ind,:,:]
-        target = targets.detach().cpu().numpy()[ind,:,:]
-        pred = preds.detach().cpu().numpy()[ind,:,:]
-        plt.plot(range(0, N_input), input, label='input', linewidth=3)
-        plt.plot(range(N_input-1, N_input+N_output), np.concatenate([input[N_input-1:N_input], target]), label='target', linewidth=3)   
-        plt.plot(range(N_input-1, N_input+N_output),  np.concatenate([input[N_input-1:N_input], pred]), label='prediction', linewidth=3)       
-        plt.legend()
-        plt.savefig(f"{args.save_plots_path}/{ind}.jpg")
+    if args.n_plots:
+        count = 0
+        plt.figure(figsize=(10, 6))
+        for dates, inputs, targets in testloader:
+            dates = np.array(dates)
+            inputs  = torch.tensor(inputs, dtype=torch.float32).to(device)
+            targets = torch.tensor(targets, dtype=torch.float32).to(device)
+            preds = model(inputs).to(device)
+            for i in range(args.batch_size):
+                # if count == args.n_plots:
+                #     return smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss
+                date = dates[:,i]
+                input = inputs.detach().cpu().numpy()[i,:,:]
+                target = targets.detach().cpu().numpy()[i,:,:]
+                pred = preds.detach().cpu().numpy()[i,:,:]
+                plt.plot(range(0, N_input), input, label='Model Input', linewidth=3)
+                plt.plot(range(N_input-1, N_input+N_output), np.concatenate([input[N_input-1:N_input], target]), label='Target (GT)', linewidth=3)   
+                plt.plot(range(N_input-1, N_input+N_output),  np.concatenate([input[N_input-1:N_input], pred]), label='Prediction', linewidth=3)       
+                plt.xticks(range(0, N_input+N_output+1, N_output), date)
+                plt.xlabel('Date')
+                plt.ylabel('Load (normalized)')
+                plt.title('Load Forecasting')
+                plt.legend()
+                plt.savefig(f"{args.save_plots_path}/{count}.jpg")
+                plt.clf()
+                count += 1
 
     return smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss
 

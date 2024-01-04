@@ -2,7 +2,7 @@ import os
 import glob 
 import numpy as np
 import torch
-
+import pandas as pd
 
 class F_Dataset(torch.utils.data.Dataset):
 
@@ -13,16 +13,18 @@ class F_Dataset(torch.utils.data.Dataset):
         self.ts_split = ts_split
 
     def __getitem__(self, idx):
-        # date_range = os.path.basename(self.npy_paths[idx]).replace(".npy", "")
-        # first_date, last_date = date_range.split(" - ")
-        # first_date = first_date.split("_")[0]
-        # last_date = last_date.split("_")[0]
+        date_range = os.path.basename(self.npy_paths[idx]).replace(".npy", "")
+        first_date, last_date = date_range.split(" - ")
+        first_date = first_date.split("_")[0]
+        last_date = last_date.split("_")[0]
+        dates = pd.date_range(first_date, last_date, freq="1D")
+        dates = [str(date).split(" ")[0] for date in dates]
 
         data = np.load(self.npy_paths[idx])
         data = torch.tensor(data, dtype=torch.float)
         if data.dim() == 1: data = data.unsqueeze(1)
         seq_len = int(data.shape[0]*self.ts_split)
-        return data[:seq_len, :], data[seq_len:, :]
+        return dates, data[:seq_len, :], data[seq_len:, :]
 
     def __len__(self):
         return len(self.npy_paths)
