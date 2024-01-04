@@ -14,7 +14,7 @@ class AD_Dataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         data = np.load(self.data[idx])
         gt_heatmap = np.load(self.gt[idx]) if len(self.gt) else np.zeros_like(data)
-        is_anom = np.any(gt_heatmap) if gt_heatmap is not None else None
+        is_anom = np.any(gt_heatmap)
         return {
             "data": torch.tensor(data, dtype=torch.float).unsqueeze(1),
             "gt_heatmap": gt_heatmap,

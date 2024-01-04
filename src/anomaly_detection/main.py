@@ -30,10 +30,10 @@ def parse_args():
     parser.add_argument("--results_file",       type=str,            default="results/results.txt",                 help="Path to file to save results in")
     parser.add_argument("--eval_plots_path",    type=str,            default="results/Park/Commercial/30_minutes",  help="Path to file to save results in")
     # dataset
-    parser.add_argument("--train_data_path",    type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths") # we flag anomalies on the whole dataset for the pipeline
-    parser.add_argument("--test_data_path",     type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths")
+    parser.add_argument("--train_data_path",    type=str, nargs='+', default=["dataset/processed/INPG/ad_train_contam", "dataset/processed/INPG/ad_test_contam"], help="List of training data paths") # we flag anomalies on the whole dataset for the pipeline
+    parser.add_argument("--test_data_path",     type=str, nargs='+', default=["dataset/processed/INPG/ad_train_contam", "dataset/processed/INPG/ad_test_contam"], help="List of training data paths")
+    parser.add_argument("--nbr_timesteps",      type=int,            default=24*1) # sequence length
     parser.add_argument("--batch_size",         type=int,            default=32)
-    parser.add_argument("--nbr_timesteps",      type=int,            default=48*1) # sequence length
     parser.add_argument("--nbr_variables",      type=int,            default=1)
     parser.add_argument("--nbr_features",       type=int,            default=3)
     # feature extraction
@@ -169,7 +169,7 @@ def run(args):
     print(f"percentile threshold: {window_threshold}") # for unsupervised INPG dataset (gt_is_anom is None)
     coreset.window_threshold = window_threshold
 
-    if not gt_is_anom is None:
+    if np.any(gt_is_anom):
         LOGGER.info("Computing evaluation metrics.")
         # sequence wise evaluation
         results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.eval_plots_path)
