@@ -7,9 +7,8 @@ import holidays
 from datetime import datetime, timedelta
 
 import sys
-sys.path.append("./src") # TODO: fix this hack
+sys.path.append("./src")
 
-from data_processing.synth_anomaly import SynthLoadAnomaly
 from utils.utils import set_seed
 
 
@@ -124,7 +123,7 @@ def run(args):
 
             time_wind.append(sequence)
             first_date = str(load.index[day0]).replace(':', '')
-            last_date = str(load.index[day0 + n_days*day_size]).replace(':', '')
+            last_date = str(load.index[day0 + n_days*day_size-1]).replace(':', '')
             datetime_wind.append(f"{first_date} - {last_date}")
             day_idx += day_stride
 
@@ -178,6 +177,11 @@ def run(args):
 
     print(f"min_quantile={min_quantile:0.3f} -> value={min_q_val}", file=open(args.log_file, "a"))
     print(f"max_quantile={max_quantile:0.3f} -> value={max_q_val}", file=open(args.log_file, "a"))
+
+    # # replace outliers by the value of the previous week in clean load, for a fair forecasting model evaluation
+    # outliers = clean_load[clean_load[args.load_feature_name] > 2*clean_load[args.load_feature_name].quantile(0.99)]
+    # for i in range(len(outliers)):
+    #     clean_load.loc[outliers.index[i], args.load_feature_name] = clean_load.loc[outliers.index[i] - pd.Timedelta(weeks=1), args.load_feature_name]
 
     # save clean load for forecasting model evaluation
     clean_load = (clean_load - min_q_val) / (max_q_val - min_q_val)

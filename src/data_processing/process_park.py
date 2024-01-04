@@ -128,7 +128,7 @@ def run(args):
             time_wind.append(sequence)
             gt_time_wind.append(gt)
             first_date = str(load.index[day0]).replace(':', '')
-            last_date = str(load.index[day0 + n_days*day_size]).replace(':', '')
+            last_date = str(load.index[day0 + n_days*day_size-1]).replace(':', '')
             datetime_wind.append(f"{first_date} - {last_date}")
             day_idx += day_stride
 

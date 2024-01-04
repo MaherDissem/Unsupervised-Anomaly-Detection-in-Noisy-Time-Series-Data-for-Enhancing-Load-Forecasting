@@ -55,8 +55,6 @@ def run(args):
         return np.array(sequence), np.array(gt)
 
     def build_dataset(data, n_days, day_size, day_stride):
-        # TODO add exclusind corrupt data
-        # TODO save dates
         """
             build a dataset from feat dataframe using a sliding window of size n_days and stride of 1 day 
             while contamining the data with synthetic anomalies
@@ -73,7 +71,7 @@ def run(args):
             time_wind.append(sequence)
             gt_time_wind.append(gt)
             first_date = str(data.index[day0]).replace(':', '')
-            last_date = str(data.index[day0 + n_days*day_size]).replace(':', '')
+            last_date = str(data.index[day0 + n_days*day_size-1]).replace(':', '')
             datetime_wind.append(f"{first_date} - {last_date}")
 
             day_idx += day_stride
