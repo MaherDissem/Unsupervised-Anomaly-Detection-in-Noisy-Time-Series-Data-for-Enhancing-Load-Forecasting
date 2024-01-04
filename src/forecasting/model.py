@@ -47,7 +47,7 @@ class Net_GRU(nn.Module):
         encoder_hidden = self.encoder.init_hidden(self.device)
         for ei in range(input_length):
             encoder_output, encoder_hidden = self.encoder(x[:, ei:ei+1, :] , encoder_hidden) 
-            # self.encoder is a single unit, loop describes how units are connected, h_t-1 -> h_t and input=x_t => shouldnt he be using GRUCell in stead of GRU? => I think GRU==GRUCell for seq_length(input length)=1. hidden size the size of hidden representation, not the number of neurons, number of neurons==input length
+            # TODO remove self.encoder is a single unit, loop describes how units are connected, h_t-1 -> h_t and input=x_t => shouldnt he be using GRUCell in stead of GRU? => I think GRU==GRUCell for seq_length(input length)=1. hidden size the size of hidden representation, not the number of neurons, number of neurons==input length
             
         decoder_input = x[:,-1,:].unsqueeze(1) # first decoder input = last element of input sequence
         decoder_hidden = encoder_hidden

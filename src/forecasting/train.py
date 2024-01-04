@@ -3,16 +3,13 @@ import sys
 import numpy as np
 import torch
 
-from loss.dilate_loss import dilate_loss
-from tslearn.metrics import dtw, dtw_path
-
 sys.path.insert(0, os.getcwd())
 from src.utils.early_stop import EarlyStopping
 
 
 def train_model(
         trainloader, testloader,
-        net, loss_type, learning_rate, gamma=0.001, Lambda=1, alpha=0.5, 
+        net, learning_rate,
         epochs=1000, patience=20,
         device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
         verbose=1, eval_every=5,
@@ -28,17 +25,11 @@ def train_model(
         epoch_loss = 0.0
 
         for i, data in enumerate(trainloader):
-            _, inputs, target = data
-            inputs = torch.tensor(inputs, dtype=torch.float32).to(device)
-            target = torch.tensor(target, dtype=torch.float32).to(device)
-            batch_size, N_output = target.shape[0:2]
+            inputs, target = data
+            inputs = inputs.to(device)
+            target = target.to(device)
             outputs = net(inputs)
-            loss_mse, loss_shape, loss_temporal = torch.tensor(-1), torch.tensor(-1), torch.tensor(-1)
-            if loss_type=='mse':
-                loss_mse = mse_criterion(target, outputs)
-                loss = loss_mse                    
-            if loss_type=='dilate':    
-                loss, loss_shape, loss_temporal = dilate_loss(outputs, target, alpha, gamma, device)             
+            loss = mse_criterion(target, outputs)      
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -49,7 +40,7 @@ def train_model(
         if verbose:
             print(f"epoch: {epoch}, loss: {epoch_loss/(i+1)}")
             if epoch % eval_every == 0:
-                smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = eval_model(net, testloader, gamma, device)
+                smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = eval_model(net, testloader, device)
                 print(f"Eval: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}")
 
         # early_stopping needs the validation loss to check if it has decresed, 
@@ -62,30 +53,26 @@ def train_model(
     # load the last checkpoint with the best model (saved by EarlyStopping)
     net.load_state_dict(torch.load(checkpoint_path))
 
-    smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = eval_model(net, testloader, gamma, device)
+    smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = eval_model(net, testloader, device)
     return loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss
   
 
-def eval_model(net, loader, gamma, device):   
+def eval_model(net, loader, device):   
     losses_smape = []
     losses_mae = []
     losses_mse = []
     losses_rmse = []
     losses_mape = []
     losses_mase = []
-    losses_dtw = []
-    losses_tdi = []
     losses_r2 = []
 
-    for i, data in enumerate(loader, 0):
+    for data in loader:
         # run inference
         _, inputs, target = data
-        inputs = torch.tensor(inputs, dtype=torch.float32).to(device)
-        target = torch.tensor(target, dtype=torch.float32).to(device)
-        batch_size, N_output = target.shape[0:2]
+        inputs = inputs.to(device)
+        target = target.to(device)
         outputs = net(inputs)
 
-        # eval metrics
         # sMAPE
         absolute_percentage_errors = 2 * torch.abs(outputs - target) / (torch.abs(outputs) + torch.abs(target))
         loss_smape = torch.mean(absolute_percentage_errors) * 100
@@ -101,19 +88,6 @@ def eval_model(net, loader, gamma, device):
         loss_mase = torch.mean(torch.abs(outputs - target) / loss_mae)
         # R squared
         loss_r2 = 1 - torch.sum((target - outputs)**2) / torch.sum((target - torch.mean(target))**2)
-        # DTW and TDI
-        # loss_dtw, loss_tdi = 0, 0
-        # for k in range(batch_size):         
-        #     target_k_cpu = target[k, :, 0:1].view(-1).detach().cpu().numpy()
-        #     output_k_cpu = outputs[k, :, 0:1].view(-1).detach().cpu().numpy()
-        #     path, sim = dtw_path(target_k_cpu, output_k_cpu)   
-        #     loss_dtw += sim
-        #     Dist = 0
-        #     for i, j in path:
-        #             Dist += (i-j)*(i-j)
-        #     loss_tdi += Dist / (N_output*N_output)                            
-        # loss_dtw = loss_dtw /batch_size
-        # loss_tdi = loss_tdi / batch_size
 
         losses_smape.append( loss_smape.item() )
         losses_mae.append( loss_mae.item() )
@@ -122,8 +96,6 @@ def eval_model(net, loader, gamma, device):
         losses_mape.append( loss_mape.item() )
         losses_mase.append( loss_mase.item() )
         losses_r2.append( loss_r2.item() )
-        # losses_dtw.append( loss_dtw )
-        # losses_tdi.append( loss_tdi )
 
     smape_loss = np.array(losses_smape).mean()
     mae_loss = np.array(losses_mae).mean()
@@ -132,6 +104,6 @@ def eval_model(net, loader, gamma, device):
     mape_loss = np.array(losses_mape).mean()
     mase_loss = np.array(losses_mase).mean()
     r2_loss = np.array(losses_r2).mean()
-    # dtw_loss = np.array(losses_dtw).mean()
-    # tdi_loss = np.array(losses_tdi).mean()
-    return smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss #, dtw_loss, tdi_loss
+    
+    return smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss
+
