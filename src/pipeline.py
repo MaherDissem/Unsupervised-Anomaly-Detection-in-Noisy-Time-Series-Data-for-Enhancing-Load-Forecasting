@@ -164,8 +164,6 @@ with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Impu
                     ax2 = ax1.twinx()
                     ax1.imshow(heatmap_data, cmap="YlOrRd", aspect='auto')
                     ax2.plot(timeserie, label='Time Series', color='blue')
-                    # scale mask to timeserie
-                    # mask = [0.9*max(timeserie)*mask[i] for i in range(len(mask))]
                     mask *= max(timeserie)/max(mask)
                     ax2.plot(mask, label='Mask', color='green')
                     ax2.set_xlabel('Time')
@@ -213,8 +211,11 @@ for i, (masked_data, mask, date_range) in enumerate(anomalous):
 
     if save_figs:
         # save imputation visualization
-        plt.plot(masked_data.squeeze(0).squeeze(-1), label="serie with missing values")
-        plt.plot(mask.squeeze(0).squeeze(-1), label="mask")
+        masked_data = masked_data.squeeze(0).squeeze(-1)
+        mask = mask.squeeze(0).squeeze(-1)
+        mask *= max(masked_data)/max(mask)
+        plt.plot(masked_data, label="serie with missing values")
+        plt.plot(mask, label="mask")
         plt.plot(filled_ts, label="serie with filled values")
         plt.legend()
         plt.savefig(os.path.join(save_imputation_path, f"{i}.png"))
