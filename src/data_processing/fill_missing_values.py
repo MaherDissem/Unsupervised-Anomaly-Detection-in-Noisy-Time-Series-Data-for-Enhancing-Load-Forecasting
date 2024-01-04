@@ -1,16 +1,20 @@
+# this code was written during early experimentation and is not used in the final project.
+
 import numpy as np
 import pandas as pd
 from sklearn.impute import KNNImputer
 
 
 def replace_value_by_nn(time_windows):
-    """replace missing values using KNN imputation"""
+    """Impute missing values using the k-Nearest Neighbors algorithm.
+       i.e. new values will be selected from the k closest time windows.
+    """
     imputer = KNNImputer(n_neighbors=3)
     return imputer.fit_transform(np.array(time_windows).squeeze(-1))
 
 
 def fill_empty_days(load, day_size=48, load_feature_name="load"):
-    """fill empty days with previous/next week"""
+    """fill empty days with day values from previous/next week"""
     st = 0
     en = day_size
     while en < len(load):
@@ -46,7 +50,7 @@ def fill_empty_days(load, day_size=48, load_feature_name="load"):
 
 
 def fill_missing_values(load, day_size):
-    """replace missing days by previous/next week and missing values by KNN imputation"""
+    """Replace missing days by previous/next week and missing values by KNN imputation"""
     idx = pd.date_range(load.index[0], load.index[-1], freq="30T")
     load = load.reindex(idx, fill_value=np.nan)
 

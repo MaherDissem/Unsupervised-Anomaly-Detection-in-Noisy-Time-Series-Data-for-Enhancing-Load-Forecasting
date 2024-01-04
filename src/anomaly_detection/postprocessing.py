@@ -49,7 +49,7 @@ def heatmap_postprocess(timeserie, heatmap,
         patch_end = patch_start + patch_size
         anom_idx = list(range(patch_start, patch_end))
 
-    # consecutive values, for when power drops to 0 before spike (anomaly type 2)
+    # consecutive values, for when power drops to 0 before spike (anomaly type 1 and 2)
     if flag_consec:
         anom_idx += find_consec_values(timeserie, min_consecutive=2, indices_only=True, pad=patch_size//2)
 
@@ -76,4 +76,3 @@ def heatmap_postprocess(timeserie, heatmap,
     mask = torch.zeros_like(timeserie)
     mask[anom_idx] = 1
     return mask
-
