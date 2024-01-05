@@ -38,6 +38,7 @@ def find_consec_values(lst, min_consecutive=3, indices_only=True, pad=2):
 
 def heatmap_postprocess(timeserie, heatmap, 
                         flag_highest_patch=True, flag_consec=True, flag_outliers=True, extend_to_patch=True, 
+                        outlier_threshold=2.5,
                         anom_idx_only=False):
     anom_idx = []
     patch_size = timeserie.shape[0] // heatmap.shape[0]
@@ -57,8 +58,8 @@ def heatmap_postprocess(timeserie, heatmap,
     if flag_outliers:
         timeserie_ = timeserie.clone()
         timeserie_ = (timeserie_ - timeserie_.mean()) / timeserie_.std()
-        spike_anom_idx = torch.nonzero(timeserie_ > 2.5*timeserie_.std())[:, 0].tolist()
-        spike_anom_idx += torch.nonzero(timeserie_ < -2.5*timeserie_.std())[:, 0].tolist()
+        spike_anom_idx = torch.nonzero(timeserie_ > outlier_threshold*timeserie_.std())[:, 0].tolist()
+        spike_anom_idx += torch.nonzero(timeserie_ < -outlier_threshold*timeserie_.std())[:, 0].tolist()
 
     # extend point to patch for smoother imputation
     if extend_to_patch:
