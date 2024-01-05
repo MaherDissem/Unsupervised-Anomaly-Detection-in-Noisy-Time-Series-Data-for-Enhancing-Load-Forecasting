@@ -19,8 +19,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 set_seed(0)
 
 # parameters
-data_folder = "INPG"                                        # dataset folder, must be in dataset/raw/
-day_size = 24                                               # dataset resolution
+data_folder = "AEMO/NSW"                                    # dataset folder, must be in dataset/raw/
+day_size = 24 if "INPG" in data_folder else 48              # dataset resolution
 n_days = 1                                                  # window size for anomaly detection
 window_size = day_size * n_days                             # window size for anomaly detection
 day_stride = 1                                              # for anomaly detection, seperate stride for forecasting
