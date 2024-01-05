@@ -30,9 +30,9 @@ def parse_args():
     parser.add_argument("--results_file",       type=str,            default="results/results.txt",                 help="Path to file to save results in")
     parser.add_argument("--eval_plots_path",    type=str,            default="results/Park/Commercial/30_minutes",  help="Path to file to save results in")
     # dataset
-    parser.add_argument("--train_data_path",    type=str, nargs='+', default=["dataset/processed/INPG/ad_train_contam", "dataset/processed/INPG/ad_test_contam"], help="List of training data paths") # we flag anomalies on the whole dataset for the pipeline
-    parser.add_argument("--test_data_path",     type=str, nargs='+', default=["dataset/processed/INPG/ad_train_contam", "dataset/processed/INPG/ad_test_contam"], help="List of training data paths")
-    parser.add_argument("--nbr_timesteps",      type=int,            default=24*1) # sequence length
+    parser.add_argument("--train_data_path",    type=str, nargs='+', default=["dataset/processed/AEMO/NSW/ad_train_contam", "dataset/processed/AEMO/NSW/ad_test_contam"], help="List of training data paths") # we flag anomalies on the whole dataset for the pipeline
+    parser.add_argument("--test_data_path",     type=str, nargs='+', default=["dataset/processed/AEMO/NSW/ad_train_contam", "dataset/processed/AEMO/NSW/ad_test_contam"], help="List of training data paths")
+    parser.add_argument("--nbr_timesteps",      type=int,            default=48*1) # sequence length
     parser.add_argument("--batch_size",         type=int,            default=32)
     parser.add_argument("--nbr_variables",      type=int,            default=1)
     parser.add_argument("--nbr_features",       type=int,            default=3)
@@ -193,7 +193,7 @@ def run(args):
             else:
                 pred_mask = torch.zeros_like(timeserie)
             pred_masks.append(pred_mask)
-        patchwise_results = metrics.compute_pointwise_retrieval_metrics(pred_masks, gt_heatmaps)
+        patchwise_results = metrics.compute_pointwise_retrieval_metrics(pred_masks, gt_heatmaps, patch_size=args.feat_patch_size)
         LOGGER.info(f"-> Patchwise evaluation results:")
         LOGGER.info(f"AUROC: {patchwise_results['auroc']:0.3f}")
         LOGGER.info(f"Best F1: {patchwise_results['best_f1']:0.3f}")
