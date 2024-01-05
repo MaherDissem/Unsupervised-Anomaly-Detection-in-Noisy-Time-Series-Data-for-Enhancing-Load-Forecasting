@@ -26,6 +26,28 @@ def compute_timeseriewise_retrieval_metrics(
     )
     draw_curve(fpr, tpr, auroc, eval_plots_path)
 
+    # threshold using std
+    std = np.std(anomaly_prediction_weights)
+    threshold = std * 0.01
+
+    # threshold using percentile
+    threshold = np.percentile(anomaly_prediction_weights, 90.0)
+
+    # plot scores data points with ground truth as color
+    plt.clf()
+    plt.scatter(anomaly_prediction_weights, anomaly_ground_truth_labels)
+    plt.show()
+
+    print(f"threshold: {threshold}")
+    tn, fp, fn, tp = metrics.confusion_matrix(
+        anomaly_ground_truth_labels, (anomaly_prediction_weights > threshold).astype(int)
+    ).ravel()
+    print(f"tp: {tp}, fp: {fp}, \nfn: {fn}, tn: {tn}")
+    print(f"f1: {metrics.f1_score(anomaly_ground_truth_labels, (anomaly_prediction_weights > threshold).astype(int))}")
+    print(f"prcesion: {metrics.precision_score(anomaly_ground_truth_labels, (anomaly_prediction_weights > threshold).astype(int))}")
+    print(f"recall: {metrics.recall_score(anomaly_ground_truth_labels, (anomaly_prediction_weights > threshold).astype(int))}")
+    print("\n")
+
     precision, recall, thresholds = metrics.precision_recall_curve(
         anomaly_ground_truth_labels, anomaly_prediction_weights
     )
@@ -41,6 +63,8 @@ def compute_timeseriewise_retrieval_metrics(
         anomaly_ground_truth_labels, (anomaly_prediction_weights > thresholds[k]).astype(int)
     ).ravel()
     print(f"tp: {tp}, fp: {fp}, \nfn: {fn}, tn: {tn}")
+
+    print(f"{k/len(thresholds)*100}% percentile of best threshold is the best thres: {thresholds[k]}")
 
     return {
         "auroc": auroc, 

@@ -30,8 +30,8 @@ def parse_args():
     parser.add_argument("--results_file",       type=str,            default="results/results.txt",                 help="Path to file to save results in")
     parser.add_argument("--eval_plots_path",    type=str,            default="results/Park/Commercial/30_minutes",  help="Path to file to save results in")
     # dataset
-    parser.add_argument("--train_data_path",    type=str, nargs='+', default=["dataset/processed/AEMO/NSW/ad_train_contam", "dataset/processed/AEMO/NSW/ad_test_contam"], help="List of training data paths") # we flag anomalies on the whole dataset for the pipeline
-    parser.add_argument("--test_data_path",     type=str, nargs='+', default=["dataset/processed/AEMO/NSW/ad_train_contam", "dataset/processed/AEMO/NSW/ad_test_contam"], help="List of training data paths")
+    parser.add_argument("--train_data_path",    type=str, nargs='+', default=["dataset/processed/Park/Office/30_minutes/ad_train_contam", "dataset/processed/Park/Office/30_minutes/ad_test_contam"], help="List of training data paths") # we flag anomalies on the whole dataset for the pipeline
+    parser.add_argument("--test_data_path",     type=str, nargs='+', default=["dataset/processed/Park/Office/30_minutes/ad_train_contam", "dataset/processed/Park/Office/30_minutes/ad_test_contam"], help="List of training data paths")
     parser.add_argument("--nbr_timesteps",      type=int,            default=48*1) # sequence length
     parser.add_argument("--batch_size",         type=int,            default=32)
     parser.add_argument("--nbr_variables",      type=int,            default=1)
@@ -165,16 +165,16 @@ def run(args):
     heatmaps = (heatmaps - coreset.min_heatmap_scores) / (coreset.max_heatmap_scores - coreset.min_heatmap_scores)
     heatmaps = np.mean(heatmaps, axis=-1)
     
-    window_threshold = np.percentile(scores, 98)
-    print(f"percentile threshold: {window_threshold}") # for unsupervised INPG dataset (gt_is_anom is None)
+    window_threshold = np.percentile(scores, 98) # TODO param: 98 for INPG; 90 for AEMO/Park datasets (contam rate is 10%) (sometimes lower FP even than optimal threshold)
+    print(f"percentile threshold: {window_threshold}")
     coreset.window_threshold = window_threshold
 
     if np.any(gt_is_anom):
         LOGGER.info("Computing evaluation metrics.")
         # sequence wise evaluation
         results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.eval_plots_path)
-        window_threshold = results["best_threshold"] # TODO use percentile instead
-        coreset.window_threshold = window_threshold
+        window_threshold = results["best_threshold"] # TODO Remove
+        coreset.window_threshold = window_threshold # TODO Remove
         LOGGER.info(f"-> Sequence wise evaluation results:")
         LOGGER.info(f"AUROC: {results['auroc']:0.3f}")
         LOGGER.info(f"Best F1: {results['best_f1']:0.3f}")
