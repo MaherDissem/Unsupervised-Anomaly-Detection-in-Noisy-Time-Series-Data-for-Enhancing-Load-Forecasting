@@ -8,7 +8,7 @@ from src.utils.early_stop import EarlyStopping
 
 
 def train_model(
-        trainloader, testloader,
+        trainloader, validloader, testloader,
         net, learning_rate,
         epochs=1000, patience=20,
         device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
@@ -24,28 +24,29 @@ def train_model(
         early_stopping.epoch = epoch 
         epoch_loss = 0.0
 
-        for i, data in enumerate(trainloader):
+        for data in trainloader:
             inputs, target = data
             inputs = inputs.to(device)
             target = target.to(device)
             outputs = net(inputs)
-            loss = mse_criterion(target, outputs)      
+            train_loss = mse_criterion(target, outputs)      
             optimizer.zero_grad()
-            loss.backward()
+            train_loss.backward()
             optimizer.step()
-            epoch_loss += loss.item()
-        epoch_loss /= (i+1)
+            epoch_loss += train_loss.item()
+        epoch_loss /= len(trainloader) # average loss per batch
         loss_evol.append(epoch_loss)
 
+        smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = eval_model(net, validloader, device)
+
         if verbose:
-            print(f"epoch: {epoch}, loss: {epoch_loss/(i+1)}")
             if epoch % eval_every == 0:
-                smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = eval_model(net, testloader, device)
-                print(f"Eval: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}")
+                print(f"epoch: {epoch}, Train loss: {epoch_loss:.7f}")
+                print(f"Eval: smape={smape_loss:.7f}, mae={mae_loss:.7f}, mse={mse_loss:.7f}, rmse={rmse_loss:.7f}, r2={r2_loss:.7f}")
 
         # early_stopping needs the validation loss to check if it has decresed, 
         # and if it has, it will make a checkpoint of the current model
-        early_stopping(epoch_loss, net)
+        early_stopping(mse_loss, net)
 
         if early_stopping.early_stop:
             break
@@ -53,8 +54,8 @@ def train_model(
     # load the last checkpoint with the best model (saved by EarlyStopping)
     net.load_state_dict(torch.load(checkpoint_path))
 
-    smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = eval_model(net, testloader, device)
-    return loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss
+    smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = eval_model(net, testloader, device)
+    return loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss
   
 
 def eval_model(net, loader, device):   
@@ -62,8 +63,6 @@ def eval_model(net, loader, device):
     losses_mae = []
     losses_mse = []
     losses_rmse = []
-    losses_mape = []
-    losses_mase = []
     losses_r2 = []
 
     for data in loader:
@@ -82,28 +81,20 @@ def eval_model(net, loader, device):
         loss_mse = torch.mean((outputs - target)**2)
         # RMSE
         loss_rmse = torch.sqrt(loss_mse)
-        # MAPE
-        loss_mape = torch.mean(torch.abs(outputs - target) / (torch.abs(target)+1e-6)) # division by zero for null targets
-        # MASE
-        loss_mase = torch.mean(torch.abs(outputs - target) / loss_mae)
         # R squared
         loss_r2 = 1 - torch.sum((target - outputs)**2) / torch.sum((target - torch.mean(target))**2)
 
-        losses_smape.append( loss_smape.item() )
-        losses_mae.append( loss_mae.item() )
-        losses_mse.append( loss_mse.item() )
-        losses_rmse.append( loss_rmse.item() )
-        losses_mape.append( loss_mape.item() )
-        losses_mase.append( loss_mase.item() )
-        losses_r2.append( loss_r2.item() )
+        losses_smape.append(loss_smape.item())
+        losses_mae.append(loss_mae.item())
+        losses_mse.append(loss_mse.item())
+        losses_rmse.append(loss_rmse.item())
+        losses_r2.append(loss_r2.item())
 
     smape_loss = np.array(losses_smape).mean()
     mae_loss = np.array(losses_mae).mean()
     mse_loss = np.array(losses_mse).mean()
     rmse_loss = np.array(losses_rmse).mean()
-    mape_loss = np.array(losses_mape).mean()
-    mase_loss = np.array(losses_mase).mean()
     r2_loss = np.array(losses_r2).mean()
     
-    return smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss
+    return smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss
 

@@ -49,9 +49,17 @@ def get_data_loaders(args):
 
     train_data = F_Dataset(args.train_dataset_path, ts_split=args.sequence_split)
     test_data = F_Dataset(args.test_dataset_path, ts_split=args.sequence_split, return_date=True)
+    valid_data, test_data = torch.utils.data.random_split(test_data, [int(0.5*len(test_data)), len(test_data) - int(0.5*len(test_data))])
 
     trainloader = DataLoader(
         train_data,
+        batch_size=args.batch_size,
+        shuffle=True,
+        pin_memory=True,
+        drop_last=True,
+    )
+    validloader = DataLoader(
+        valid_data,
         batch_size=args.batch_size,
         shuffle=True,
         pin_memory=True,
@@ -64,7 +72,7 @@ def get_data_loaders(args):
         pin_memory=True,
         drop_last=True,
     ) 
-    return trainloader, testloader, N_input, N_output
+    return trainloader, validloader, testloader, N_input, N_output
 
 
 def run(args):
@@ -72,7 +80,7 @@ def run(args):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # get data loaders
-    trainloader, testloader, N_input, N_output = get_data_loaders(args)
+    trainloader, validloader, testloader, N_input, N_output = get_data_loaders(args)
     
     # build model
     encoder = EncoderRNN(
@@ -93,8 +101,8 @@ def run(args):
     model = Net_GRU(encoder, decoder, target_length=N_output, device=device).to(device)
 
     # train model
-    train_loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = train_model(
-        trainloader, testloader,
+    train_loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = train_model(
+        trainloader, validloader, testloader,
         model, learning_rate=args.lr,
         epochs=args.epochs, patience=args.patience,
         checkpoint_path = args.checkpoint_path,
@@ -106,7 +114,7 @@ def run(args):
     os.makedirs(os.path.dirname(args.results_file), exist_ok=True)
     print(
         f"train_dataset_path: {args.train_dataset_path}\n\
-        Final: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}",
+        Final test: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, r2={r2_loss}",
         file=open(args.results_file, "a")
     )
     plt.plot(train_loss_evol)
@@ -144,7 +152,7 @@ def run(args):
                 plt.clf()
                 count += 1
 
-    return smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss
+    return smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss
 
 
 if __name__ == "__main__":

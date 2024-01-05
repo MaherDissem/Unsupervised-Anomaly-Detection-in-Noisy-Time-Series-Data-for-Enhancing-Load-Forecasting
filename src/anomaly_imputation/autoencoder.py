@@ -104,7 +104,7 @@ class LSTM_AE(nn.Module):
         decoded = self.decoder(encoded)
         return encoded, decoded
     
-    def fit(self, train_loader):
+    def fit(self, train_loader, test_dataloader):
         """
         trains the model's parameters over a fixed number of epochs, specified by `n_epochs`, as long as the loss keeps decreasing.
         :param dataset: `Dataset` object
@@ -120,9 +120,9 @@ class LSTM_AE(nn.Module):
         for epoch in range(1 , self.epochs+1):
             # updating early_stopping's epoch
             early_stopping.epoch = epoch    
-            epoch_loss = 0.0
             
-            for batch_idx, batch in enumerate(train_loader):
+            epoch_train_loss = 0.0
+            for batch in train_loader:
                 clean_ts = batch["clean_data"].to(self.device)
                 masked_ts = batch["masked_data"].to(self.device)
                 mask = batch["mask"].to(self.device)
@@ -131,24 +131,34 @@ class LSTM_AE(nn.Module):
 
                 running_loss = self.criterion(clean_ts , decoded)                   # option 1: calculate loss for the whole sequence
                 # running_loss = self.criterion(clean_ts * mask, decoded * mask)    # option 2: only calculate loss for the masked part
-                epoch_loss += running_loss.item()
+                epoch_train_loss += running_loss.item()
 
                 # Backward pass
                 running_loss.backward()
                 nn.utils.clip_grad_norm_(self.parameters(), max_norm = self.max_grad_norm) # clipping avoids exploding gradients
                 optimizer.step()
             
+            epoch_valid_loss = 0.0
+            for batch in test_dataloader:
+                clean_ts = batch["clean_data"].to(self.device)
+                masked_ts = batch["masked_data"].to(self.device)
+                mask = batch["mask"].to(self.device)
+                encoded, decoded = self(masked_ts)
+                running_loss = self.criterion(clean_ts , decoded)                   # option 1: calculate loss for the whole sequence
+                # running_loss = self.criterion(clean_ts * mask, decoded * mask)    # option 2: only calculate loss for the masked part
+                epoch_valid_loss += running_loss.item()
+            
             # early_stopping needs the validation loss to check if it has decresed, 
             # and if it has, it will make a checkpoint of the current model
-            early_stopping(epoch_loss, self)
+            early_stopping(epoch_valid_loss, self)
 
             if early_stopping.early_stop:
                 break
             
             if epoch % self.every_epoch_print == 0:
-                print(f"epoch : {epoch}, loss_mean : {epoch_loss:.7f}")
+                print(f"epoch : {epoch}, epoch_train_loss : {epoch_train_loss:.7f}, epoch_valid_loss : {epoch_valid_loss:.7f}")
 
-            loss_history.append(epoch_loss)
+            loss_history.append(epoch_train_loss)
         
         # load the last checkpoint with the best model (saved by EarlyStopping)
         self.load_state_dict(torch.load(self.checkpoint_path))
@@ -179,7 +189,6 @@ class LSTM_AE(nn.Module):
         self.eval()
         ts = ts.to(self.device)
         mask = mask.to(self.device)
-
         model_out = self.infer(ts)
 
         model_out = model_out.squeeze(0).squeeze(-1).detach().cpu()

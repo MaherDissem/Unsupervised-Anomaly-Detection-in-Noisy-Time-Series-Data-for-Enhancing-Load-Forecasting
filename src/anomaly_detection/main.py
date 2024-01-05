@@ -173,7 +173,7 @@ def run(args):
         LOGGER.info("Computing evaluation metrics.")
         # sequence wise evaluation
         results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.eval_plots_path)
-        window_threshold = results["best_threshold"]
+        window_threshold = results["best_threshold"] # TODO use percentile instead
         coreset.window_threshold = window_threshold
         LOGGER.info(f"-> Sequence wise evaluation results:")
         LOGGER.info(f"AUROC: {results['auroc']:0.3f}")

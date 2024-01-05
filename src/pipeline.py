@@ -319,8 +319,8 @@ default_LF_args.test_dataset_path = f"dataset/processed/{data_folder}/lf_test_cl
 default_LF_args.save_plots_path = f"results/{data_folder}/forecasting/cleaned"
 default_LF_args.checkpoint_path = f"results/{data_folder}/weights/checkpoint_lf_clean.pt"
 
-smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = LF_run(default_LF_args)
-print(f"Cleaned data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
+print(f"Cleaned data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
 
 # run forecasting model on contamined data
 default_LF_args.train_dataset_path = f"dataset/processed/{data_folder}/lf_contam"
@@ -328,9 +328,9 @@ default_LF_args.test_dataset_path = f"dataset/processed/{data_folder}/lf_test_cl
 default_LF_args.save_plots_path = f"results/{data_folder}/forecasting/contam"
 default_LF_args.checkpoint_path = f"results/{data_folder}/weights/checkpoint_lf_contam.pt"
 
-smape_loss, mae_loss, mse_loss, rmse_loss, mape_loss, mase_loss, r2_loss = LF_run(default_LF_args)
-print(f"Contamined data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, mape={mape_loss}, mase={mase_loss}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
+print(f"Contamined data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
 
 # sMAPE is large for the INPG dataset, because the load is sometimes very low (~0), other metrics are more relevant in this case.
-# MASE and MAPE are not useful as they get weird values when the load is very low.
+# same for R2 which is sensitive to outliers.
 # Yet, we can see that the model is able to forecast the load with a good accuracy, even when the load is very low (see plots in f"results/{data_folder}/forecasting/cleaned/").
