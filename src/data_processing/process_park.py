@@ -60,7 +60,7 @@ def run(args):
     load = load[~load.index.duplicated()]
 
     # fill missing values
-    # load = fill_missing_values(load, args.day_size)
+    load = fill_missing_values(load, args.day_size)
     
     # split contam data into train and test sets for anomaly detection model
     N = int(args.contam_clean_ratio*len(load))//args.day_size*args.day_size
