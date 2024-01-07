@@ -30,12 +30,13 @@ def parse_args():
     parser.add_argument("--results_file",       type=str,            default="results/results.txt",                 help="Path to file to save results in")
     parser.add_argument("--eval_plots_path",    type=str,            default="results/Park/Commercial/30_minutes",  help="Path to file to save results in")
     # dataset
-    parser.add_argument("--train_data_path",    type=str, nargs='+', default=["dataset/processed/Park/Office/30_minutes/ad_train_contam", "dataset/processed/Park/Office/30_minutes/ad_test_contam"], help="List of training data paths") # we flag anomalies on the whole dataset for the pipeline
-    parser.add_argument("--test_data_path",     type=str, nargs='+', default=["dataset/processed/Park/Office/30_minutes/ad_train_contam", "dataset/processed/Park/Office/30_minutes/ad_test_contam"], help="List of training data paths")
+    parser.add_argument("--train_data_path",    type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths") # we flag anomalies on the whole dataset for the pipeline
+    parser.add_argument("--test_data_path",     type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths")
     parser.add_argument("--nbr_timesteps",      type=int,            default=48*1) # sequence length
     parser.add_argument("--batch_size",         type=int,            default=32)
     parser.add_argument("--nbr_variables",      type=int,            default=1)
     parser.add_argument("--nbr_features",       type=int,            default=3)
+    parser.add_argument("--contam_ratio",       type=float,          default=0.1, help="Estimated day contamination rate of the dataset (percentage of days with any anomaly)")
     # feature extraction
     parser.add_argument("--alpha",              type=float,          default=0.2)
     parser.add_argument("--feat_patch_size",    type=int,            default=8)
@@ -165,21 +166,21 @@ def run(args):
     heatmaps = (heatmaps - coreset.min_heatmap_scores) / (coreset.max_heatmap_scores - coreset.min_heatmap_scores)
     heatmaps = np.mean(heatmaps, axis=-1)
     
-    window_threshold = np.percentile(scores, 98) # TODO param: 98 for INPG; 90 for AEMO/Park datasets (contam rate is 10%) (sometimes lower FP even than optimal threshold)
-    print(f"percentile threshold: {window_threshold}")
+    window_threshold = np.percentile(scores, 100 - args.contam_ratio * 100) # 98 for INPG; (privilege low precision as FP impact is low thanks to imputation)
     coreset.window_threshold = window_threshold
 
     if np.any(gt_is_anom):
         LOGGER.info("Computing evaluation metrics.")
         # sequence wise evaluation
-        results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.eval_plots_path)
-        window_threshold = results["best_threshold"] # TODO Remove
-        coreset.window_threshold = window_threshold # TODO Remove
-        LOGGER.info(f"-> Sequence wise evaluation results:")
+        results = metrics.compute_timeseriewise_retrieval_metrics(scores, gt_is_anom, args.eval_plots_path, args.contam_ratio)
+        window_threshold = results["threshold"]
+        coreset.window_threshold = window_threshold
+        LOGGER.info(f">> Sequence wise evaluation results:")
         LOGGER.info(f"AUROC: {results['auroc']:0.3f}")
-        LOGGER.info(f"Best F1: {results['best_f1']:0.3f}")
-        LOGGER.info(f"Best precision: {results['best_precision']:0.3f}")
-        LOGGER.info(f"Best recall: {results['best_recall']:0.3f}")
+        LOGGER.info(f"F1: {results['f1']:0.3f}")
+        LOGGER.info(f"Precision: {results['precision']:0.3f}")
+        LOGGER.info(f"Recall: {results['recall']:0.3f}")
+        LOGGER.info(f"Confusion matrix: {results['confusion_matrix']}")
 
         # patchtwise evaluation
         pred_masks = []
@@ -194,25 +195,33 @@ def run(args):
                 pred_mask = torch.zeros_like(timeserie)
             pred_masks.append(pred_mask)
         patchwise_results = metrics.compute_pointwise_retrieval_metrics(pred_masks, gt_heatmaps, patch_size=args.feat_patch_size)
-        LOGGER.info(f"-> Patchwise evaluation results:")
-        LOGGER.info(f"AUROC: {patchwise_results['auroc']:0.3f}")
-        LOGGER.info(f"Best F1: {patchwise_results['best_f1']:0.3f}")
-        LOGGER.info(f"Best precision: {patchwise_results['best_precision']:0.3f}")
-        LOGGER.info(f"Best recall: {patchwise_results['best_recall']:0.3f}")
+        LOGGER.info(f">> Patchwise evaluation results:")
+        LOGGER.info(f"F1: {patchwise_results['f1']:0.3f}")
+        LOGGER.info(f"precision: {patchwise_results['precision']:0.3f}")
+        LOGGER.info(f"recall: {patchwise_results['recall']:0.3f}")
+        LOGGER.info(f"Confusion matrix: {patchwise_results['confusion_matrix']}")
 
         # save results to experiment log file
-        print(f"\nanomaly detection results: (day wise)\n\
-              AUROC: {results['auroc']:0.3f}, best f1: {results['best_f1']:0.3f}, best precision: {results['best_precision']:0.3f}, best recall: {results['best_recall']:0.3f}",
-              file=open(args.results_file, "a"))
-        print(f"\nanomaly detection results: (patch wise)\n\
-              AUROC: {patchwise_results['auroc']:0.3f}, best f1: {patchwise_results['best_f1']:0.3f}, best precision: {patchwise_results['best_precision']:0.3f}, best recall: {patchwise_results['best_recall']:0.3f}",
-              file=open(args.results_file, "a"))
+        print(">> Sequence wise evaluation results: ",
+            f"AUROC: {results['auroc']:0.3f}",
+            f"F1: {results['f1']:0.3f}",
+            f"Precision: {results['precision']:0.3f}",
+            f"Recall: {results['recall']:0.3f}",
+            f"Confusion matrix (tn, fp, fn, tp): {results['confusion_matrix']}",
+            file=open(args.results_file, "a"))
+        
+        print(">> Patchwise evaluation results: ",
+            f"F1: {patchwise_results['f1']:0.3f}",
+            f"precision: {patchwise_results['precision']:0.3f}",
+            f"recall: {patchwise_results['recall']:0.3f}",
+            f"Confusion matrix (tn, fp, fn, tp): {patchwise_results['confusion_matrix']}",
+            file=open(args.results_file, "a"))
 
     # saving model
     if args.save_model:
         ad_model_save_path = os.path.join(args.model_save_path)
         os.makedirs(ad_model_save_path, exist_ok=True)
-        coreset.save_to_path(ad_model_save_path) 
+        coreset.save_to_path(ad_model_save_path)
         LOGGER.info("Saved TS_SoftPatch model")
 
     print("AD module ready!")

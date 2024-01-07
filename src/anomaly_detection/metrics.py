@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 def compute_timeseriewise_retrieval_metrics(
-    anomaly_prediction_weights, anomaly_ground_truth_labels, eval_plots_path
+    anomaly_prediction_weights, anomaly_ground_truth_labels, eval_plots_path, contam_rate=0.1, use_optimal_threshold=False
 ):
     """
     Computes retrieval statistics (AUROC, FPR, TPR).
@@ -18,7 +18,8 @@ def compute_timeseriewise_retrieval_metrics(
         anomaly_ground_truth_labels: [np.array or list] [N] Binary labels - 1
                                     if timeserie is an anomaly, 0 if not.
     """
-    fpr, tpr, thresholds = metrics.roc_curve(
+    # we compute AUROC to evaluate the performance of the anomaly detection regardless of the selected threshold
+    fpr, tpr, _ = metrics.roc_curve(
         anomaly_ground_truth_labels, anomaly_prediction_weights
     )
     auroc = metrics.roc_auc_score(
@@ -26,55 +27,49 @@ def compute_timeseriewise_retrieval_metrics(
     )
     draw_curve(fpr, tpr, auroc, eval_plots_path)
 
-    # threshold using std
-    std = np.std(anomaly_prediction_weights)
-    threshold = std * 0.01
+    # we select the anomaly score threshold as a percentile of the anomaly scores
+    threshold = np.percentile(anomaly_prediction_weights, 100 - contam_rate * 100)
+    anomaly_predicted_labels = (anomaly_prediction_weights > threshold).astype(int)
 
-    # threshold using percentile
-    threshold = np.percentile(anomaly_prediction_weights, 90.0)
-
-    # plot scores data points with ground truth as color
-    plt.clf()
-    plt.scatter(anomaly_prediction_weights, anomaly_ground_truth_labels)
-    plt.show()
-
-    print(f"threshold: {threshold}")
-    tn, fp, fn, tp = metrics.confusion_matrix(
+    f1 = metrics.f1_score(anomaly_ground_truth_labels, anomaly_predicted_labels)
+    precision = metrics.precision_score(anomaly_ground_truth_labels, anomaly_predicted_labels)
+    recall = metrics.recall_score(anomaly_ground_truth_labels, anomaly_predicted_labels)
+    confusion_matrix = metrics.confusion_matrix(
         anomaly_ground_truth_labels, (anomaly_prediction_weights > threshold).astype(int)
     ).ravel()
-    print(f"tp: {tp}, fp: {fp}, \nfn: {fn}, tn: {tn}")
-    print(f"f1: {metrics.f1_score(anomaly_ground_truth_labels, (anomaly_prediction_weights > threshold).astype(int))}")
-    print(f"prcesion: {metrics.precision_score(anomaly_ground_truth_labels, (anomaly_prediction_weights > threshold).astype(int))}")
-    print(f"recall: {metrics.recall_score(anomaly_ground_truth_labels, (anomaly_prediction_weights > threshold).astype(int))}")
-    print("\n")
 
-    precision, recall, thresholds = metrics.precision_recall_curve(
-        anomaly_ground_truth_labels, anomaly_prediction_weights
-    )
-    f1_scores = np.divide(
-        2 * precision * recall,
-        precision + recall,
-        out=np.zeros_like(precision),
-        where=(precision + recall) != 0,
-    )
-    k = f1_scores.argmax() # idx of best f1 score / threshold
-
-    tn, fp, fn, tp = metrics.confusion_matrix(
-        anomaly_ground_truth_labels, (anomaly_prediction_weights > thresholds[k]).astype(int)
-    ).ravel()
-    print(f"tp: {tp}, fp: {fp}, \nfn: {fn}, tn: {tn}")
-
-    print(f"{k/len(thresholds)*100}% percentile of best threshold is the best thres: {thresholds[k]}")
+    # for optimality analysis, we also compute the metrics for an optimal threshold (highest f1 score)
+    if use_optimal_threshold:
+        precision_list, recall_list, threshold_list = metrics.precision_recall_curve(
+            anomaly_ground_truth_labels, anomaly_prediction_weights
+        )
+        f1_score_list = np.divide(
+            2 * precision_list * recall_list,
+            precision_list + recall_list,
+            out=np.zeros_like(precision_list),
+            where=(precision_list + recall_list) != 0,
+        )
+        k = f1_score_list.argmax()
+    
+        threshold = threshold_list[k]
+        f1 = f1_score_list[k]
+        precision = precision_list[k]
+        recall = recall_list[k]
+        confusion_matrix = metrics.confusion_matrix(
+            anomaly_ground_truth_labels, (anomaly_prediction_weights > threshold).astype(int)
+        ).ravel()
+        # print(f"{k/len(thresholds)*100}% percentile of best threshold is the best thres: {threshold}")
 
     return {
         "auroc": auroc, 
         "fpr": fpr, 
-        "tpr": tpr, 
-        "best_f1": f1_scores[k], 
-        "best_precision": precision[k],
-        "best_recall": recall[k],
-        "best_threshold": thresholds[k],
-        "thresholds": thresholds, 
+        "tpr": tpr,
+        
+        "threshold": threshold,
+        "f1": f1,
+        "precision": precision,
+        "recall": recall,
+        "confusion_matrix": confusion_matrix, # tn, fp, fn, tp
     }
 
 
@@ -105,40 +100,21 @@ def compute_pointwise_retrieval_metrics(predicted_masks, ground_truth_masks, pat
         pred_masks_patched[i] = patched_pred_mask
         ground_truth_masks_patched[i] = patched_gt_mask
 
-    flat_predicted_masks = pred_masks_patched.ravel()
+    flat_predicted_masks = pred_masks_patched.ravel() # binary
     flat_ground_truth_masks_patched = ground_truth_masks_patched.ravel()
 
-    fpr, tpr, thresholds = metrics.roc_curve(
-        flat_ground_truth_masks_patched.astype(int), flat_predicted_masks
-    )
-    auroc = metrics.roc_auc_score(
-        flat_ground_truth_masks_patched.astype(int), flat_predicted_masks
-    )
-    precision, recall, thresholds = metrics.precision_recall_curve(
-        flat_ground_truth_masks_patched.astype(int), flat_predicted_masks
-    )
-    f1_scores = np.divide(
-        2 * precision * recall,
-        precision + recall,
-        out=np.zeros_like(precision),
-        where=(precision + recall) != 0,
-    )
-    k = f1_scores.argmax() # idx of best f1 score / threshold
-
-    tn, fp, fn, tp = metrics.confusion_matrix(
-        flat_ground_truth_masks_patched.astype(int), flat_predicted_masks.astype(int)
+    f1 = metrics.f1_score(flat_ground_truth_masks_patched, flat_predicted_masks)
+    precision = metrics.precision_score(flat_ground_truth_masks_patched, flat_predicted_masks)
+    recall = metrics.recall_score(flat_ground_truth_masks_patched, flat_predicted_masks)
+    confusion_matrix = metrics.confusion_matrix(
+        flat_ground_truth_masks_patched, flat_predicted_masks
     ).ravel()
-    print(f"tp: {tp}, fp: {fp}, \nfn: {fn}, tn: {tn}")
 
     return {
-        "auroc": auroc, 
-        "fpr": fpr, 
-        "tpr": tpr, 
-        "best_f1": f1_scores[k], 
-        "best_precision": precision[k],
-        "best_recall": recall[k],
-        "best_threshold": thresholds[k],
-        "thresholds": thresholds, 
+        "f1": f1,
+        "precision": precision,
+        "recall": recall,   
+        "confusion_matrix": confusion_matrix,     
     }
 
 

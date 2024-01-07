@@ -20,11 +20,12 @@ set_seed(0)
 
 # parameters
 data_folder = "AEMO/NSW"                                    # dataset folder, must be in dataset/raw/
+
 day_size = 24 if "INPG" in data_folder else 48              # dataset resolution
 n_days = 1                                                  # window size for anomaly detection
 window_size = day_size * n_days                             # window size for anomaly detection
 day_stride = 1                                              # for anomaly detection, seperate stride for forecasting
-contam_ratio = 0.1                                          # contamination ratio for anomaly detection (% of days with anomalies, one anomaly per day)
+contam_ratio = 0.02 if "INPG" in data_folder else 0.1       # contamination ratio for anomaly detection (% of days with anomalies, one anomaly per day)
 flag_consec = "INPG" not in data_folder                     # False for INPG dataset, True otherwise (anomaly type 1 and 2)
 outlier_threshold = 2.4 if "INPG" in data_folder else 2.5   # threshold for outlier detection
 forecast_window_size = 6                                    # window size for forecasting
@@ -74,6 +75,8 @@ default_process_data_AD_args.log_file = f"results/{data_folder}/log.txt"
 default_process_data_AD_args.day_size = day_size
 default_process_data_AD_args.n_days = n_days
 default_process_data_AD_args.day_stride = day_stride
+if "INPG" not in data_folder:
+    default_process_data_AD_args.contam_ratio = contam_ratio
 
 min_q_val, max_q_val = prepare_data_AD_run(default_process_data_AD_args)
 
