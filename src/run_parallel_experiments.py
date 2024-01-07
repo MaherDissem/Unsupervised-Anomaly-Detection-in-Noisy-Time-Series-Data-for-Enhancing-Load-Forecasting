@@ -7,8 +7,9 @@ from pipeline import run_pipeline
 
 
 # environment variables
-gpu_ids = [0]#, 1, 2, 3]
+gpu_ids = [0, 1, 2, 3]
 nbr_workers = len(gpu_ids)
+job_per_gpu = 2
 
 # Grid of experiment parameters, each row is a different experiment, non-specified parameters are set to default
 exp_parameters = [
@@ -65,6 +66,7 @@ def run_experiment(exp_id, gpu_id, exp_parameters):
 
 
 if __name__ == "__main__":
+
     # Create a list of arguments for each experiment
     experiment_args = []
     exp = 0
@@ -74,10 +76,10 @@ if __name__ == "__main__":
         experiment_args.append([exp_id, gpu_id, exp_parameters])
         exp += 1
 
-    # divide the number of experiments by the max number of parallel processes
-    chunks = [experiment_args[i:i+nbr_workers] for i in range(0, len(experiment_args), nbr_workers)]
+    # Divide the number of experiments by the max number of parallel processes
+    chunks = [experiment_args[i:i+nbr_workers*job_per_gpu] for i in range(0, len(experiment_args), nbr_workers*job_per_gpu)]
 
-    # Run the experiments in parallel
+    # Run the experiments in parallel, one chunk at a time
     for chunk in chunks:
         processes = []
         for args in chunk:

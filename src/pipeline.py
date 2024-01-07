@@ -334,7 +334,7 @@ def run_pipeline(data_folder,
 
 if __name__ == "__main__":
     # parameters
-    data_folder = "AEMO/NSW"                                    # dataset folder, must be in dataset/raw/
+    data_folder = "Park/Commercial/30_minutes"                  # dataset folder, must be in dataset/raw/
     exp_folder = "exp1"                                         # folder for saving datasets/results/plots/weights, located in dataset/processed/ and results/
 
     day_size = 24 if "INPG" in data_folder else 48              # dataset resolution
