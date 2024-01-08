@@ -30,6 +30,17 @@ exp_parameters = [
     {"data_folder": "AEMO/NSW", "contam_ratio": 0.2},
     {"data_folder": "AEMO/NSW", "contam_ratio": 0.25},
 
+    {"forecast_window_size": 14, "forecast_sequence_split": 0.5, "data_folder": "AEMO/NSW",},
+    {"forecast_window_size": 14, "forecast_sequence_split": 0.5, "data_folder": "AEMO/QLD",},
+    {"forecast_window_size": 14, "forecast_sequence_split": 0.5, "data_folder": "AEMO/SA",},
+    {"forecast_window_size": 14, "forecast_sequence_split": 0.5, "data_folder": "AEMO/TAS",},
+    {"forecast_window_size": 14, "forecast_sequence_split": 0.5, "data_folder": "AEMO/VIC",},
+    {"forecast_window_size": 14, "forecast_sequence_split": 0.5, "data_folder": "INPG",},
+    {"forecast_window_size": 14, "forecast_sequence_split": 0.5, "data_folder": "Park/Commercial/30_minutes",},
+    {"forecast_window_size": 14, "forecast_sequence_split": 0.5, "data_folder": "Park/Office/30_minutes",},
+    {"forecast_window_size": 14, "forecast_sequence_split": 0.5, "data_folder": "Park/Residential/30_minutes",},
+    {"forecast_window_size": 14, "forecast_sequence_split": 0.5, "data_folder": "Park/Public/30_minutes",},
+
 ]
 
 def get_default_parameters(params):
@@ -44,6 +55,7 @@ def get_default_parameters(params):
     params.setdefault("outlier_threshold", 2.4 if "INPG" in params.get("data_folder", "") else 2.5)
     params.setdefault("forecast_window_size", 6)
     params.setdefault("forecast_day_stride", 1)
+    params.setdefault("forecast_sequence_split", (params.get("forecast_window_size", 6) - 1 )/ params.get("forecast_window_size", 6))
     params.setdefault("save_figs", True)
     params.setdefault("imp_trained", False)
     return params

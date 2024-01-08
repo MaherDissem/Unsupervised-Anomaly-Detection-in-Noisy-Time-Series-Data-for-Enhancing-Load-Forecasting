@@ -19,7 +19,7 @@ from utils.utils import make_clean_folder
 def run_pipeline(data_folder, 
                  exp_folder,
                  day_size, n_days, window_size, day_stride, contam_ratio, flag_consec, outlier_threshold, # anomaly detection parameters
-                 forecast_window_size, forecast_day_stride, # forecasting parameters
+                 forecast_window_size, forecast_day_stride, forecast_sequence_split, # forecasting parameters
                  save_figs, imp_trained):
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -306,7 +306,7 @@ def run_pipeline(data_folder,
 
     default_LF_args = LF_parse_args()
     default_LF_args.timesteps = day_size * forecast_window_size
-    default_LF_args.sequence_split = (forecast_window_size-1)/forecast_window_size
+    default_LF_args.sequence_split = forecast_sequence_split
     default_LF_args.results_file = f"results/{data_folder}/{exp_folder}/log.txt"
 
     # run forecasting model on cleaned data
@@ -346,8 +346,9 @@ if __name__ == "__main__":
     outlier_threshold = 2.4 if "INPG" in data_folder else 2.5   # threshold for outlier detection
     forecast_window_size = 6                                    # window size for forecasting
     forecast_day_stride = 1                                     # stride for forecasting
+    forecast_sequence_split = (forecast_window_size-1)/forecast_window_size # split ratio for forecasting (model input, model target)
     save_figs = True                                            # save plots of anomaly detection and imputation
     imp_trained = False                                         # if True, skip training of anomaly imputation model (for running multiple forecasting experiments after imputation)
 
     # run pipeline (data processing, anomaly detection, anomaly imputation, forecasting with cleaned/contamined data)
-    run_pipeline(data_folder, exp_folder, day_size, n_days, window_size, day_stride, contam_ratio, flag_consec, outlier_threshold, forecast_window_size, forecast_day_stride, save_figs, imp_trained)
+    run_pipeline(data_folder, exp_folder, day_size, n_days, window_size, day_stride, contam_ratio, flag_consec, outlier_threshold, forecast_window_size, forecast_day_stride, forecast_sequence_split, save_figs, imp_trained)
