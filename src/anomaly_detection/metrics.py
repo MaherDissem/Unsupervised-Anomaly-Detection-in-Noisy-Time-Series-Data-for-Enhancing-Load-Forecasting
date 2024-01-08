@@ -58,7 +58,7 @@ def compute_timeseriewise_retrieval_metrics(
         confusion_matrix = metrics.confusion_matrix(
             anomaly_ground_truth_labels, (anomaly_prediction_weights > threshold).astype(int)
         ).ravel()
-        # print(f"{k/len(thresholds)*100}% percentile of best threshold is the best thres: {threshold}")
+        # print(f"{k/len(threshold_list)*100}% percentile of best threshold is the best thres: {threshold}")
 
     return {
         "auroc": auroc, 

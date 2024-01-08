@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 # paths = ["dataset/processed/Yahoo/A1Benchmark/ad_test_contam/data", "dataset/processed/Yahoo/A1Benchmark/ad_train_contam/data"]
 # gt_paths = ["dataset/processed/Yahoo/A1Benchmark/ad_test_contam/gt", "dataset/processed/Yahoo/A1Benchmark/ad_train_contam/gt"]
-paths = ["dataset/processed/INPG/ai_train/data",]# "dataset/processed/AEMO/NSW/lf_contam/data"]:
+paths = ["dataset/processed/Park/Office/30_minutes/ad_test_contam",]# "dataset/processed/AEMO/NSW/lf_contam/data"]:
 
 for plots_path in paths:
     os.makedirs(os.path.join(plots_path, "..", "images"), exist_ok=True)

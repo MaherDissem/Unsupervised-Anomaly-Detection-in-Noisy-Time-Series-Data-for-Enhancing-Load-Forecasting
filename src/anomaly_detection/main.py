@@ -32,14 +32,14 @@ def parse_args():
     # dataset
     parser.add_argument("--train_data_path",    type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths") # we flag anomalies on the whole dataset for the pipeline
     parser.add_argument("--test_data_path",     type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths")
-    parser.add_argument("--nbr_timesteps",      type=int,            default=48*1) # sequence length
+    parser.add_argument("--nbr_timesteps",      type=int,            default=48*1)  # sequence length
     parser.add_argument("--batch_size",         type=int,            default=32)
-    parser.add_argument("--nbr_variables",      type=int,            default=1)
-    parser.add_argument("--nbr_features",       type=int,            default=3)
-    parser.add_argument("--contam_ratio",       type=float,          default=0.1, help="Estimated day contamination rate of the dataset (percentage of days with any anomaly)")
+    parser.add_argument("--nbr_variables",      type=int,            default=1)     # uni-variate
+    parser.add_argument("--nbr_features",       type=int,            default=3)     # set according to feature extraction module
+    parser.add_argument("--contam_ratio",       type=float,          default=0.1, help="Estimated day contamination rate of the dataset (percentage of days with any anomaly)") # 0.02 for INPG; 0.05 for Yahoo
     # feature extraction
     parser.add_argument("--alpha",              type=float,          default=0.2)
-    parser.add_argument("--feat_patch_size",    type=int,            default=8)
+    parser.add_argument("--feat_patch_size",    type=int,            default=8)     # set according to layer_to_extract_from
     # backbone
     parser.add_argument("--backbone_name",      type=str,            default="resnet50")
     parser.add_argument("--backbone_layers_to_extract_from", "-le",  type=str, action="append", default=["layer1"])
@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument("--faiss_num_workers",  type=int,            default=4)
     # SoftPatch hyper-parameter
     parser.add_argument("--weight_method",      type=str,            default="gaussian")
-    parser.add_argument("--threshold",          type=float,          default=0.2) # denoising parameter
+    parser.add_argument("--threshold",          type=float,          default=0.2)   # denoising parameter
     parser.add_argument("--lof_k",              type=int,            default=6)
     parser.add_argument("--without_soft_weight",type=bool,           default=False)
 
