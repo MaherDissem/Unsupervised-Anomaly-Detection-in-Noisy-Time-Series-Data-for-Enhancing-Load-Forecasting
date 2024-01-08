@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument("--num_grulstm_layers",   type=int,       default=1,        help="Number of GRU/LSTM layers")
     parser.add_argument("--fc_units",             type=int,       default=16,       help="Number of fully connected units")
     # training
-    parser.add_argument("--epochs",               type=int,       default=300,      help="Number of epochs") # 300
+    parser.add_argument("--epochs",               type=int,       default=1,      help="Number of epochs") # 300
     parser.add_argument("--patience",             type=int,       default=20,       help="Patience for early stopping")
     parser.add_argument("--batch_size",           type=int,       default=32,       help="Batch size")
     parser.add_argument("--lr",                   type=float,     default=1e-3,     help="Learning rate")
@@ -143,7 +143,7 @@ def run(args):
                 date_list = dates[:,i]
                 next_date = str(pd.to_datetime(date_list[-1]) + pd.Timedelta(days=1)).split(' ')[0]
                 date_list = [str(d).split(' ')[0] for d in date_list] + [next_date]
-                plt.xticks(range(0, N_input+N_output+1, N_output), date_list)
+                plt.xticks(range(0, N_input+N_output+1, (N_input+N_output)//(len(date_list)-1)), date_list)
                 plt.xlabel('Date')
                 plt.ylabel('Load (normalized)')
                 plt.title('Load Forecasting')
