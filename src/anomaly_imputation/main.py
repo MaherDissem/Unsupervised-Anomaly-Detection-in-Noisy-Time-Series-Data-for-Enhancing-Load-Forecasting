@@ -25,8 +25,8 @@ def parse_args():
     parser.add_argument("--seed",                type=int,   default=0,                                             help="Random seed")
     parser.add_argument("--checkpoint_path",     type=str,   default="src/anomaly_imputation/checkpoint.pt",        help="Path to save checkpoint")
     # training params
-    parser.add_argument("--epochs",              type=int,   default=200,                                           help="Number of training epochs")
-    parser.add_argument("--patience",            type=int,   default=20,                                            help="Patience for early stopping")
+    parser.add_argument("--epochs",              type=int,   default=500,                                           help="Number of training epochs")
+    parser.add_argument("--patience",            type=int,   default=50,                                            help="Patience for early stopping")
     parser.add_argument("--max_grad_norm",       type=float, default=0.05,                                          help="Maximum gradient norm for gradient clipping")
     # logging params
     parser.add_argument("--every_epoch_print",   type=int,   default=10,                                            help="Print results every n epochs")
