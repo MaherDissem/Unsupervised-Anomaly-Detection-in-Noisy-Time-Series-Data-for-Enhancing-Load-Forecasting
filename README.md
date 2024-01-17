@@ -10,13 +10,13 @@ Our approach involves synthesizing realistic load anomalies, contaminating load 
 
 - [Data Processing](src/data_processing/)
 
-    Prepares data by preprocessing, generating synthetic anomalies, contaminating, and saving processed data. 
+    Prepares data by preprocessing, generating synthetic anomalies, contaminating, and saving processed data.
 
     Separate scripts are provided for each dataset, facilitating both anomaly detection and forecasting stages, with customizable parameters such as window size and stride.
 
 - [Anomaly Detection](src/anomaly_detection/)
 
-    Train and evaluate the AD model: generate time series features, fill the memory bank with patch features extracted through a backbone, denoise the bank, and calculate an anomaly score as the distance to the saved features. 
+    Train and evaluate the AD model: generate time series features, fill the memory bank with patch features extracted through a backbone, denoise the bank, and calculate an anomaly score as the distance to the saved features.
 
     Execute with `python src/anomaly_detection/main.py`.
 
@@ -26,33 +26,33 @@ Our approach involves synthesizing realistic load anomalies, contaminating load 
 
     Execute with python `src/anomaly_imputation/main.py`.
 
-- [Load Forecasting](src/forecasting/) 
+- [Load Forecasting](src/forecasting/)
 
-    Uses a GRU-based autoencoder for time series forecasting given parameters like the sequence size, forecast horizon split, etc. 
+    Uses a GRU-based autoencoder for time series forecasting given parameters like the sequence size, forecast horizon split, etc.
 
     Execute with `python src/forecasting/main.py`.
 
 ### Pipeline
 
-All these modules can be called individually using their corresponding arguments. 
-Plus, the sequential execution of the training and evaluation of every module in this pipeline, given data parameters, is automated with `python /src/pipeline.py`. 
+All these modules can be called individually using their corresponding arguments.
+Plus, the sequential execution of the training and evaluation of every module in this pipeline, given data parameters, is automated with `python /src/pipeline.py`.
 
 ### Datasets
 
 In our experiments, we leverage the following datasets:
 
-- Australian Energy Market Operator: 
+- Australian Energy Market Operator:
     
     Aggregated load demand for the states of Australia.
 
-    Collect data: `python src/data_processing/collect_aemo_data.py`
+    Collect data: `python src/data_processing/collect_aemo_data.py`.
 
-- Industrial Park: 
+- Industrial Park:
 
     Load data for 4 different types of buildings (commercial, office, public, residential).
     Data is obtained from [here](https://www.nature.com/articles/s41597-023-02786-9).
 
-- Predis-MHI: 
+- Predis-MHI:
 
     Load data captured in the GreEn-ER living lab (contains genuine anomalies).
     This is a private dataset that's available upon request from the owner, [link](https://g2elab.grenoble-inp.fr/fr/plateformes/predis-mhi).
@@ -69,11 +69,11 @@ pip install -r requirements.txt
 python src/run_parallel_experiments.py
 ``````
 
-### Acknowledgement 
+### Acknowledgement
 
-Our codebase builds heavily on the following projects: 
+Our codebase builds heavily on the following projects:
 
-- [SoftPatch](https://github.com/TencentYoutuResearch/AnomalyDetection-SoftPatch) (Anomaly detection in images)
+- [SoftPatch](https://github.com/TencentYoutuResearch/AnomalyDetection-SoftPatch) (Anomaly detection for image data)
 
 Thanks for open-sourcing!
 
