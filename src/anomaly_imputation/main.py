@@ -1,5 +1,3 @@
-import sys
-sys.path.append("./src")
 import os
 import argparse
 import torch
@@ -7,6 +5,9 @@ import matplotlib.pyplot as plt
 
 from dataset_ai import DatasetAnomalyImputation
 from autoencoder import LSTM_AE
+
+import sys
+sys.path.append("./src")
 from utils.utils import set_seed
 
 

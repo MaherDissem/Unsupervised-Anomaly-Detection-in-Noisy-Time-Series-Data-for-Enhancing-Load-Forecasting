@@ -1,4 +1,3 @@
-import sys
 import os
 import argparse
 
@@ -12,6 +11,7 @@ from dataset_f import DatasetForecasting
 from model import DecoderRNN, EncoderRNN, Net_GRU
 from train import train_model
 
+import sys
 sys.path.insert(0, os.getcwd())
 from src.utils.utils import set_seed
 

@@ -1,8 +1,8 @@
 import os
-import sys
 import numpy as np
 import torch
 
+import sys
 sys.path.insert(0, os.getcwd())
 from src.utils.early_stop import EarlyStopping
 
