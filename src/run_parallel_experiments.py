@@ -1,4 +1,4 @@
-# TODO increase number of epochs
+# TODO increase number of epochs and patience
 import os
 import inspect
 import multiprocessing as mp
@@ -69,12 +69,11 @@ def run_experiment(exp_id, gpu_id, exp_parameters):
     parameter_order = list(inspect.signature(run_pipeline).parameters.keys())
     
     # Create a dictionary with parameters in the correct order
-    exp_parameters.update({"exp_folder": f"exp{exp_id}"})
+    exp_parameters.update({"exp_folder": f"exp{exp_id}"}) # folder to save data and results in
     ordered_parameters = {param: exp_parameters[param] for param in parameter_order}
     
     # Call run_pipeline with the selected parameters
     run_pipeline(**ordered_parameters)
-
 
 
 if __name__ == "__main__":
@@ -101,5 +100,7 @@ if __name__ == "__main__":
 
         for process in processes:
             process.join()
-
+            
+            # TODO new process should start as soon as one finishes
+    
     print("Multi-processes finished")
