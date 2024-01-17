@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 
-class AI_Dataset(torch.utils.data.Dataset):
+class DatasetAnomalyImputation(torch.utils.data.Dataset):
 
     def __init__(self, root_dir, mask_size=8):
         super().__init__()

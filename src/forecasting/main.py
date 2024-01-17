@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 
-from dataset_f import F_Dataset
+from dataset_f import DatasetForecasting
 from model import DecoderRNN, EncoderRNN, Net_GRU
 from train import train_model
 
@@ -47,8 +47,8 @@ def get_data_loaders(args):
     N_input = int(args.sequence_split*args.timesteps)  # input length
     N_output = args.timesteps - N_input                # target length
 
-    train_data = F_Dataset(args.train_dataset_path, ts_split=args.sequence_split)
-    test_data = F_Dataset(args.test_dataset_path, ts_split=args.sequence_split, return_date=True)
+    train_data = DatasetForecasting(args.train_dataset_path, ts_split=args.sequence_split)
+    test_data = DatasetForecasting(args.test_dataset_path, ts_split=args.sequence_split, return_date=True)
     valid_data, test_data = torch.utils.data.random_split(test_data, [int(0.5*len(test_data)), len(test_data) - int(0.5*len(test_data))])
 
     trainloader = DataLoader(

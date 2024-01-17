@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 
-class F_Dataset(torch.utils.data.Dataset):
+class DatasetForecasting(torch.utils.data.Dataset):
 
     def __init__(self, root_dir, ts_split=0.7, return_date=False):
         super().__init__()

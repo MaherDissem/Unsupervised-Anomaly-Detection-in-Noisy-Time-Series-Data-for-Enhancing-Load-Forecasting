@@ -13,7 +13,7 @@ import metrics as metrics
 import sampler as sampler
 import softpatch as softpatch
 from postprocessing import heatmap_postprocess
-from dataset_ad import AD_Dataset
+from dataset_ad import DatasetAnomalyDetection
 
 sys.path.insert(0, os.getcwd()) 
 from src.utils.utils import set_seed
@@ -62,8 +62,8 @@ def get_dataloaders(args):
     train_data_path = args.train_data_path
     test_data_path = args.test_data_path
 
-    train_dataset = AD_Dataset(train_data_path)
-    test_dataset = AD_Dataset(test_data_path)
+    train_dataset = DatasetAnomalyDetection(train_data_path)
+    test_dataset = DatasetAnomalyDetection(test_data_path)
     
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,

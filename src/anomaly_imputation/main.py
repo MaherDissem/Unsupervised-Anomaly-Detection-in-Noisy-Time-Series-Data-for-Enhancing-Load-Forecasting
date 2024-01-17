@@ -5,7 +5,7 @@ import argparse
 import torch
 import matplotlib.pyplot as plt
 
-from dataset_ai import AI_Dataset
+from dataset_ai import DatasetAnomalyImputation
 from autoencoder import LSTM_AE
 from utils.utils import set_seed
 
@@ -35,8 +35,8 @@ def parse_args():
     return parser.parse_args()
 
 def get_data_loaders(dataset_root, split_ratio, mask_size, batch_size):
-    dataset = AI_Dataset(dataset_root,
-                         mask_size)
+    dataset = DatasetAnomalyImputation(dataset_root,
+                                        mask_size)
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [int(split_ratio * len(dataset)), len(dataset) - int(split_ratio * len(dataset))])
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
