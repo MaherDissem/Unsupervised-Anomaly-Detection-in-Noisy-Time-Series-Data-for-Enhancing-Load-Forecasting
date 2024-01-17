@@ -1,17 +1,15 @@
-import logging
 import os
+import logging
+import tqdm
 import pickle
-
 import numpy as np
 import torch
 import torch.nn.functional as F
-import tqdm
 from sklearn.neighbors import LocalOutlierFactor
 
 import common
 import multi_variate_gaussian
 import sampler
-
 from feature_extractor import gen_ts_features
 
 
@@ -51,7 +49,6 @@ class SoftPatch(torch.nn.Module):
         min_heatmap_scores=None,
         max_heatmap_scores=None,
         window_threshold=None,
-
         **kwargs,
     ):
         self.device = device
@@ -128,57 +125,55 @@ class SoftPatch(torch.nn.Module):
                 return [x.detach().cpu().numpy() for x in features]
             return features
         
-        # input input_data.shape => torch.Size([8, 240, 1]), batch of 8 timeseries
         ts_features = gen_ts_features(
             input_data.to(self.device), 
             self.feat_patch_size, 
             self.alpha
-        ) # timeseries.shape -> torch.Size([8, 3, 240, 1]), batch of 8 timeseries
+        )
         
         _ = self.forward_modules["feature_aggregator"].eval()
         with torch.no_grad():
-            backbone_features = self.forward_modules["feature_aggregator"](ts_features) # {layer2:torch.Size([8, 512, 28, 28]), layer3:torch.Size([8, 1024, 14, 14])}
+            backbone_features = self.forward_modules["feature_aggregator"](ts_features)
 
-        features = [backbone_features[layer] for layer in self.layers_to_extract_from] # [torch.Size([8, 512, 28, 28]), torch.Size([8, 1024, 14, 14])]
+        features = [backbone_features[layer] for layer in self.layers_to_extract_from]
 
         features = [
             self.patch_maker.patchify(x, return_spatial_info=True) for x in features
         ]
-        # features => [ ( torch.Size([8, 784, 512, 3, 3]), [28,28] ), (#layer3), ... ]
         
-        patch_shapes = [x[1] for x in features] # [[28, 28], [14, 14], ...]
-        features = [x[0] for x in features] # [torch.Size([8, 784, 512, 3, 3]), torch.Size([8, 196, 1024, 3, 3]), ...]
+        patch_shapes = [x[1] for x in features]
+        features = [x[0] for x in features]
         ref_num_patches = patch_shapes[0]
 
-        for i in range(1, len(features)): # for extracted layers # make all exracted layer features have same shape as first layer extracted features
-            _features = features[i] # torch.Size([8, 196, 1024, 3, 3]), 196=14*14
+        for i in range(1, len(features)):
+            _features = features[i]
             patch_dims = patch_shapes[i]
 
             _features = _features.reshape(
                 _features.shape[0], patch_dims[0], patch_dims[1], *_features.shape[2:]
-            ) # torch.Size([8, 14, 14, 1024, 3, 3])
-            _features = _features.permute(0, -3, -2, -1, 1, 2) # torch.Size([8, 1024, 3, 3, 14, 14])
+            )
+            _features = _features.permute(0, -3, -2, -1, 1, 2)
             perm_base_shape = _features.shape
-            _features = _features.reshape(-1, *_features.shape[-2:]) # torch.Size([73728, 14, 14]), 73728=8*1024*3*3
+            _features = _features.reshape(-1, *_features.shape[-2:])
             _features = F.interpolate(
                 _features.unsqueeze(1),
                 size=(ref_num_patches[0], ref_num_patches[1]),
                 mode="bilinear",
                 align_corners=False,
-            ) # torch.Size([73728, 1, 28, 28])
-            _features = _features.squeeze(1) # torch.Size([73728, 28, 28])
+            )
+            _features = _features.squeeze(1)
             _features = _features.reshape(
                 *perm_base_shape[:-2], ref_num_patches[0], ref_num_patches[1]
-            ) # torch.Size([8, 1024, 3, 3, 28, 28])
-            _features = _features.permute(0, -2, -1, 1, 2, 3) # torch.Size([8, 28, 28, 1024, 3, 3])
-            _features = _features.reshape(len(_features), -1, *_features.shape[-3:]) # torch.Size([8, 784, 1024, 3, 3])
+            )
+            _features = _features.permute(0, -2, -1, 1, 2, 3)
+            _features = _features.reshape(len(_features), -1, *_features.shape[-3:])
             features[i] = _features
-        features = [x.reshape(-1, *x.shape[-3:]) for x in features] # [torch.Size([6272, 512, 3, 3]), torch.Size([6272, 1024, 3, 3]), ], 6272=8*784
+        features = [x.reshape(-1, *x.shape[-3:]) for x in features]
 
         # As different feature backbones & patching provide differently
         # sized features, these are brought into the correct form here.
-        features = self.forward_modules["preprocessing"](features) # torch.Size([6272, 2, 1024])
-        features = self.forward_modules["preadapt_aggregator"](features) # torch.Size([6272, 1024]), 6272=8*28*28
+        features = self.forward_modules["preprocessing"](features)
+        features = self.forward_modules["preadapt_aggregator"](features)
 
         if provide_patch_shapes:
             return _detach(features), patch_shapes
@@ -217,7 +212,7 @@ class SoftPatch(torch.nn.Module):
 
             patch_weight = patch_weight.reshape(-1)
             threshold = torch.quantile(patch_weight, 1 - self.threshold)
-            sampling_weight = torch.where(patch_weight > threshold, 0, 1) # denoising: sampling_weight[i] is 0 if patch_weight[i] > threshold (quantile), else 1, i.e. high weight are ignored
+            sampling_weight = torch.where(patch_weight > threshold, 0, 1) # denoising
             self.featuresampler.set_sampling_weight(sampling_weight)
             self.patch_weight = patch_weight.clamp(min=0)
 
@@ -377,10 +372,10 @@ class SoftPatch(torch.nn.Module):
             features, patch_shapes = self._embed(timeseries, provide_patch_shapes=True)
             features = np.asarray(features)
 
-            timeserie_scores, _, indices = self.anomaly_scorer.predict([features]) # mean distance to NN: (B x w=30 x h=1)
+            timeserie_scores, _, indices = self.anomaly_scorer.predict([features])
             if self.soft_weight_flag:
                 indices = indices.squeeze()
-                weight = np.take(self.coreset_weight, axis=0, indices=indices) # multiplied by anom score /weight of NN saved in memory bank
+                weight = np.take(self.coreset_weight, axis=0, indices=indices)
 
                 timeserie_scores = timeserie_scores * weight 
 
@@ -389,7 +384,7 @@ class SoftPatch(torch.nn.Module):
             timeserie_scores = self.patch_maker.unpatch_scores(
                 timeserie_scores, batchsize=batchsize
             ) # (B, 30)
-            timeserie_scores = timeserie_scores.reshape(*timeserie_scores.shape[:2], -1) # (B, 30, 1)
+            timeserie_scores = timeserie_scores.reshape(*timeserie_scores.shape[:2], -1)
             timeserie_scores = self.patch_maker.score(timeserie_scores)
 
             patch_scores = self.patch_maker.unpatch_scores(
@@ -399,7 +394,7 @@ class SoftPatch(torch.nn.Module):
             patch_scores = patch_scores.reshape(batchsize, scales[0], scales[1])
             masks = patch_scores
 
-        return [score for score in timeserie_scores], [mask for mask in masks] # masks is (32, 30, 1) -> mask of patch scores not original data points
+        return [score for score in timeserie_scores], [mask for mask in masks]
 
     @staticmethod
     def _params_file(filepath, prepend=""):

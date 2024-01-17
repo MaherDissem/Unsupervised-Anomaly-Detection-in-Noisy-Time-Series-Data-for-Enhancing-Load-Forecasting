@@ -56,10 +56,10 @@ def run(args):
     full_Holiday_date = [str(date) for date in sampled_dates]
 
     # remove lab holidays
-    # TODO switch to 1D frequency
+    # TODO switch to 1D frequency instead of hourly
     lab_holidays = []
     for year in range(2016, 2023):
-        lab_holidays.extend(pd.date_range(f'{year}-07-31', f'{year}-08-16', freq='H')[:-1]) # summer holidays
+        lab_holidays.extend(pd.date_range(f'{year}-07-31', f'{year}-08-16', freq='H')[:-1])   # summer holidays
         lab_holidays.extend(pd.date_range(f'{year}-12-21', f'{year+1}-01-04', freq='H')[:-1]) # christmas holidays
 
     # remove covid period
@@ -79,7 +79,6 @@ def run(args):
     corrupt_data_dates.extend(pd.date_range('2022-05-27', '2022-05-28', freq="H")[:-1])
 
     # empty days
-    # for some reason, the 5th of each month is missing in the training data
     empty_days = []
     days_in_train_index = pd.date_range(train_data.index[0], train_data.index[-1], freq="D")
     for day in days_in_train_index:
@@ -105,7 +104,7 @@ def run(args):
     def extract_consec_days(load, day0, n_days, day_size):
         """return n_days consecutive days starting at day0 from load dataframe"""
 
-        # discard feeding time windows that contain corrupted data into the model
+        # discard feeding time windows that contain corrupt data to the model
         start_date = str(load.index[day0]).split(' ')[0]
         end_date = str(load.index[day0 + day_size*n_days-1]).split(' ')[0]
         days_in_seq = pd.date_range(start_date, end_date, freq="D")

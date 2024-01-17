@@ -95,7 +95,6 @@ def run(args):
     def scale_windows(windows_list, min_q_val, max_q_val):
         scaled_windows = []
         for window in windows_list:
-            # TODO remove
             min_q_val = window.min()
             max_q_val = window.max()
             window = (window - min_q_val) / (max_q_val - min_q_val)
@@ -143,5 +142,3 @@ if __name__ == "__main__":
     args = parse_args()
     run(args)
     print("Done!")
-
-# A2 works well for min_q_val = window.min(); max_q_val = window.max()
