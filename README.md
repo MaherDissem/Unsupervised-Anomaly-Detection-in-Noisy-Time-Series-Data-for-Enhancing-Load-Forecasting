@@ -28,7 +28,7 @@ Execute with python `src/anomaly_imputation/main.py`.
 
 - [Load Forecasting](src/forecasting/) 
 
-Uses a GRU-based autoencoder for forecasting, given parameters like the sequence size, forecast horizon split, etc. 
+Uses a GRU-based autoencoder for time series forecasting given parameters like the sequence size, forecast horizon split, etc. 
 
 Execute with python `src/forecasting/main.py`.
 
