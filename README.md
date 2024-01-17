@@ -10,7 +10,7 @@ Our approach involves synthesizing realistic load anomalies, contaminating load 
 
 - [Data Processing](src/data_processing/)
 
-Prepares raw data by preprocessing, generating synthetic anomalies, contaminating, and saving processed data. 
+Prepares data by preprocessing, generating synthetic anomalies, contaminating, and saving processed data. 
 
 Separate scripts are provided for each dataset, facilitating both anomaly detection and forecasting stages, with customizable parameters such as window size and stride.
 
