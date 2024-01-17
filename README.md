@@ -32,10 +32,10 @@ Uses a GRU-based autoencoder for forecasting, given parameters like the sequence
 
 Execute with python `src/forecasting/main.py`.
 
-- Pipeline
+### Pipeline
 
 All these modules can be called individually using their corresponding arguments. 
-Plus, sequential execution of the training and evaluation of every module in the pipeline given data parameters is automated with `python /src/pipeline.py`. 
+Plus, the sequential execution of the training and evaluation of every module in this pipeline, given data parameters, is automated with `python /src/pipeline.py`. 
 
 ### Datasets
 
@@ -53,17 +53,17 @@ In our experiments, we leverage the following datasets:
 
     A private dataset available upon request from the owner, [link](https://g2elab.grenoble-inp.fr/fr/plateformes/predis-mhi).
 
-### Running
+### Results Replication
+
+To replicate our results, run the following:
 
 ``````
 python -m venv venv
 source venv/Scripts/activate
 pip install -r requirements.txt
+
+python src/run_parallel_experiments.py
 ``````
-
-To replicate our results, run the following:
-
-`python src/run_parallel_experiments.py`
 
 ### Acknowledgement 
 
