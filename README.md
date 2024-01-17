@@ -41,17 +41,21 @@ Plus, the sequential execution of the training and evaluation of every module in
 
 In our experiments, we leverage the following datasets:
 
-- Australian Energy Market Operator
+- Australian Energy Market Operator: 
+    
+    Aggregated load demand for the states of Australia.
 
     Collect data: `python src/data_processing/collect_aemo_data.py`
 
-- Industrial Park:
+- Industrial Park: 
 
+    Load data for 4 different types of buildings (commercial, office, public, residential).
     Data is obtained from [here](https://www.nature.com/articles/s41597-023-02786-9).
 
 - Predis-MHI: 
 
-    A private dataset available upon request from the owner, [link](https://g2elab.grenoble-inp.fr/fr/plateformes/predis-mhi).
+    Load data captured in the GreEn-ER living lab (contains genuine anomalies).
+    This is a private dataset that's available upon request from the owner, [link](https://g2elab.grenoble-inp.fr/fr/plateformes/predis-mhi).
 
 ### Results Replication
 
