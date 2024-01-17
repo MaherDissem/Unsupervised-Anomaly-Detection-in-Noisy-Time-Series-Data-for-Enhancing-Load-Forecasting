@@ -10,27 +10,27 @@ Our approach involves synthesizing realistic load anomalies, contaminating load 
 
 - [Data Processing](src/data_processing/)
 
-Prepares data by preprocessing, generating synthetic anomalies, contaminating, and saving processed data. 
+    Prepares data by preprocessing, generating synthetic anomalies, contaminating, and saving processed data. 
 
-Separate scripts are provided for each dataset, facilitating both anomaly detection and forecasting stages, with customizable parameters such as window size and stride.
+    Separate scripts are provided for each dataset, facilitating both anomaly detection and forecasting stages, with customizable parameters such as window size and stride.
 
 - [Anomaly Detection](src/anomaly_detection/)
 
-Train and evaluate the AD model: generate time series features, fill the memory bank with patch features extracted through a backbone, denoise the bank, and calculate an anomaly score as the distance to the saved features. 
+    Train and evaluate the AD model: generate time series features, fill the memory bank with patch features extracted through a backbone, denoise the bank, and calculate an anomaly score as the distance to the saved features. 
 
-Execute with `python src/anomaly_detection/main.py`.
+    Execute with `python src/anomaly_detection/main.py`.
 
 - [Anomaly Imputation](src/anomaly_imputation/)
 
-Employs anomaly-free samples to train a bi-LSTM-based denoising recurrent autoencoder for imputing consecutive values manually omitted from the samples.
+    Employs anomaly-free samples to train a bi-LSTM-based denoising recurrent autoencoder for imputing consecutive values manually omitted from the samples.
 
-Execute with python `src/anomaly_imputation/main.py`.
+    Execute with python `src/anomaly_imputation/main.py`.
 
 - [Load Forecasting](src/forecasting/) 
 
-Uses a GRU-based autoencoder for time series forecasting given parameters like the sequence size, forecast horizon split, etc. 
+    Uses a GRU-based autoencoder for time series forecasting given parameters like the sequence size, forecast horizon split, etc. 
 
-Execute with `python src/forecasting/main.py`.
+    Execute with `python src/forecasting/main.py`.
 
 ### Pipeline
 
