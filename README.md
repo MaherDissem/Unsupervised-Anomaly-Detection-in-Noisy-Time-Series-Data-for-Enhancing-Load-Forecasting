@@ -24,18 +24,18 @@ Our approach involves synthesizing realistic load anomalies, contaminating load 
 
     Employs anomaly-free samples to train a bi-LSTM-based denoising recurrent autoencoder for imputing consecutive values manually omitted from the samples.
 
-    Execute with python `src/anomaly_imputation/main.py`.
+    Execute with `python src/anomaly_imputation/main.py`.
 
 - [Load Forecasting](src/forecasting/)
 
-    Uses a GRU-based autoencoder for time series forecasting given parameters like the sequence size, forecast horizon split, etc.
+    Uses a GRU-based seq2seq model for time series forecasting given parameters like the sequence size, forecast horizon split, etc.
 
     Execute with `python src/forecasting/main.py`.
 
 ### Pipeline
 
 All these modules can be called individually using their corresponding arguments.
-Plus, the sequential execution of the training and evaluation of every module in this pipeline, given data parameters, is automated with `python /src/pipeline.py`.
+Plus, the sequential execution of the training and evaluation of every module in this pipeline for a set of given parameters is automated with `python /src/pipeline.py`.
 
 ### Datasets
 

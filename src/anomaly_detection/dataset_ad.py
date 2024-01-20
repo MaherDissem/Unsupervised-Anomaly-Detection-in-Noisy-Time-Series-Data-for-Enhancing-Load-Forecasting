@@ -28,8 +28,8 @@ class DatasetAnomalyDetection(torch.utils.data.Dataset):
         data = []
         gt = []
         for root_dir in self.data_folders_paths:
-            data.extend(glob.iglob(os.path.join(root_dir, "data", "*.npy")))
-            gt.extend(glob.iglob(os.path.join(root_dir, "gt", "*.npy")))
+            data.extend(glob.glob(os.path.join(root_dir, "data", "*.npy")))
+            gt.extend(glob.glob(os.path.join(root_dir, "gt", "*.npy")))
         if len(data) == 0: 
             raise ValueError("No data found in the specified directory")
         return data, gt

@@ -11,7 +11,7 @@ class DatasetForecasting(torch.utils.data.Dataset):
         super().__init__()
         self.root_dir = root_dir
         self.npy_paths = self.load_data()
-        self.ts_split = ts_split
+        self.ts_split = ts_split # Ratio of input to target (forecasting horizon) split"
         self.return_date = return_date
 
     def __getitem__(self, idx):

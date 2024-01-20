@@ -30,4 +30,3 @@ class DatasetAnomalyImputation(torch.utils.data.Dataset):
     def load_data(self):
         data = glob.glob(os.path.join(self.root_dir, "*.npy"))
         return data
-    

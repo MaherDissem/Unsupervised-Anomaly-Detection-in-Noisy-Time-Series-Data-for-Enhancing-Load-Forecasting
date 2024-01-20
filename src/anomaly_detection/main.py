@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument("--save_model",         type=bool,           default=True)
     parser.add_argument("--model_save_path",    type=str,            default="results/weights")
     parser.add_argument("--results_file",       type=str,            default="results/results.txt",                 help="Path to file to save results in")
-    parser.add_argument("--eval_plots_path",    type=str,            default="results/Park/Commercial/30_minutes",  help="Path to file to save results in")
+    parser.add_argument("--eval_plots_path",    type=str,            default="results/Park/Commercial/30_minutes",  help="Path to file to save generated plots in")
     # dataset
     parser.add_argument("--train_data_path",    type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths") # we flag anomalies on the whole dataset for the pipeline
     parser.add_argument("--test_data_path",     type=str, nargs='+', default=["dataset/processed/Park/Commercial/30_minutes/ad_train_contam", "dataset/processed/Park/Commercial/30_minutes/ad_test_contam"], help="List of training data paths")
@@ -190,7 +190,7 @@ def run(args):
                                                 flag_highest_patch=False,  # disabling as it is not precise enough
                                                 flag_consec=True,          # True for synthetic data
                                                 flag_outliers=True,        # always True
-                                                extend_to_patch=True)      # True when imputing missing values, False for benchmarking (a bit more precise)
+                                                extend_to_patch=True)      # True when imputing missing values (smoother imputations), False for benchmarking (more precise)
             else:
                 pred_mask = torch.zeros_like(timeserie)
             pred_masks.append(pred_mask)

@@ -20,7 +20,7 @@ def run_pipeline(data_folder,
                  exp_folder,
                  day_size, n_days, window_size, day_stride, contam_ratio, flag_consec, outlier_threshold, # anomaly detection parameters
                  forecast_window_size, forecast_day_stride, forecast_sequence_split, # forecasting parameters
-                 save_figs, imp_trained):
+                 save_figs):
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     set_seed(0)
@@ -89,7 +89,7 @@ def run_pipeline(data_folder,
     default_AD_args.contam_ratio = contam_ratio
     default_AD_args.results_file = f"results/{data_folder}/{exp_folder}/log.txt"
     default_AD_args.model_save_path = f"results/{data_folder}/{exp_folder}/weights"
-    # default_AD_args.without_soft_weight = True # set true in case of nan values in data
+    # default_AD_args.without_soft_weight = True # set to True in case of nan values in data
 
     AD_run(default_AD_args)
 
@@ -200,8 +200,7 @@ def run_pipeline(data_folder,
     default_AI_args.checkpoint_path = f"results/{data_folder}/{exp_folder}/weights/checkpoint_ai.pt"
     default_AI_args.save_folder = f"results/{data_folder}/{exp_folder}/ai_eval_plots"
 
-    if not imp_trained:
-        AI_train(default_AI_args)
+    AI_train(default_AI_args)
 
     # infer anomaly imputation model on samples flagged as anomalous
     loaded_model = LSTM_AE(default_AI_args.seq_len, default_AI_args.no_features, default_AI_args.embedding_dim, default_AI_args.learning_rate, default_AI_args.every_epoch_print, default_AI_args.epochs, default_AI_args.patience, default_AI_args.max_grad_norm, default_AI_args.checkpoint_path, default_AI_args.seed)
@@ -332,20 +331,19 @@ def run_pipeline(data_folder,
 if __name__ == "__main__":
     # parameters
     data_folder = "Park/Commercial/30_minutes"                              # dataset folder, must be in dataset/raw/
-    exp_folder = "exp1"                                                     # folder for saving datasets, results, plots and weights, will be created in dataset/processed/ and results/
+    exp_folder = "exp1"                                                     # folder for saving datasets, results, plots and weights, will be created in dataset/processed/ and in results/
 
     day_size = 24 if "INPG" in data_folder else 48                          # dataset resolution (samples per day)
-    n_days = 1                                                              # window size for anomaly detection
-    window_size = day_size * n_days                                         # window size for anomaly detection
-    day_stride = 1                                                          # for anomaly detection, seperate stride for forecasting
-    contam_ratio = 0.02 if "INPG" in data_folder else 0.1                   # contamination ratio for anomaly detection (% of days with anomalies, one anomaly per day)
+    n_days = 1                                                              # window size for anomaly detection in days
+    window_size = day_size * n_days                                         # window size for anomaly detection in samples
+    day_stride = 1                                                          # sliding window stride for anomaly detection, a seperate stride is set later for forecasting
+    contam_ratio = 0.02 if "INPG" in data_folder else 0.1                   # data contamination ratio (% of days with anomalies, one anomaly per day)
     flag_consec = "INPG" not in data_folder                                 # False for INPG dataset, True otherwise (anomaly type 1 and 2)
     outlier_threshold = 2.4 if "INPG" in data_folder else 2.5               # threshold for outlier detection
-    forecast_window_size = 6                                                # window size for forecasting
+    forecast_window_size = 6                                                # window size for forecasting in days (including forecast day)
     forecast_day_stride = 1                                                 # stride for forecasting
-    forecast_sequence_split = (forecast_window_size-1)/forecast_window_size # split ratio for forecasting (model input, model target)
-    save_figs = True                                                        # save plots of anomaly detection and imputation
-    imp_trained = False                                                     # if True, skip training of anomaly imputation model (for running multiple forecasting experiments after imputation)
+    forecast_sequence_split = (forecast_window_size-1)/forecast_window_size # split ratio for forecasting (model input, forecast horizon)
+    save_figs = True                                                        # save visualization plots for anomaly detection and imputation
 
     # run pipeline (data processing, anomaly detection, anomaly imputation, forecasting with cleaned/contamined data)
-    run_pipeline(data_folder, exp_folder, day_size, n_days, window_size, day_stride, contam_ratio, flag_consec, outlier_threshold, forecast_window_size, forecast_day_stride, forecast_sequence_split, save_figs, imp_trained)
+    run_pipeline(data_folder, exp_folder, day_size, n_days, window_size, day_stride, contam_ratio, flag_consec, outlier_threshold, forecast_window_size, forecast_day_stride, forecast_sequence_split, save_figs)

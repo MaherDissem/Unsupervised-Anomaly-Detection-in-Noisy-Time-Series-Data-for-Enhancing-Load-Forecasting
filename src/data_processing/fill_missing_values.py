@@ -1,4 +1,4 @@
-# this code was written during early experimentation and is not used in the final project.
+# this code was developped during early experimentation and is not used in the final project.
 
 import numpy as np
 import pandas as pd

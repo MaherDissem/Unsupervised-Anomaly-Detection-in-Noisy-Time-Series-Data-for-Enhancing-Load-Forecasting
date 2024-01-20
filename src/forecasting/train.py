@@ -97,4 +97,3 @@ def eval_model(net, loader, device):
     r2_loss = np.array(losses_r2).mean()
     
     return smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss
-

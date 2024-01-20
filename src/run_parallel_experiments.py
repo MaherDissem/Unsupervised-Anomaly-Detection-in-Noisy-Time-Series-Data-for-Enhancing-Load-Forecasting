@@ -57,7 +57,6 @@ def get_default_parameters(params):
     params.setdefault("forecast_day_stride", 1)
     params.setdefault("forecast_sequence_split", (params.get("forecast_window_size", 6) - 1 )/ params.get("forecast_window_size", 6))
     params.setdefault("save_figs", True)
-    params.setdefault("imp_trained", False)
     return params
 
 def run_experiment(exp_id, gpu_id, exp_parameters):
@@ -99,8 +98,6 @@ if __name__ == "__main__":
             process.start()
 
         for process in processes:
-            process.join()
-            
-            # TODO new process should start as soon as one finishes
+            process.join() # TODO new process should start as soon as one finishes
     
     print("Multi-processes finished")

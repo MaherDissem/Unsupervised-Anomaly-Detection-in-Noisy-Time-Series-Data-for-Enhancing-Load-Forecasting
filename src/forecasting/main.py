@@ -19,18 +19,18 @@ from src.utils.utils import set_seed
 def parse_args():
     parser = argparse.ArgumentParser(description="Runs Load Forecasting experiments")
     # dataset
-    parser.add_argument("--train_dataset_path",   type=str,       default="dataset/processed/INPG/lf_cleaned",       help="Path to train dataset") # dataset parameter
-    parser.add_argument("--test_dataset_path",    type=str,       default="dataset/processed/INPG/lf_test_clean",    help="Path to clean dataset for testing") # dataset parameter
+    parser.add_argument("--train_dataset_path",   type=str,       default="dataset/processed/INPG/lf_cleaned",       help="Path to train dataset")
+    parser.add_argument("--test_dataset_path",    type=str,       default="dataset/processed/INPG/lf_test_clean",    help="Path to clean dataset for testing")
     # sequence
-    parser.add_argument("--timesteps",            type=int,       default=24*6,     help="Number of timesteps")    # dataset parameter
-    parser.add_argument("--sequence_split",       type=float,     default=5/6,      help="Sequence split ratio")   # dataset parameter
+    parser.add_argument("--timesteps",            type=int,       default=24*6,     help="Number of timesteps")
+    parser.add_argument("--sequence_split",       type=float,     default=5/6,      help="Ratio of input to target (forecasting horizon) split")
     parser.add_argument("--nbr_var",              type=int,       default=1,        help="Number of variables")
     # model parameters
     parser.add_argument("--hidden_size",          type=int,       default=128,      help="Hidden size of the model")
     parser.add_argument("--num_grulstm_layers",   type=int,       default=1,        help="Number of GRU/LSTM layers")
     parser.add_argument("--fc_units",             type=int,       default=16,       help="Number of fully connected units")
     # training
-    parser.add_argument("--epochs",               type=int,       default=500,      help="Number of epochs") # 300
+    parser.add_argument("--epochs",               type=int,       default=500,      help="Number of epochs")
     parser.add_argument("--patience",             type=int,       default=50,       help="Patience for early stopping")
     parser.add_argument("--batch_size",           type=int,       default=32,       help="Batch size")
     parser.add_argument("--lr",                   type=float,     default=1e-3,     help="Learning rate")
@@ -38,14 +38,14 @@ def parse_args():
     parser.add_argument("--checkpoint_path",      type=str,       default="src/forecasting/checkpoint.pt",       help="Path to save checkpoint")
     # visualization
     parser.add_argument("--n_plots",              type=int,       default=32,                                    help="Number of plots")
-    parser.add_argument("--save_plots_path",      type=str,       default="results/forecasting/contam",          help="Path to save plots") # dataset parameter
+    parser.add_argument("--save_plots_path",      type=str,       default="results/forecasting/contam",          help="Path to save plots")
     parser.add_argument("--results_file",         type=str,       default="results/results.txt",                 help="Path to file to save results in")
     return parser.parse_args()
 
 
 def get_data_loaders(args):
-    N_input = int(args.sequence_split*args.timesteps)  # input length
-    N_output = args.timesteps - N_input                # target length
+    N_input = int(args.sequence_split*args.timesteps)  # model input length 
+    N_output = args.timesteps - N_input                # target length (forecasting horizon)
 
     train_data = DatasetForecasting(args.train_dataset_path, ts_split=args.sequence_split)
     test_data = DatasetForecasting(args.test_dataset_path, ts_split=args.sequence_split, return_date=True)

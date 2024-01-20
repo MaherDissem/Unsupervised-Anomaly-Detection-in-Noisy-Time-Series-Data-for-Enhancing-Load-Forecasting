@@ -97,5 +97,3 @@ if __name__ == "__main__":
     set_seed(args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     train(args)
-
-# TODO: compare autoencoder vs KNN 

@@ -1,5 +1,5 @@
-import argparse
 import os
+import argparse
 import glob
 import numpy as np
 import pandas as pd

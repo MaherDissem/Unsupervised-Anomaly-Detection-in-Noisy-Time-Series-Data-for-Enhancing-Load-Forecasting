@@ -1,8 +1,8 @@
+import os
+import glob
 import random
 import numpy as np 
 import torch
-import os 
-import glob
 
 
 def set_seed(seed=0, with_torch=True, with_cuda=True):
@@ -23,6 +23,7 @@ def set_seed(seed=0, with_torch=True, with_cuda=True):
         torch.backends.cudnn.deterministic = True
 
 def make_clean_folder(path):
+    """Create a clean folder. If the folder already exists, files are deleted."""
     os.makedirs(path, exist_ok=True)
     for f in glob.iglob(os.path.join(path, "*")):
         os.remove(f)
