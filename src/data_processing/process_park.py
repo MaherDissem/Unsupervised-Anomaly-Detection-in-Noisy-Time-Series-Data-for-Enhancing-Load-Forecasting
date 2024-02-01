@@ -65,10 +65,10 @@ def run(args):
     # split contam data into train and test sets for anomaly detection model
     N = int(args.contam_clean_ratio*len(load))//args.day_size*args.day_size
     M = int(args.ad_split_ratio*(len(load[:N])))//args.day_size*args.day_size
-    contaminated_load = load[:N]
-    clean_load = load[N:]
-    ad_train_load = contaminated_load[:M]
-    ad_test_load = contaminated_load[M:]
+    contaminated_load = load[:N].copy()
+    clean_load = load[N:].copy()
+    ad_train_load = contaminated_load[:M].copy()
+    ad_test_load = contaminated_load[M:].copy()
 
     # contaminate data with synthetic anomalies
     anomaly_generator = SynthLoadAnomaly()
@@ -202,7 +202,7 @@ def run(args):
     clean_load.to_csv(os.path.join(args.trg_save_data, "load_clean_lf_test.csv"))
 
     # save contaminated load serie to infer AD/AI models after training
-    contam_full_load, gt_full_load = contam_load(load, args.contam_ratio, args.load_feature_name, args.day_size) # anomaly contamination is different than for AD model training
+    contam_full_load, gt_full_load = contam_load(contaminated_load, args.contam_ratio, args.load_feature_name, args.day_size) # anomaly contamination is different than for AD model training
     scaled_load = (contam_full_load - min_q_val) / (max_q_val - min_q_val)
     scaled_load.rename_axis("date", inplace=True)
     scaled_load.fillna(0, inplace=True) # will be detected as anomaly and imputed by AI model

@@ -84,15 +84,15 @@ def run(args):
     # remove uncomplete last day
     uncomplete_last_day = load[load.index.day == load.index[-1].day]
     load = load.drop(uncomplete_last_day.index)
+    load = load[~load.index.isin(to_remove)] # remove corrupt data
         
     # split contam data into train and test sets for anomaly detection model
     N = int(args.contam_clean_ratio*len(load))//args.day_size*args.day_size
     M = int(args.ad_split_ratio*(len(load[:N])))//args.day_size*args.day_size
     contaminated_load = load[:N].copy()
-    contaminated_load = contaminated_load[~contaminated_load.index.isin(to_remove)] # remove corrupt data to train AD/AI model
-    clean_load = load[N:]
-    ad_train_load = contaminated_load[:M]
-    ad_test_load = contaminated_load[M:]
+    clean_load = load[N:].copy()
+    ad_train_load = contaminated_load[:M].copy()
+    ad_test_load = contaminated_load[M:].copy()
 
     def extract_consec_days(load, day0, n_days, day_size):
         """return n_days consecutive days starting at day0 from load dataframe"""
@@ -185,7 +185,7 @@ def run(args):
     clean_load.to_csv(os.path.join(args.trg_save_data, "load_clean_lf_test.csv"))
 
     # save contaminated load serie to infer AD/AI models after training
-    scaled_load = (load - min_q_val) / (max_q_val - min_q_val)
+    scaled_load = (contaminated_load - min_q_val) / (max_q_val - min_q_val)
     scaled_load.rename_axis("date", inplace=True)
     scaled_load.to_csv(os.path.join(args.trg_save_data, "load_contam.csv"))
     print('Dataset ready!')
