@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument("--sequence_split",       type=float,     default=5/6,      help="Ratio of input to target (forecasting horizon) split")
     parser.add_argument("--nbr_var",              type=int,       default=1,        help="Number of variables")
     # training
-    parser.add_argument("--epochs",               type=int,       default=5,      help="Number of epochs")
+    parser.add_argument("--epochs",               type=int,       default=300,      help="Number of epochs")
     parser.add_argument("--patience",             type=int,       default=50,       help="Patience for early stopping")
     parser.add_argument("--batch_size",           type=int,       default=32,       help="Batch size")
     parser.add_argument("--lr",                   type=float,     default=1e-3,     help="Learning rate")
