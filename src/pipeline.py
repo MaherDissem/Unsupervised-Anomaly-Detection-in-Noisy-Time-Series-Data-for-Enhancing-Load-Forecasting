@@ -19,7 +19,7 @@ from utils.utils import make_clean_folder
 def run_pipeline(data_folder, 
                  exp_folder,
                  day_size, n_days, window_size, day_stride, contam_ratio, flag_consec, outlier_threshold, # anomaly detection parameters
-                 forecast_window_size, forecast_day_stride, forecast_sequence_split, # forecasting parameters
+                 forecast_model, forecast_window_size, forecast_day_stride, forecast_sequence_split, # forecasting parameters
                  save_figs):
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -227,7 +227,7 @@ def run_pipeline(data_folder,
     # ---
     # save cleaned (imputed) data for forecasting task
     # ---
-            
+    
     # we reconstruct a continuous timeserie from individually imputed windows          
     cleaned_dataset = []
     for timeserie, date_range in cleaned_anomalies:
@@ -275,7 +275,6 @@ def run_pipeline(data_folder,
         from data_processing.process_LF import run as prepare_data_LF_run
         from data_processing.process_LF import parse_args as prepare_data_LF_parse_args
 
-
     default_process_data_LF_args = prepare_data_LF_parse_args()
     default_process_data_LF_args.n_days = forecast_window_size
     default_process_data_LF_args.day_size = day_size
@@ -285,12 +284,12 @@ def run_pipeline(data_folder,
     default_process_data_LF_args.trg_test_save_data = f"dataset/processed/{data_folder}/{exp_folder}/lf_test_clean"
     default_process_data_LF_args.log_file = f"results/{data_folder}/{exp_folder}/log.txt"
 
-    # cleaned data
+    # process cleaned data
     default_process_data_LF_args.raw_train_data_csv = f"dataset/processed/{data_folder}/{exp_folder}/load_cleaned.csv"
     default_process_data_LF_args.trg_train_save_data = f"dataset/processed/{data_folder}/{exp_folder}/lf_cleaned"
     prepare_data_LF_run(default_process_data_LF_args)
 
-    # contamined data
+    # process contamined data
     default_process_data_LF_args.raw_train_data_csv = f"dataset/processed/{data_folder}/{exp_folder}/load_contam.csv"
     default_process_data_LF_args.trg_train_save_data = f"dataset/processed/{data_folder}/{exp_folder}/lf_contam"
     prepare_data_LF_run(default_process_data_LF_args)
@@ -312,20 +311,46 @@ def run_pipeline(data_folder,
     # run forecasting model on cleaned data
     default_LF_args.train_dataset_path = f"dataset/processed/{data_folder}/{exp_folder}/lf_cleaned"
     default_LF_args.test_dataset_path = f"dataset/processed/{data_folder}/{exp_folder}/lf_test_clean"
-    default_LF_args.save_plots_path = f"results/{data_folder}/{exp_folder}/forecasting/cleaned"
-    default_LF_args.checkpoint_path = f"results/{data_folder}/{exp_folder}/weights/checkpoint_lf_clean.pt"
-
-    smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
-    print(f"Cleaned data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+    # seq2seq model
+    if forecast_model == "seq2seq" or forecast_model == "all":
+        default_LF_args.model_choice = "seq2seq"
+        default_LF_args.save_plots_path = f"results/{data_folder}/{exp_folder}/forecasting/seq2seq/cleaned"
+        default_LF_args.checkpoint_path = f"results/{data_folder}/{exp_folder}/weights/seq2seq/checkpoint_lf_clean.pt"
+        os.makedirs(os.path.dirname(default_LF_args.save_plots_path), exist_ok=True)
+        os.makedirs(os.path.dirname(default_LF_args.checkpoint_path), exist_ok=True)
+        smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
+        print(f"seq2seq: Cleaned data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+    # scinet model
+    if forecast_model == "scinet" or forecast_model == "all":
+        default_LF_args.model_choice = "scinet"
+        default_LF_args.save_plots_path = f"results/{data_folder}/{exp_folder}/forecasting/scinet/cleaned"
+        default_LF_args.checkpoint_path = f"results/{data_folder}/{exp_folder}/weights/scinet/checkpoint_lf_clean.pt"
+        os.makedirs(os.path.dirname(default_LF_args.save_plots_path), exist_ok=True)
+        os.makedirs(os.path.dirname(default_LF_args.checkpoint_path), exist_ok=True)
+        smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
+        print(f"SCINet: Cleaned data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
 
     # run forecasting model on contamined data
     default_LF_args.train_dataset_path = f"dataset/processed/{data_folder}/{exp_folder}/lf_contam"
     default_LF_args.test_dataset_path = f"dataset/processed/{data_folder}/{exp_folder}/lf_test_clean"
-    default_LF_args.save_plots_path = f"results/{data_folder}/{exp_folder}/forecasting/contam"
-    default_LF_args.checkpoint_path = f"results/{data_folder}/{exp_folder}/weights/checkpoint_lf_contam.pt"
-
-    smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
-    print(f"Contamined data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+    # seq2seq model
+    if forecast_model == "seq2seq" or forecast_model == "all":
+        default_LF_args.model_choice = "seq2seq"
+        default_LF_args.save_plots_path = f"results/{data_folder}/{exp_folder}/forecasting/seq2seq/contam"
+        default_LF_args.checkpoint_path = f"results/{data_folder}/{exp_folder}/weights/seq2seq/checkpoint_lf_contam.pt"
+        os.makedirs(os.path.dirname(default_LF_args.save_plots_path), exist_ok=True)
+        os.makedirs(os.path.dirname(default_LF_args.checkpoint_path), exist_ok=True)
+        smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
+        print(f"seq2seq: Contamined data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+    # scinet model
+    if forecast_model == "scinet" or forecast_model == "all":
+        default_LF_args.model_choice = "scinet"
+        default_LF_args.save_plots_path = f"results/{data_folder}/{exp_folder}/forecasting/scinet/contam"
+        default_LF_args.checkpoint_path = f"results/{data_folder}/{exp_folder}/weights/scinet/checkpoint_lf_contam.pt"
+        os.makedirs(os.path.dirname(default_LF_args.save_plots_path), exist_ok=True)
+        os.makedirs(os.path.dirname(default_LF_args.checkpoint_path), exist_ok=True)
+        smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
+        print(f"SCINet: Contamined data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
 
 
 if __name__ == "__main__":
@@ -343,7 +368,8 @@ if __name__ == "__main__":
     forecast_window_size = 6                                                # window size for forecasting in days (including forecast day)
     forecast_day_stride = 1                                                 # stride for forecasting
     forecast_sequence_split = (forecast_window_size-1)/forecast_window_size # split ratio for forecasting (model input, forecast horizon)
+    forecast_model = "all"                                                  # model to use for forecasting: "seq2seq", "scinet" or "all"
     save_figs = True                                                        # save visualization plots for anomaly detection and imputation
 
     # run pipeline (data processing, anomaly detection, anomaly imputation, forecasting with cleaned/contamined data)
-    run_pipeline(data_folder, exp_folder, day_size, n_days, window_size, day_stride, contam_ratio, flag_consec, outlier_threshold, forecast_window_size, forecast_day_stride, forecast_sequence_split, save_figs)
+    run_pipeline(data_folder, exp_folder, day_size, n_days, window_size, day_stride, contam_ratio, flag_consec, outlier_threshold, forecast_model, forecast_window_size, forecast_day_stride, forecast_sequence_split, save_figs)

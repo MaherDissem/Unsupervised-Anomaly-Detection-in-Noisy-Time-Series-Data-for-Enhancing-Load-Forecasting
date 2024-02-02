@@ -56,6 +56,7 @@ def get_default_parameters(params):
     params.setdefault("forecast_window_size", 6)
     params.setdefault("forecast_day_stride", 1)
     params.setdefault("forecast_sequence_split", (params.get("forecast_window_size", 6) - 1 )/ params.get("forecast_window_size", 6))
+    params.setdefault("forecast_model", "all")
     params.setdefault("save_figs", True)
     return params
 
