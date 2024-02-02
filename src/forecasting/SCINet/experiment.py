@@ -119,17 +119,17 @@ class ModelWrapper():
 
             for data in trainloader:
                 inputs, targets = data
-                tx = inputs.to(self.device)  # [batch_size, seq_len, input_size=n_var]
-                ty = targets.to(self.device) # [batch_size, horizon, input_size]
+                inputs = inputs.to(self.device)  # [batch_size, seq_len, input_size=n_var]
+                targets = targets.to(self.device) # [batch_size, horizon, input_size]
 
                 # inference
                 self.model.zero_grad()
                 if self.args.stacks == 1:
-                    forecast = self.model(tx)
-                    loss = self.criterion(forecast, ty)
+                    forecast = self.model(inputs)
+                    loss = self.criterion(forecast, targets)
                 if self.args.stacks == 2:
-                    forecast, mid = self.model(tx)
-                    loss = self.criterion(forecast, ty) + self.criterion(mid, ty)
+                    forecast, mid = self.model(inputs)
+                    loss = self.criterion(forecast, targets) + self.criterion(mid, targets)
                 epoch_loss += loss.item()
 
                 # backpropagate
