@@ -27,18 +27,18 @@ def run_pipeline(data_folder,
 
     # prepare directories for results/plots/weights saving
     # data 
-    save_imputation_train_path = f"dataset/processed/{data_folder}/{exp_folder}/ai_train/data"
-    save_forecasting_clean_train_path = f"dataset/processed/{data_folder}/{exp_folder}/lf_cleaned/data"
-    save_forecasting_contam_train_path = f"dataset/processed/{data_folder}/{exp_folder}/lf_contam/data"
+    save_imputation_data_path = f"dataset/processed/{data_folder}/{exp_folder}/ai_train/data"
+    save_forecasting_clean_data_path = f"dataset/processed/{data_folder}/{exp_folder}/lf_cleaned/data"
+    save_forecasting_contam_data_path = f"dataset/processed/{data_folder}/{exp_folder}/lf_contam/data"
     # plots
     save_heatmaps_path = f"results/{data_folder}/{exp_folder}/heatmaps"
-    save_imputation_path = f"results/{data_folder}/{exp_folder}/imputation"
-    save_forecasting_cleaned_path = f"results/{data_folder}/{exp_folder}/forecasting"
+    save_imputation_plots_path = f"results/{data_folder}/{exp_folder}/imputation"
+    save_forecasting_plots_path = f"results/{data_folder}/{exp_folder}/forecasting"
     save_ai_eval_plots_path = f"results/{data_folder}/{exp_folder}/ai_eval_plots"
     # weights
     save_weights_path = f"results/{data_folder}/{exp_folder}/weights"
 
-    path_list = [save_imputation_train_path, save_forecasting_clean_train_path, save_forecasting_contam_train_path, save_heatmaps_path, save_imputation_path, save_forecasting_cleaned_path, save_forecasting_contam_path, save_ai_eval_plots_path, save_weights_path]
+    path_list = [save_imputation_data_path, save_forecasting_clean_data_path, save_forecasting_contam_data_path, save_heatmaps_path, save_imputation_plots_path, save_forecasting_plots_path, save_ai_eval_plots_path, save_weights_path]
     for path in path_list:
         make_clean_folder(path)
 
