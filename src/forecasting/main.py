@@ -19,11 +19,11 @@ from src.utils.utils import set_seed
 def parse_args():
     parser = argparse.ArgumentParser(description="Runs Load Forecasting experiments")
     # dataset
-    parser.add_argument("--train_dataset_path",   type=str,       default="dataset/processed/INPG/exp5/lf_cleaned",       help="Path to train dataset")
-    parser.add_argument("--test_dataset_path",    type=str,       default="dataset/processed/INPG/exp5/lf_test_clean",    help="Path to clean dataset for testing")
+    parser.add_argument("--train_dataset_path",   type=str,       default="dataset/processed/INPG/exp20/lf_contam",       help="Path to train dataset")
+    parser.add_argument("--test_dataset_path",    type=str,       default="dataset/processed/INPG/exp20/lf_test_clean",    help="Path to clean dataset for testing")
     # sequence
-    parser.add_argument("--timesteps",            type=int,       default=24*6,     help="Number of timesteps")
-    parser.add_argument("--sequence_split",       type=float,     default=5/6,      help="Ratio of input to target (forecasting horizon) split")
+    parser.add_argument("--timesteps",            type=int,       default=24*7*2,     help="Number of timesteps")
+    parser.add_argument("--sequence_split",       type=float,     default=0.5,      help="Ratio of input to target (forecasting horizon) split")
     parser.add_argument("--nbr_var",              type=int,       default=1,        help="Number of variables")
     # training
     parser.add_argument("--epochs",               type=int,       default=300,      help="Number of epochs")
@@ -45,10 +45,6 @@ def parse_args():
     parser.add_argument("--num_grulstm_layers",   type=int,       default=1,        help="Number of GRU/LSTM layers")
     parser.add_argument("--fc_units",             type=int,       default=16,       help="Number of fully connected units") 
     # SCINet model parameters, only relevant if model == "scinet"
-    ### -------  input/output length settings --------------                                                                            
-    parser.add_argument('--window_size', type=int, default=24*5, help='input length')
-    parser.add_argument('--horizon', type=int, default=24, help='prediction length')
-    parser.add_argument('--concat_len', type=int, default=0)
     ### -------  training settings --------------  
     parser.add_argument('--save', type=str, default='model/model.pt', help='path to save the final model')
     parser.add_argument('--optim', type=str, default='adam')
@@ -58,6 +54,7 @@ def parse_args():
     parser.add_argument('--save_path', type=str, default='exp/financial_checkpoints/')
     parser.add_argument('--model_name', type=str, default='SCINet')
     ### -------  model settings --------------  
+    parser.add_argument('--concat_len', type=int, default=0)
     parser.add_argument('--hidden-size', default=1.0, type=float, help='hidden channel of module')# H, EXPANSION RATE
     parser.add_argument('--INN', default=1, type=int, help='use INN or basic strategy')
     parser.add_argument('--kernel', default=5, type=int, help='kernel size')#k kernel size
@@ -65,7 +62,7 @@ def parse_args():
     parser.add_argument('--positionalEcoding', type = bool , default=False)
     parser.add_argument('--dropout', type=float, default=0.25)
     parser.add_argument('--groups', type=int, default=1)
-    parser.add_argument('--levels', type=int, default=3) # 3 for 24*5 input length,
+    parser.add_argument('--levels', type=int, default=3) # 3 for 24*5 and 48*5, 48*7*2, 24*7*2 input length
     parser.add_argument('--num_decoder_layer', type=int, default=1)
     parser.add_argument('--stacks', type=int, default=1)
     parser.add_argument('--long_term_forecast', action='store_true', default=False)
@@ -77,7 +74,7 @@ def parse_args():
 
     args = parser.parse_args()
     if not args.long_term_forecast:
-        args.concat_len = args.window_size - args.horizon
+        args.concat_len = args.timesteps * (args.sequence_split - (1 - args.sequence_split))
 
     return parser.parse_args()
 

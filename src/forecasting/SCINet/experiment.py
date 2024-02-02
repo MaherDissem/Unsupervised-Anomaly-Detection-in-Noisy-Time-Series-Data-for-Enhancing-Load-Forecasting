@@ -14,6 +14,7 @@ import sys
 sys.path.insert(0, os.getcwd())
 from src.utils.early_stop import EarlyStopping
 
+
 def normal_std(x):
     return x.std() * np.sqrt((len(x) - 1.) / (len(x)))
 
@@ -35,6 +36,10 @@ class ModelWrapper():
     def __init__(self, args):
         self.args = args
         self.input_dim = self.args.nbr_var
+        self.timesteps = self.args.timesteps
+        self.sequence_split = self.args.sequence_split
+        self.input_len = int(self.timesteps * self.sequence_split)
+        self.horizon = int(self.timesteps * (1 - self.sequence_split))
 
         self.criterion = smooth_l1_loss if self.args.L1Loss else nn.MSELoss(size_average=False).cuda()
         self.evaluateL2 = nn.MSELoss(size_average=False).cuda()
@@ -46,8 +51,8 @@ class ModelWrapper():
     def _build_model(self):
         if self.args.decompose:
             model = SCINet_decompose(
-                output_len=self.args.horizon,
-                input_len=self.args.window_size,
+                output_len=self.horizon,
+                input_len=self.input_len,
                 input_dim=self.input_dim,
                 hid_size=self.args.hidden_size,
                 num_stacks=self.args.stacks,
@@ -64,8 +69,8 @@ class ModelWrapper():
             )
         else:
             model = SCINet(
-                output_len=self.args.horizon,
-                input_len=self.args.window_size,
+                output_len=self.horizon,
+                input_len=self.input_len,
                 input_dim=self.input_dim,
                 hid_size=self.args.hidden_size,
                 num_stacks=self.args.stacks,
@@ -99,7 +104,7 @@ class ModelWrapper():
 
         # loading and resuming training
         # if self.args.resume:
-        #     self.model, lr, epoch_start = load_model(self.model, save_path, model_name=self.args.dataset_name, horizon=self.args.horizon)
+        #     self.model, lr, epoch_start = load_model(self.model, save_path, model_name=self.args.dataset_name, horizon=self.horizon)
         # else:
         #     epoch_start = 0
 
@@ -185,7 +190,7 @@ class ModelWrapper():
 
         # if eval_trained:
         #     save_path = os.path.join(self.args.save_path, self.args.model_name)
-        #     self.model = load_model(self.model, save_path, model_name=self.args.dataset_name, horizon=self.args.horizon)[0]
+        #     self.model = load_model(self.model, save_path, model_name=self.args.dataset_name, horizon=self.horizon)[0]
         
         self.model.eval()
 
@@ -205,7 +210,7 @@ class ModelWrapper():
                 if self.args.stacks == 1:
                     outputs = self.model(inputs)
                 elif self.args.stacks == 2:
-                    outputs, res = self.model(inputs)
+                    outputs, _ = self.model(inputs)
 
             # sMAPE
             absolute_percentage_errors = 2 * torch.abs(outputs - targets) / (torch.abs(outputs) + torch.abs(targets))
@@ -240,5 +245,5 @@ class ModelWrapper():
             if self.args.stacks == 1:
                 outputs = self.model(inputs)
             elif self.args.stacks == 2:
-                outputs, res = self.model(inputs)
+                outputs, _ = self.model(inputs)
         return outputs
