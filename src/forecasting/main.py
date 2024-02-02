@@ -70,7 +70,6 @@ def parse_args():
     parser.add_argument('--decompose', type=bool,default=False)
     parser.add_argument('--single_step', type=int, default=0, help='only supervise the final setp')
     parser.add_argument('--single_step_output_One', type=int, default=0, help='only output the single final step')
-    parser.add_argument('--lastWeight', type=float, default=0.5,help='Loss weight lambda on the final step')
 
     args = parser.parse_args()
     if not args.long_term_forecast:

@@ -109,15 +109,11 @@ class ModelWrapper():
 
         epoch_start = 0
         loss_evol = []
-        weight = torch.tensor(self.args.lastWeight).cuda() #used with multi-step
         optim=self._select_optimizer()
         
-        print(self.args.epochs, "epochs")
         for epoch in range(epoch_start, self.args.epochs):
             self.model.train()
-            total_loss = 0
-            final_loss = 0
-            min_loss = 0
+            total_loss = 0.0
             epoch_loss = 0.0
             lr = adjust_learning_rate(optim, epoch, self.args)
 
@@ -130,32 +126,16 @@ class ModelWrapper():
                 self.model.zero_grad()
                 if self.args.stacks == 1:
                     forecast = self.model(tx)
-                elif self.args.stacks == 2: 
-                    forecast, res = self.model(tx)
-
-                # calc loss. TODO replce by loss ETTH loss
-                if self.args.lastWeight == 1.0:
-                    loss_f = self.criterion(forecast, ty)
-                    if self.args.stacks == 2:
-                        loss_m = self.criterion(res, ty)
-                else:
-                    loss_f = self.criterion(forecast[:, :-1, :], ty[:, :-1, :] ) \
-                            + weight * self.criterion(forecast[:, -1:, :], ty[:, -1:, :] )
-                    if self.args.stacks == 2:  # add middle loss
-                        loss_m = self.criterion(res[:, :-1, :] , ty[:, :-1, :] ) \
-                                + weight * self.criterion(res[:, -1:, :], ty[:, -1:, :] )
-                loss = loss_f
+                    loss = self.criterion(forecast, ty)
                 if self.args.stacks == 2:
-                    loss += loss_m
+                    forecast, mid = self.model(tx)
+                    loss = self.criterion(forecast, ty) + self.criterion(mid, ty)
                 epoch_loss += loss.item()
 
                 # backpropagate
                 loss.backward()
                 total_loss += loss.item()
-                final_loss  += loss_f.item()
-                if self.args.stacks == 2:
-                    min_loss  += loss_m.item()
-                grad_norm = optim.step()
+                optim.step()
 
             epoch_loss /= len(trainloader) # average loss per batch
             loss_evol.append(epoch_loss)
