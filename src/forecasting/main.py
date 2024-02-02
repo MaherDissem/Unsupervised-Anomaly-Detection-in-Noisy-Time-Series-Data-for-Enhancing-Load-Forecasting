@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument("--sequence_split",       type=float,     default=5/6,      help="Ratio of input to target (forecasting horizon) split")
     parser.add_argument("--nbr_var",              type=int,       default=1,        help="Number of variables")
     # training
-    parser.add_argument("--epochs",               type=int,       default=300,      help="Number of epochs")
+    parser.add_argument("--epochs",               type=int,       default=500,      help="Number of epochs")
     parser.add_argument("--patience",             type=int,       default=50,       help="Patience for early stopping")
     parser.add_argument("--batch_size",           type=int,       default=32,       help="Batch size")
     parser.add_argument("--lr",                   type=float,     default=1e-3,     help="Learning rate")
@@ -71,7 +71,7 @@ def parse_args():
     parser.add_argument('--single_step', type=int, default=0, help='only supervise the final setp')
     parser.add_argument('--single_step_output_One', type=int, default=0, help='only output the single final step')
     parser.add_argument('--lastWeight', type=float, default=0.5,help='Loss weight lambda on the final step')
-    
+
     args = parser.parse_args()
     if not args.long_term_forecast:
         args.concat_len = args.timesteps * (args.sequence_split - (1 - args.sequence_split))
