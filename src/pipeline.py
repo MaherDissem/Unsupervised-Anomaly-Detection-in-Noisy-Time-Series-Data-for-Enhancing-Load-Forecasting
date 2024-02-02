@@ -37,6 +37,8 @@ def run_pipeline(data_folder,
     save_ai_eval_plots_path = f"results/{data_folder}/{exp_folder}/ai_eval_plots"
     # weights
     save_weights_path = f"results/{data_folder}/{exp_folder}/weights"
+    
+    # TODO declare all use paths here
 
     path_list = [save_imputation_data_path, save_forecasting_clean_data_path, save_forecasting_contam_data_path, save_heatmaps_path, save_imputation_plots_path, save_forecasting_plots_path, save_ai_eval_plots_path, save_weights_path]
     for path in path_list:
@@ -184,8 +186,8 @@ def run_pipeline(data_folder,
         dates = ''
         for d in range(n_days):
             dates += str(date_range[d*day_size].date()) + "_"
-        np.save(os.path.join(save_imputation_train_path, str(dates)+'.npy'), timeserie.squeeze(-1))
-    print(f"saved impuation training data to {save_imputation_train_path}.npy")
+        np.save(os.path.join(save_imputation_data_path, str(dates)+'.npy'), timeserie.squeeze(-1))
+    print(f"saved impuation training data to {save_imputation_data_path}.")
 
     # train anomaly imputation model on anomaly free samples
     from anomaly_imputation.main import parse_args as AI_parse_args
@@ -195,7 +197,7 @@ def run_pipeline(data_folder,
     default_AI_args = AI_parse_args()
     default_AI_args.seq_len = window_size
     default_AI_args.mask_size = window_size // heatmaps[0].shape[0] 
-    default_AI_args.dataset_root = save_imputation_train_path
+    default_AI_args.dataset_root = save_imputation_data_path
     default_AI_args.checkpoint_path = f"results/{data_folder}/{exp_folder}/weights/checkpoint_ai.pt"
     default_AI_args.save_folder = f"results/{data_folder}/{exp_folder}/ai_eval_plots"
 
@@ -219,7 +221,7 @@ def run_pipeline(data_folder,
             plt.plot(mask, label="mask")
             plt.plot(filled_ts, label="serie with filled values")
             plt.legend()
-            plt.savefig(os.path.join(save_imputation_path, f"{i}.png"))
+            plt.savefig(os.path.join(save_imputation_plots_path, f"{i}.png"))
             plt.clf()
 
 
@@ -292,7 +294,6 @@ def run_pipeline(data_folder,
     default_process_data_LF_args.raw_train_data_csv = f"dataset/processed/{data_folder}/{exp_folder}/load_contam.csv"
     default_process_data_LF_args.trg_train_save_data = f"dataset/processed/{data_folder}/{exp_folder}/lf_contam"
     prepare_data_LF_run(default_process_data_LF_args)
-
 
     # ---
     # run forecasting model
