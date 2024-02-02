@@ -39,7 +39,7 @@ class ModelWrapper():
         self.timesteps = self.args.timesteps
         self.sequence_split = self.args.sequence_split
         self.input_len = int(self.timesteps * self.sequence_split)
-        self.horizon = int(self.timesteps * (1 - self.sequence_split))
+        self.horizon = self.timesteps - self.input_len
 
         self.criterion = smooth_l1_loss if self.args.L1Loss else nn.MSELoss(size_average=False).cuda()
         self.evaluateL2 = nn.MSELoss(size_average=False).cuda()
@@ -99,9 +99,8 @@ class ModelWrapper():
         
         early_stopping = EarlyStopping(patience=self.args.patience, verbose=False, checkpoint_path=self.args.checkpoint_path)
         
-        save_path = os.path.join(self.args.save_path, self.args.model_name)
-        os.makedirs(save_path, exist_ok=True)
-
+        # save_path = os.path.join(self.args.save_path, self.args.model_name)
+        # os.makedirs(save_path, exist_ok=True)
         # loading and resuming training
         # if self.args.resume:
         #     self.model, lr, epoch_start = load_model(self.model, save_path, model_name=self.args.dataset_name, horizon=self.horizon)
@@ -134,7 +133,7 @@ class ModelWrapper():
                 elif self.args.stacks == 2: 
                     forecast, res = self.model(tx)
 
-                # calc loss
+                # calc loss. TODO replce by loss ETTH loss
                 if self.args.lastWeight == 1.0:
                     loss_f = self.criterion(forecast, ty)
                     if self.args.stacks == 2:

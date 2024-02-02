@@ -19,11 +19,11 @@ from src.utils.utils import set_seed
 def parse_args():
     parser = argparse.ArgumentParser(description="Runs Load Forecasting experiments")
     # dataset
-    parser.add_argument("--train_dataset_path",   type=str,       default="dataset/processed/INPG/exp20/lf_contam",       help="Path to train dataset")
-    parser.add_argument("--test_dataset_path",    type=str,       default="dataset/processed/INPG/exp20/lf_test_clean",    help="Path to clean dataset for testing")
+    parser.add_argument("--train_dataset_path",   type=str,       default="dataset/processed/AEMO/NSW/exp0/lf_contam",       help="Path to train dataset")
+    parser.add_argument("--test_dataset_path",    type=str,       default="dataset/processed/AEMO/NSW/exp0/lf_cleaned",    help="Path to clean dataset for testing")
     # sequence
-    parser.add_argument("--timesteps",            type=int,       default=24*7*2,     help="Number of timesteps")
-    parser.add_argument("--sequence_split",       type=float,     default=0.5,      help="Ratio of input to target (forecasting horizon) split")
+    parser.add_argument("--timesteps",            type=int,       default=48*6,     help="Number of timesteps")
+    parser.add_argument("--sequence_split",       type=float,     default=5/6,      help="Ratio of input to target (forecasting horizon) split")
     parser.add_argument("--nbr_var",              type=int,       default=1,        help="Number of variables")
     # training
     parser.add_argument("--epochs",               type=int,       default=300,      help="Number of epochs")
@@ -71,7 +71,7 @@ def parse_args():
     parser.add_argument('--single_step', type=int, default=0, help='only supervise the final setp')
     parser.add_argument('--single_step_output_One', type=int, default=0, help='only output the single final step')
     parser.add_argument('--lastWeight', type=float, default=0.5,help='Loss weight lambda on the final step')
-
+    
     args = parser.parse_args()
     if not args.long_term_forecast:
         args.concat_len = args.timesteps * (args.sequence_split - (1 - args.sequence_split))
