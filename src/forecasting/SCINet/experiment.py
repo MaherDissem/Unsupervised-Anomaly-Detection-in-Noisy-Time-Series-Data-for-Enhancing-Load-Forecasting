@@ -158,10 +158,7 @@ class ModelWrapper():
         # load the last checkpoint with the best model (saved by EarlyStopping)
         self.model.load_state_dict(torch.load(self.args.checkpoint_path))
 
-        # test and save
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = self.validate(testloader)
-        print(f"Dataset = {self.args.train_dataset_path}\nTest: smape={smape_loss:.7f}, mae={mae_loss:.7f}, mse={mse_loss:.7f}, rmse={rmse_loss:.7f}, r2={r2_loss:.7f}\n", file=open("results/scinet/results.txt", "a"))
-
         return loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss
 
 
