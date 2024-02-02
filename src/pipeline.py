@@ -33,8 +33,7 @@ def run_pipeline(data_folder,
     # plots
     save_heatmaps_path = f"results/{data_folder}/{exp_folder}/heatmaps"
     save_imputation_path = f"results/{data_folder}/{exp_folder}/imputation"
-    save_forecasting_cleaned_path = f"results/{data_folder}/{exp_folder}/forecasting/cleaned"
-    save_forecasting_contam_path = f"results/{data_folder}/{exp_folder}/forecasting/contam"
+    save_forecasting_cleaned_path = f"results/{data_folder}/{exp_folder}/forecasting"
     save_ai_eval_plots_path = f"results/{data_folder}/{exp_folder}/ai_eval_plots"
     # weights
     save_weights_path = f"results/{data_folder}/{exp_folder}/weights"

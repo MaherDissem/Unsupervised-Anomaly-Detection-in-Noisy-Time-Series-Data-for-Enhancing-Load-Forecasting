@@ -1,5 +1,5 @@
 import os
-import glob
+import shutil
 import random
 import numpy as np 
 import torch
@@ -23,7 +23,10 @@ def set_seed(seed=0, with_torch=True, with_cuda=True):
         torch.backends.cudnn.deterministic = True
 
 def make_clean_folder(path):
-    """Create a clean folder. If the folder already exists, files are deleted."""
+    """Create a clean folder. If the folder already exists, delete its contents."""
     os.makedirs(path, exist_ok=True)
-    for f in glob.iglob(os.path.join(path, "*")):
-        os.remove(f)
+    
+    for item in os.listdir(path):
+        item_path = os.path.join(path, item)
+        shutil.rmtree(item_path)
+    
