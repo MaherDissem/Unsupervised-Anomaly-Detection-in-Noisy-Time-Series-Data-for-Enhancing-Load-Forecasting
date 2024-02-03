@@ -1,14 +1,10 @@
 import os
-import warnings
-warnings.filterwarnings('ignore')
-
 import numpy as np
 import torch
 import torch.nn as nn
 
 from .SCINet import SCINet
 from .SCINet_decompose import SCINet_decompose
-from .tools import adjust_learning_rate, load_model, save_model
 
 import sys
 sys.path.insert(0, os.getcwd())
@@ -17,6 +13,7 @@ from src.utils.early_stop import EarlyStopping
 
 def normal_std(x):
     return x.std() * np.sqrt((len(x) - 1.) / (len(x)))
+
 
 def smooth_l1_loss(input, target, beta=1. / 9, size_average=True):
     """
@@ -31,6 +28,27 @@ def smooth_l1_loss(input, target, beta=1. / 9, size_average=True):
     return loss.sum()
 
 
+def adjust_learning_rate(optimizer, epoch, args):
+    if args.lradj==1:
+        lr_adjust = {epoch: args.lr * (0.95 ** (epoch // 1))}
+
+    elif args.lradj==2:
+        lr_adjust = {
+            0: 0.0001, 5: 0.0005, 10:0.001, 20: 0.0001, 30: 0.00005, 40: 0.00001
+            , 70: 0.000001
+        }
+
+    if epoch in lr_adjust.keys():
+        lr = lr_adjust[epoch]
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
+        print('Updating learning rate to {}'.format(lr))
+    else:
+        for param_group in optimizer.param_groups:
+            lr = param_group['lr']
+    return lr
+
+
 class ModelWrapper():
 
     def __init__(self, args):
@@ -42,12 +60,11 @@ class ModelWrapper():
         self.horizon = self.timesteps - self.input_len
 
         self.criterion = smooth_l1_loss if self.args.L1Loss else nn.MSELoss(size_average=False).cuda()
-        self.evaluateL2 = nn.MSELoss(size_average=False).cuda()
-        self.evaluateL1 = nn.L1Loss(size_average=False).cuda()
         self.device  = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 
         self.model = self._build_model().cuda()
     
+
     def _build_model(self):
         if self.args.decompose:
             model = SCINet_decompose(
@@ -97,25 +114,16 @@ class ModelWrapper():
               trainloader, validloader, testloader,
         ):
         
+        optim=self._select_optimizer()
         early_stopping = EarlyStopping(patience=self.args.patience, verbose=False, checkpoint_path=self.args.checkpoint_path)
-        
-        # save_path = os.path.join(self.args.save_path, self.args.model_name)
-        # os.makedirs(save_path, exist_ok=True)
-        # loading and resuming training
-        # if self.args.resume:
-        #     self.model, lr, epoch_start = load_model(self.model, save_path, model_name=self.args.dataset_name, horizon=self.horizon)
-        # else:
-        #     epoch_start = 0
-
         epoch_start = 0
         loss_evol = []
-        optim=self._select_optimizer()
         
         for epoch in range(epoch_start, self.args.epochs):
             self.model.train()
             total_loss = 0.0
             epoch_loss = 0.0
-            lr = adjust_learning_rate(optim, epoch, self.args)
+            adjust_learning_rate(optim, epoch, self.args)
 
             for data in trainloader:
                 inputs, targets = data
@@ -163,14 +171,8 @@ class ModelWrapper():
 
 
     def validate(self, dataloader):
-
-        # if eval_trained:
-        #     save_path = os.path.join(self.args.save_path, self.args.model_name)
-        #     self.model = load_model(self.model, save_path, model_name=self.args.dataset_name, horizon=self.horizon)[0]
-        
         self.model.eval()
 
-        # calc metrics
         losses_smape = []
         losses_mae = []
         losses_mse = []
@@ -179,7 +181,6 @@ class ModelWrapper():
 
         for _data in dataloader:
             _, inputs, targets = _data
-
             inputs = inputs.to(self.device)   # [batch_size, window_size, n_var]
             targets = targets.to(self.device) # [batch_size, horizon, n_var]
             with torch.no_grad():

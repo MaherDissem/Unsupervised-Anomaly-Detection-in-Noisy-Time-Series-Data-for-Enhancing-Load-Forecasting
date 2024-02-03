@@ -8,8 +8,8 @@ import torch
 from torch.utils.data import DataLoader
 
 from dataset_f import DatasetForecasting
-from seq2seq.train import ModelWrapper as Seq2seq_model
-from SCINet.experiment import ModelWrapper as SCINet_model
+from seq2seq.wrapper import ModelWrapper as Seq2seq_model
+from SCINet.wrapper import ModelWrapper as SCINet_model
 
 import sys
 sys.path.insert(0, os.getcwd())
@@ -156,7 +156,7 @@ def run(args):
     #     f"train_dataset_path: {args.train_dataset_path}\n\
     #     Final test: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, r2={r2_loss}",
     #     file=open(args.results_file, "a")
-    # ) # results saved at pipeline level
+    # ) # results saved at pipeline level instead of here
     plt.plot(train_loss_evol)
     os.makedirs(args.save_plots_path, exist_ok=True)
     plt.savefig(args.save_plots_path + "/forecast_train_loss_evol.jpg")
