@@ -55,8 +55,8 @@ def parse_args():
     parser.add_argument('--groups',                 type=int,       default=1)
     parser.add_argument('--levels',                 type=int,       default=3)
     parser.add_argument('--num_decoder_layer',      type=int,       default=1)
-    parser.add_argument('--stacks',                 type=int,       default=1) # TODO compare 1 vs 2
-    parser.add_argument('--long_term_forecast',     action='store_true',     default=False) # TODO compare T vs F
+    parser.add_argument('--stacks',                 type=int,       default=2)
+    parser.add_argument('--long_term_forecast',     action='store_true',     default=False)
     parser.add_argument('--RIN',                    type=bool,      default=False)
     parser.add_argument('--decompose',              type=bool,      default=False)
     parser.add_argument('--single_step',            type=int,       default=0,        help='only supervise the final setp')     # disabled (need to change loss function to use)
@@ -135,6 +135,7 @@ def plot_predictions(model, testloader, args, device, N_input, N_output):
 def run(args):
     set_seed(args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    os.makedirs(os.path.dirname(args.checkpoint_path), exist_ok=True)
 
     # get data loaders
     trainloader, validloader, testloader, N_input, N_output = get_data_loaders(args)
@@ -147,14 +148,15 @@ def run(args):
 
     # train model
     train_loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = model.train(trainloader, validloader, testloader)
+    print(smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss)
 
     # save results
     os.makedirs(os.path.dirname(args.results_file), exist_ok=True)
-    print(
-        f"train_dataset_path: {args.train_dataset_path}\n\
-        Final test: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, r2={r2_loss}",
-        file=open(args.results_file, "a")
-    )
+    # print(
+    #     f"train_dataset_path: {args.train_dataset_path}\n\
+    #     Final test: smape={smape_loss}, mae={mae_loss}, mse={mse_loss}, rmse={rmse_loss}, r2={r2_loss}",
+    #     file=open(args.results_file, "a")
+    # ) # results saved at pipeline level
     plt.plot(train_loss_evol)
     os.makedirs(args.save_plots_path, exist_ok=True)
     plt.savefig(args.save_plots_path + "/forecast_train_loss_evol.jpg")

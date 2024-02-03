@@ -316,8 +316,6 @@ def run_pipeline(data_folder,
         default_LF_args.model_choice = "seq2seq"
         default_LF_args.save_plots_path = f"results/{data_folder}/{exp_folder}/forecasting/seq2seq/cleaned"
         default_LF_args.checkpoint_path = f"results/{data_folder}/{exp_folder}/weights/seq2seq/checkpoint_lf_clean.pt"
-        os.makedirs(os.path.dirname(default_LF_args.save_plots_path), exist_ok=True)
-        os.makedirs(os.path.dirname(default_LF_args.checkpoint_path), exist_ok=True)
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
         print(f"seq2seq: Cleaned data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
     # scinet model
@@ -325,8 +323,6 @@ def run_pipeline(data_folder,
         default_LF_args.model_choice = "scinet"
         default_LF_args.save_plots_path = f"results/{data_folder}/{exp_folder}/forecasting/scinet/cleaned"
         default_LF_args.checkpoint_path = f"results/{data_folder}/{exp_folder}/weights/scinet/checkpoint_lf_clean.pt"
-        os.makedirs(os.path.dirname(default_LF_args.save_plots_path), exist_ok=True)
-        os.makedirs(os.path.dirname(default_LF_args.checkpoint_path), exist_ok=True)
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
         print(f"SCINet: Cleaned data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
 
@@ -338,8 +334,6 @@ def run_pipeline(data_folder,
         default_LF_args.model_choice = "seq2seq"
         default_LF_args.save_plots_path = f"results/{data_folder}/{exp_folder}/forecasting/seq2seq/contam"
         default_LF_args.checkpoint_path = f"results/{data_folder}/{exp_folder}/weights/seq2seq/checkpoint_lf_contam.pt"
-        os.makedirs(os.path.dirname(default_LF_args.save_plots_path), exist_ok=True)
-        os.makedirs(os.path.dirname(default_LF_args.checkpoint_path), exist_ok=True)
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
         print(f"seq2seq: Contamined data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
     # scinet model
@@ -347,8 +341,6 @@ def run_pipeline(data_folder,
         default_LF_args.model_choice = "scinet"
         default_LF_args.save_plots_path = f"results/{data_folder}/{exp_folder}/forecasting/scinet/contam"
         default_LF_args.checkpoint_path = f"results/{data_folder}/{exp_folder}/weights/scinet/checkpoint_lf_contam.pt"
-        os.makedirs(os.path.dirname(default_LF_args.save_plots_path), exist_ok=True)
-        os.makedirs(os.path.dirname(default_LF_args.checkpoint_path), exist_ok=True)
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
         print(f"SCINet: Contamined data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
 
