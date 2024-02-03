@@ -7,9 +7,8 @@ from pipeline import run_pipeline
 
 
 # Environment variables
-gpu_ids = [0, 1, 2, 3]
-nbr_workers = len(gpu_ids)
-job_per_gpu = 2
+gpu_ids = [0, 1, 2, 3] # List of GPU IDs to use
+job_per_gpu = 2        # Number of jobs to run on each GPU
 
 # Grid of experiment parameters, each row is a different experiment, non-specified parameters are set to default values
 exp_parameters = [
