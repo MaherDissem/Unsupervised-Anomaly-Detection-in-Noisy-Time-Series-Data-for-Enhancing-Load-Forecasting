@@ -1,24 +1,24 @@
-# TODO increase number of epochs and patience
+# TODO increase number of epochs and early-stop patience
 import os
 import inspect
-import multiprocessing as mp
+import concurrent.futures
 
 from pipeline import run_pipeline
 
 
-# environment variables
+# Environment variables
 gpu_ids = [0, 1, 2, 3]
 nbr_workers = len(gpu_ids)
-job_per_gpu = 4
+job_per_gpu = 2
 
-# Grid of experiment parameters, each row is a different experiment, non-specified parameters are set to default
+# Grid of experiment parameters, each row is a different experiment, non-specified parameters are set to default values
 exp_parameters = [
-    {"data_folder": "AEMO/NSW",},
-    {"data_folder": "AEMO/QLD",},
-    {"data_folder": "AEMO/SA",},
-    {"data_folder": "AEMO/TAS",},
-    {"data_folder": "AEMO/VIC",},
-    {"data_folder": "INPG",},
+    {"data_folder": "AEMO/NSW"},
+    {"data_folder": "AEMO/QLD"},
+    {"data_folder": "AEMO/SA"},
+    {"data_folder": "AEMO/TAS"},
+    {"data_folder": "AEMO/VIC"},
+    {"data_folder": "INPG"},
     {"data_folder": "Park/Commercial/30_minutes",},
     {"data_folder": "Park/Office/30_minutes",},
     {"data_folder": "Park/Residential/30_minutes",},
@@ -44,7 +44,9 @@ exp_parameters = [
 ]
 
 def get_default_parameters(params):
-    """Set default parameters for non-specified parameters for the experiment"""
+    """ Set default parameters for non-specified experiment parameters.
+        Models default parameters are defined in their respective parsing functions.
+    """
     params.setdefault("data_folder", "AEMO/NSW")
     params.setdefault("day_size", 24 if "INPG" in params.get("data_folder", "") else 48)
     params.setdefault("n_days", 1)
@@ -77,28 +79,23 @@ def run_experiment(exp_id, gpu_id, exp_parameters):
 
 
 if __name__ == "__main__":
+    n_workers = len(gpu_ids) * job_per_gpu
+    with concurrent.futures.ProcessPoolExecutor(max_workers=n_workers) as executor:
+        futures = {}
+        for exp_id, exp_parameter in enumerate(exp_parameters):
+            # Assign GPUs in a round-robin fashion
+            gpu_id = gpu_ids[exp_id % len(gpu_ids)]
+            # Get default experiment parameters
+            exp_parameters = get_default_parameters(exp_parameter)
+            # Submit an experiment for execution and store the future object
+            futures[executor.submit(run_experiment, exp_id, gpu_id, exp_parameters)] = (exp_id, gpu_id, exp_parameters)
 
-    # Create a list of arguments for each experiment
-    experiment_args = []
-    exp = 0
-    for exp_id, exp_parameter in enumerate(exp_parameters):
-        gpu_id = gpu_ids[exp % len(gpu_ids)]  # Assign GPUs in a round-robin fashion
-        exp_parameters = get_default_parameters(exp_parameter)
-        experiment_args.append([exp_id, gpu_id, exp_parameters])
-        exp += 1
+        # Iterate over completed futures as they become available
+        for completed_future in concurrent.futures.as_completed(futures):
+            exp_id, gpu_id, exp_parameters = futures[completed_future]
+            try:
+                completed_future.result() # Blocked until result is ready
+            except Exception as e:
+                print(f"Experiment {exp_id} on GPU {gpu_id} failed with error: {e}")
 
-    # Divide the number of experiments by the max number of parallel processes
-    chunks = [experiment_args[i:i+nbr_workers*job_per_gpu] for i in range(0, len(experiment_args), nbr_workers*job_per_gpu)]
-
-    # Run the experiments in parallel, one chunk at a time
-    for chunk in chunks:
-        processes = []
-        for args in chunk:
-            process = mp.Process(target=run_experiment, args=args)
-            processes.append(process)
-            process.start()
-
-        for process in processes:
-            process.join() # TODO new process should start as soon as one finishes
-    
     print("Multi-processes finished")
