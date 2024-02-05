@@ -47,15 +47,15 @@ class ModelWrapper():
         early_stopping = EarlyStopping(patience=self.args.patience, verbose=False, checkpoint_path=self.args.checkpoint_path)
         loss_evol = []
         for epoch in range(1, self.args.epochs):
-            early_stopping.epoch = epoch 
+            early_stopping.epoch = epoch
             epoch_loss = 0.0
 
             for data in trainloader:
-                inputs, target = data
+                inputs, targets = data
                 inputs = inputs.to(self.device)
-                target = target.to(self.device)
+                targets = targets.to(self.device) # TODO plural
                 outputs = self.model(inputs)
-                train_loss = mse_criterion(target, outputs)      
+                train_loss = mse_criterion(targets, outputs)      
                 optimizer.zero_grad()
                 train_loss.backward()
                 optimizer.step()
