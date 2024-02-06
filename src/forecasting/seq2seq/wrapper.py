@@ -53,7 +53,7 @@ class ModelWrapper():
             for data in trainloader:
                 inputs, targets = data
                 inputs = inputs.to(self.device)
-                targets = targets.to(self.device) # TODO plural
+                targets = targets.to(self.device)
                 outputs = self.model(inputs)
                 train_loss = mse_criterion(targets, outputs)      
                 optimizer.zero_grad()
