@@ -22,13 +22,18 @@ def set_seed(seed=0, with_torch=True, with_cuda=True):
         torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
 
-def make_clean_folder(path):
-    """Create a clean folder. If the folder already exists, delete its contents."""
-    os.makedirs(path, exist_ok=True)
-    
-    for item in os.listdir(path):
-        item_path = os.path.join(path, item)
-        if os.path.isfile(item_path):
-            os.remove(item_path)
-        else:
-            shutil.rmtree(item_path)
+def delete_files_folders(path):
+    """Delete files and folders at the given path."""
+
+    if os.path.isdir(path):    
+        os.makedirs(path, exist_ok=True)
+        for item in os.listdir(path):
+            item_path = os.path.join(path, item)
+            if os.path.isfile(item_path):
+                os.remove(item_path)
+            else:
+                shutil.rmtree(item_path)
+    else:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if os.path.exists(path):
+            os.remove(path)
