@@ -17,7 +17,7 @@ class DatasetForecasting(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         data = np.load(self.npy_paths[idx])
         data = torch.tensor(data, dtype=torch.float)
-        if data.dim() == 1: data = data.unsqueeze(1)
+        if data.dim() == 1: data = data.unsqueeze(1) # add dimensions here if necessary
         seq_len = int(data.shape[0]*self.ts_split)
 
         if not self.return_date:

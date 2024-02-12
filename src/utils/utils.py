@@ -1,5 +1,4 @@
 import os
-import glob
 import shutil
 import random
 import numpy as np 
@@ -27,8 +26,9 @@ def make_clean_folder(path):
     """Create a clean folder. If the folder already exists, delete its contents."""
     os.makedirs(path, exist_ok=True)
     
-    for item in glob.iglob(os.path.join(path, "*")):
-        if os.path.isfile(item):
-            os.remove(item)
+    for item in os.listdir(path):
+        item_path = os.path.join(path, item)
+        if os.path.isfile(item_path):
+            os.remove(item_path)
         else:
-            shutil.rmtree(item)
+            shutil.rmtree(item_path)

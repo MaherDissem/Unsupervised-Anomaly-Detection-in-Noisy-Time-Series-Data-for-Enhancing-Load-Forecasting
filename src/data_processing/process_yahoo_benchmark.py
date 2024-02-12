@@ -84,7 +84,7 @@ def run(args):
 
 
     ad_train_windows, gt_ad_train_windows = build_dataset(ad_train_feat, args.n_days, args.day_size, args.day_stride)
-    ad_test_windows, gt_ad_test_windows = build_dataset(ad_test_feat, args.n_days, args.day_size, args.day_stride)
+    ad_test_windows, gt_ad_test_windows = build_dataset(ad_test_feat, args.n_days, args.day_size, args.day_stride) # TODO no stride for test data for fair evaluation. i.e. day_stride=1
 
     # normalize data
     min_quantile = 0.01
