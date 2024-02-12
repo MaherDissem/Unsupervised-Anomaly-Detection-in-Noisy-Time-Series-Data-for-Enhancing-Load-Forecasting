@@ -18,7 +18,7 @@ def parse_args():
     parser.add_argument("--raw_test_data_csv",    type=str,   default="dataset/processed/AEMO/NSW/load_clean_lf_test.csv", help="Path to raw data root")
     parser.add_argument("--trg_test_save_data",   type=str,   default="dataset/processed/AEMO/NSW/lf_test_clean", help="Path to save processed data")
     
-    parser.add_argument("--trg_feature_name",    type=str,   default="TOTALDEMAND", help="Name of the feat feature")
+    parser.add_argument("--trg_feature_name",     type=str,   default="TOTALDEMAND", help="Name of the feat feature")
     parser.add_argument("--date_feature_name",    type=str,   default="date", help="Name of the date_time feature")
 
     parser.add_argument("--day_size",             type=int,   default=48, help="Size of a day")

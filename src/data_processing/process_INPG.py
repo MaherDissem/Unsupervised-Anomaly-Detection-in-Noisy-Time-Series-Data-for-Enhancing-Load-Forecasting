@@ -15,14 +15,14 @@ from utils.utils import set_seed
 # load parameters
 def parse_args():
     parser = argparse.ArgumentParser(description="Prepare data for anomaly detection model training and evaluation.")
-    parser.add_argument("--raw_data_csv",        type=str,   default="dataset/raw/INPG/predis-mhi.csv", help="Path to raw data root")
+    parser.add_argument("--raw_data_csv",         type=str,   default="dataset/raw/INPG/predis-mhi.csv", help="Path to raw data root")
     parser.add_argument("--trg_save_data",        type=str,   default="dataset/processed/INPG", help="Path to save processed data")
     parser.add_argument("--load_feature_name",    type=str,   default="conso_global", help="Name of the load feature")
     parser.add_argument("--date_feature_name",    type=str,   default="date_time", help="Name of the date_time feature")
     parser.add_argument("--day_size",             type=int,   default=24, help="Size of a day")
     parser.add_argument("--n_days",               type=int,   default=1, help="Number of days")
     parser.add_argument("--day_stride",           type=int,   default=1, help="Day stride for sliding window")
-    parser.add_argument("--contam_clean_ratio",   type=float, default=0.8, help="Clean data save ratio (forcasting model is later evaluated on this clean data)")
+    parser.add_argument("--contam_clean_ratio",   type=float, default=0.7, help="Clean data save ratio (forcasting model is later evaluated on this clean data)")
     parser.add_argument("--ad_split_ratio",       type=float, default=0.7, help="Anomaly detection train-test split ratio")
     parser.add_argument("--seed",                 type=int,   default=0, help="Random seed")
     parser.add_argument("--log_file",             type=str,   default="results/results.txt", help="Path of file to log to") # quantiles must be saved to later scale back metrics

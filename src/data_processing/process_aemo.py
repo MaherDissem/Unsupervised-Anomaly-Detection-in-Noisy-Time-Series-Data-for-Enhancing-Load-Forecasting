@@ -22,7 +22,7 @@ def parse_args():
     parser.add_argument("--n_days",               type=int,   default=1, help="Number of days")
     parser.add_argument("--day_stride",           type=int,   default=1, help="Day stride for sliding window")
     parser.add_argument("--contam_ratio",         type=float, default=0.1, help="Contamination ratio (percentage of days with anomalies))") # train data contam depends on window size (nbr of days in a window)
-    parser.add_argument("--contam_clean_ratio",   type=float, default=0.8, help="Clean data save ratio (forcasting model is later evaluated on this clean data)")
+    parser.add_argument("--contam_clean_ratio",   type=float, default=0.7, help="Clean data save ratio (forcasting model is later evaluated on this clean data)")
     parser.add_argument("--ad_split_ratio",       type=float, default=0.7, help="Anomaly detection train-test split ratio")
     parser.add_argument("--seed",                 type=int,   default=0, help="Random seed")
     parser.add_argument("--log_file",             type=str,   default="results/results.txt", help="Path of file to log to") # quantiles must be saved to later scale back metrics
