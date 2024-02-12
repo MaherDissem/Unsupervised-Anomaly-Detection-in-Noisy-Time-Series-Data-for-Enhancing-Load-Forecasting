@@ -4,12 +4,11 @@ import glob
 import numpy as np
 import pandas as pd
 
-from data_processing.synth_anomaly import SynthLoadAnomaly
-
 import sys
 sys.path.append("./src")
 
 from utils.utils import set_seed
+from data_processing.synth_anomaly import SynthLoadAnomaly
 
 
 # load parameters
