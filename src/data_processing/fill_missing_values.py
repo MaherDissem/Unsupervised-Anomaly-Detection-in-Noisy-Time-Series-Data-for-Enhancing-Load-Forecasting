@@ -1,5 +1,3 @@
-# this code was developped during early experimentation and is not used in the final project.
-
 import numpy as np
 import pandas as pd
 from sklearn.impute import KNNImputer
@@ -19,29 +17,28 @@ def fill_empty_days(load, day_size=48, load_feature_name="load"):
     en = day_size
     while en < len(load):
         day_serie = load[load_feature_name].values[st:en]
-        # day is empty
         if np.isnan(day_serie).sum() == day_size:
             empty_day = True
-            prev_weekday_st = st - day_size*7
-            while prev_weekday_st>0:
-                prev_weekday_serie = load[load_feature_name].values[prev_weekday_st:prev_weekday_st+day_size]
-                if np.isnan(prev_weekday_serie).sum() != day_size:
-                    load[load_feature_name].values[st:en] = prev_weekday_serie
+            prev_week_day_st = st - day_size*7
+            while prev_week_day_st>0:
+                prev_week_day_serie = load[load_feature_name].values[prev_week_day_st:prev_week_day_st+day_size]
+                if np.isnan(prev_week_day_serie).sum() != day_size:
+                    load[load_feature_name].values[st:en] = prev_week_day_serie
                     empty_day = False
                     break
-                prev_weekday_st -= day_size*7
+                prev_week_day_st -= day_size*7
             
-            next_weekday_st = st + day_size*7
+            next_week_day_st = st + day_size*7
             while en<len(load) and empty_day:
-                next_weekday_serie = load[load_feature_name].values[next_weekday_st:next_weekday_st+day_size]
-                if np.isnan(next_weekday_serie).sum() != day_size:
-                    load[load_feature_name].values[st:en] = next_weekday_serie
+                next_week_day_serie = load[load_feature_name].values[next_week_day_st:next_week_day_st+day_size]
+                if np.isnan(next_week_day_serie).sum() != day_size:
+                    load[load_feature_name].values[st:en] = next_week_day_serie
                     empty_day = False
                     break
-                next_weekday_st += day_size*7
+                next_week_day_st += day_size*7
 
             if empty_day:
-                print("Couldn't find a non-empty day to fill empty day at ")
+                print("Couldn't find a non-empty day to fill empty day at index" , st, " with previous/next week.")
 
         st += day_size
         en += day_size
