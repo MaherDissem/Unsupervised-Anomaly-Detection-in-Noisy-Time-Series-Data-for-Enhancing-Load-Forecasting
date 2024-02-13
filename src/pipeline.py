@@ -18,8 +18,8 @@ from utils.utils import delete_files_folders
 
 def run_pipeline(data_folder, 
                  exp_folder,
-                 day_size, n_days, window_size, day_stride, contam_ratio, flag_consec, outlier_threshold, # anomaly detection parameters
-                 forecast_model, forecast_window_size, forecast_day_stride, forecast_sequence_split,      # forecasting parameters
+                 day_size, n_days, window_size, day_stride, day_contam_rate, data_contam_rate, flag_consec, outlier_threshold,  # anomaly detection parameters
+                 forecast_model, forecast_window_size, forecast_day_stride, forecast_sequence_split,                            # forecasting parameters
                  save_figs):
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -94,7 +94,8 @@ def run_pipeline(data_folder,
     default_process_data_AD_args.n_days = n_days
     default_process_data_AD_args.day_stride = day_stride
     if "INPG" not in data_folder:
-        default_process_data_AD_args.contam_ratio = contam_ratio
+        default_process_data_AD_args.day_contam_rate = day_contam_rate
+        default_process_data_AD_args.data_contam_rate = data_contam_rate
 
     min_q_val, max_q_val = prepare_data_AD_run(default_process_data_AD_args)
 
@@ -112,7 +113,7 @@ def run_pipeline(data_folder,
     default_AD_args.train_data_path = [AD_train_data_path, AD_test_data_path]
     default_AD_args.test_data_path = [AD_train_data_path, AD_test_data_path]
     default_AD_args.nbr_timesteps = window_size
-    default_AD_args.contam_ratio = contam_ratio
+    default_AD_args.contam_ratio = day_contam_rate
     default_AD_args.results_file = log_file_path
     default_AD_args.model_save_path = weights_path
     # default_AD_args.without_soft_weight = True # set to True in case of nan values left in data
@@ -200,7 +201,7 @@ def run_pipeline(data_folder,
                         ax2.tick_params('y', colors='blue')
                         plt.title('Time Series with Anomaly Score Heatmap')
                         plt.legend()
-                        plt.savefig(f"{heatmaps_path}/{i}.png")
+                        plt.savefig(f"{heatmaps_path}/{i}.png") # TODO improve plot
                         plt.close()
                 i += 1
 
@@ -372,10 +373,11 @@ if __name__ == "__main__":
     data_folder = "AEMO/SA"                                                 # dataset folder, must be in dataset/raw/
     exp_folder = "exp0"                                                     # folder for saving datasets, results, plots and weights, will be created in dataset/processed/ and in results/
     day_size = 24 if "INPG" in data_folder else 48                          # dataset resolution (samples per day)
-    n_days = 1                                                              # window size for anomaly detection in days
-    window_size = day_size * n_days                                         # window size for anomaly detection in samples
-    day_stride = 1                                                          # sliding window stride for anomaly detection, a seperate stride is set later for forecasting
-    contam_ratio = 0.02 if "INPG" in data_folder else 0.4                   # data contamination ratio (% of days with anomalies, one anomaly per day)
+    n_days = 1                                                              # window size for anomaly detection in terms of days
+    window_size = day_size * n_days                                         # window size for anomaly detection in terms of data points
+    day_stride = 1                                                          # sliding window stride for anomaly detection, a different stride may be set later for forecasting
+    day_contam_rate = 0.02 if "INPG" in data_folder else 0.4                # day contamination ratio (% of days with anomalies, one anomaly per day)
+    data_contam_rate = 0.05                                                 # data contamination ratio (% of data points with anomalies)
     flag_consec = "INPG" not in data_folder                                 # False for INPG dataset, True otherwise (anomaly type 1 and 2)
     outlier_threshold = 2.4 if "INPG" in data_folder else 2.5               # threshold for outlier detection
     forecast_window_size = 6                                                # window size for forecasting in days (including forecast day)
@@ -385,4 +387,4 @@ if __name__ == "__main__":
     save_figs = True                                                        # save visualization plots for anomaly detection and imputation
 
     # run pipeline (data processing, anomaly detection, anomaly imputation, forecasting with cleaned/contamined data)
-    run_pipeline(data_folder, exp_folder, day_size, n_days, window_size, day_stride, contam_ratio, flag_consec, outlier_threshold, forecast_model, forecast_window_size, forecast_day_stride, forecast_sequence_split, save_figs)
+    run_pipeline(data_folder, exp_folder, day_size, n_days, window_size, day_stride, day_contam_rate, data_contam_rate, flag_consec, outlier_threshold, forecast_model, forecast_window_size, forecast_day_stride, forecast_sequence_split, save_figs)
