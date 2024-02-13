@@ -166,6 +166,7 @@ def run_pipeline(data_folder,
     heatmaps = (heatmaps - coreset.min_heatmap_scores) / (coreset.max_heatmap_scores - coreset.min_heatmap_scores)
     heatmaps = np.mean(heatmaps, axis=-1)
 
+    display_mask = True
     anomaly_free = []
     anomalous = []
     with tqdm.tqdm(infer_dataloader, desc="Saving anomaly free samples to train Imputation model...", leave=True) as data_iterator:
@@ -197,21 +198,29 @@ def run_pipeline(data_folder,
                     anomalous.append((masked_data, mask, date_range))
 
                     if save_figs:
-                        # save heatmap jpg
+                        # save heatmap of anomaly score for each timeserie
                         heatmap = heatmaps[i].reshape(1, -1)
-                        heatmap_data = np.repeat(heatmap, len(timeserie)//heatmap.shape[1], axis=1)
-                        fig, ax1 = plt.subplots(figsize=(10, 6))
+                        heatmap_data = np.repeat(heatmap, len(timeserie)//heatmap.shape[1], axis=1) 
+                        _, ax1 = plt.subplots(figsize=(10, 6))
+                        ax1.imshow(heatmap_data, cmap="OrRd", aspect='auto')
+                        ax1.set_yticks([])
+                        cbar = plt.colorbar(ax1.imshow(heatmap_data, cmap="OrRd", aspect='auto'))
+                        cbar.set_label('Anomaly Score', rotation=270, labelpad=0)
+                        cbar.set_ticks([heatmap.min(), heatmap.max()])
+                        cbar.set_ticklabels(['Low', 'High'])
                         ax2 = ax1.twinx()
-                        ax1.imshow(heatmap_data, cmap="YlOrRd", aspect='auto')
                         ax2.plot(timeserie, label='Time Series', color='blue')
-                        mask *= max(timeserie)/max(mask)
-                        ax2.plot(mask, label='Mask', color='green')
+                        if display_mask:
+                            mask *= max(timeserie)/max(mask)
+                            ax2.plot(mask, label='Mask', color='green')
                         ax2.set_xlabel('Time')
                         ax2.set_ylabel('Value', color='blue')
                         ax2.tick_params('y', colors='blue')
+                        ax2.yaxis.set_label_position('left')
+                        ax2.yaxis.set_ticks_position('left')
                         plt.title('Time Series with Anomaly Score Heatmap')
                         plt.legend()
-                        plt.savefig(f"{heatmaps_path}/{i}.png") # TODO improve plot
+                        plt.savefig(f"{heatmaps_path}/{i}.png")
                         plt.close()
                 i += 1
 
@@ -231,7 +240,7 @@ def run_pipeline(data_folder,
 
     default_AI_args = AI_parse_args()
     default_AI_args.seq_len = window_size
-    default_AI_args.mask_size = window_size // heatmaps[0].shape[0] 
+    default_AI_args.mask_size = window_size // heatmaps[0].shape[0] # TODO make it a parameter instead as length is variable, or take average from generated anomalies
     default_AI_args.dataset_root = imputation_data_path
     default_AI_args.checkpoint_path = f"{weights_path}/checkpoint_ai.pt"
     default_AI_args.save_folder = imputation_eval_plots_path
