@@ -44,9 +44,9 @@ def run(args):
             csv_file = pd.read_excel(csv_path)
             csv_file = csv_file[[args.date_feature_name, args.load_feature_name]]
             csv_file[args.date_feature_name] = pd.to_datetime(csv_file[args.date_feature_name], format="%Y-%m-%d %H:%M:%S")
-            aonm_perc = csv_file[args.load_feature_name].isna().sum()/len(csv_file[args.load_feature_name])
+            na_perc = csv_file[args.load_feature_name].isna().sum()/len(csv_file[args.load_feature_name])
             zeros_perc = (csv_file[args.load_feature_name] == 0).sum()/len(csv_file[args.load_feature_name])
-            if aonm_perc > 0 or zeros_perc>0.05: continue
+            if na_perc > 0 or zeros_perc>0.05: continue
         except Exception as e:
             print(e)
         load = pd.concat([load, csv_file], axis=0)
@@ -60,6 +60,8 @@ def run(args):
     load = load[~load.index.duplicated()]
 
     # fill missing values
+    idx = pd.date_range(load.index[0], load.index[-1], freq="30T") # TODO: make frequency dynamic
+    load = load.reindex(idx, fill_value=np.nan)
     load = fill_missing_values(load, args.day_size)
     
     # split contam data into train and test sets for anomaly detection model

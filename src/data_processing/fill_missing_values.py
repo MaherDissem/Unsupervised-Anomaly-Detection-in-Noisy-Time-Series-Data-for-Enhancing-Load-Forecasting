@@ -48,8 +48,6 @@ def fill_empty_days(load, day_size=48, load_feature_name="load"):
 
 def fill_missing_values(load, day_size):
     """Replace missing days by previous/next week and missing values by KNN imputation"""
-    idx = pd.date_range(load.index[0], load.index[-1], freq="30T")
-    load = load.reindex(idx, fill_value=np.nan)
 
     # fill empty days
     load_feature_name = load.columns[0]
