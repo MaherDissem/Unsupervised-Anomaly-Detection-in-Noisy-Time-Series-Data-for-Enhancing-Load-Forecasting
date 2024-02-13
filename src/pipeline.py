@@ -211,7 +211,8 @@ def run_pipeline(data_folder,
                         ax2 = ax1.twinx()
                         ax2.plot(timeserie, label='Time Series', color='blue')
                         if display_mask:
-                            mask *= max(timeserie)/max(mask)
+                            scale = torch.max(timeserie) if torch.abs(torch.max(timeserie)) >= torch.abs(torch.min(timeserie)) else torch.min(timeserie)
+                            mask *= scale # for better visualization, masked part is set to 0, rest is scaled to either max or min of the timeserie
                             ax2.plot(mask, label='Mask', color='green')
                         ax2.set_xlabel('Time')
                         ax2.set_ylabel('Value', color='blue')
