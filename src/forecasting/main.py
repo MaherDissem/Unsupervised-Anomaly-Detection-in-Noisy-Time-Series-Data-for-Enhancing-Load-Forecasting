@@ -148,7 +148,6 @@ def run(args):
 
     # train model
     train_loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = model.train(trainloader, validloader, testloader)
-    print(smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss)
 
     # save results
     os.makedirs(os.path.dirname(args.results_file), exist_ok=True)

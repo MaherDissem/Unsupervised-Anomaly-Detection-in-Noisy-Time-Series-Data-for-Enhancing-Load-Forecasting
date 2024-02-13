@@ -117,7 +117,7 @@ def run(args):
 
                 # update gt
                 for anom_id in anom_idx: 
-                    if not seq_gt[anom_id]: 
+                    if not seq_gt[anom_id]: # handles adding anomalies to contaminated load (not implemented)
                         seq_gt[anom_id] = 1 
                         cur_contam += 1
                 cur_contam_days += 1
