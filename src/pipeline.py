@@ -315,7 +315,7 @@ def run_pipeline(data_folder,
     default_process_data_LF_args.trg_feature_name = feat_name
     default_process_data_LF_args.raw_test_data_csv = test_load_csv_path
     default_process_data_LF_args.trg_test_save_data = forecasting_test_data
-    default_process_data_LF_args.log_file = f"results/{data_folder}/{exp_folder}/log.txt"
+    default_process_data_LF_args.log_file = log_file_path
 
     # process cleaned data
     default_process_data_LF_args.raw_train_data_csv = cleaned_load_csv_path
@@ -338,7 +338,7 @@ def run_pipeline(data_folder,
     default_LF_args = LF_parse_args()
     default_LF_args.timesteps = day_size * forecast_window_size
     default_LF_args.sequence_split = forecast_sequence_split
-    default_LF_args.results_file = f"results/{data_folder}/{exp_folder}/log.txt"
+    default_LF_args.results_file = log_file_path
 
     # run forecasting model on cleaned data
     default_LF_args.train_dataset_path = forecasting_clean_data
