@@ -10,29 +10,29 @@ Our system involves synthesizing realistic load anomalies, contaminating load da
 
 - [Data Processing](src/data_processing/)
 
-    Prepares data by preprocessing, generating synthetic anomalies, contaminating, and saving data in a convenient format.
+    Prepare data by preprocessing, generating and injecting synthetic anomalies, and saving data in a convenient format.
 
-    Separate scripts are provided for each dataset, facilitating both anomaly detection and forecasting stages, with different customizable parameters such as window size and stride.
+    Separate scripts are provided for each dataset, facilitating both anomaly detection and forecasting stages, with different customizable parameters such as the contamination rate, the sliding window's size and stride, the data split ratios, etc.
 
 - [Anomaly Detection](src/anomaly_detection/)
 
-    Train, evaluate and save the AD model: generate time series features, fill the memory bank with patch features extracted through a backbone, denoise the bank, and calculate an anomaly score as the distance to the saved features.
+    Train, evaluate and save the AD model: generate time series features, fill the memory bank with patch features extracted through a backbone, denoise the bank, and finally calculate an anomaly score as the distance to the saved features.
 
     Execute with `python src/anomaly_detection/main.py`.
 
 - [Anomaly Imputation](src/anomaly_imputation/)
 
-    Train a bi-LSTM-based denoising recurrent autoencoder for imputing sequences of missing values in timeserie data. During training, we randomly omit values in anomaly-free samples.
+    Train a bi-LSTM-based denoising recurrent autoencoder for imputing sequences of missing values in time serie data. This model is trained by randomly omitting values in anomaly-free samples.
 
     Execute with `python src/anomaly_imputation/main.py`.
 
 - [Load Forecasting](src/forecasting/)
 
-    Trains and evaluate a forecasting model on either the contaminated or cleaned data (detected anomalies are imputed).
+    Train and evaluate a forecasting model on either the contaminated or cleaned data (detected anomalies are imputed).
 
     We employ the following models given forecasting parameters like the sequence size, forecast horizon, etc.
     
-    - Seq2seq: a GRU-based seq2seq model for time series forecasting given.
+    - Seq2seq: a GRU-based seq2seq model for time series forecasting.
     
     - [SCINet](https://github.com/cure-lab/SCINet): a recursive downsample-convolve-interact architecture.
 
