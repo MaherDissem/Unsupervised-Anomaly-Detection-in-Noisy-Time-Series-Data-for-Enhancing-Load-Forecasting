@@ -1,5 +1,5 @@
-import argparse
 import os
+import argparse
 import glob
 import numpy as np
 import pandas as pd
@@ -7,9 +7,9 @@ import pandas as pd
 import sys
 sys.path.append("./src")
 
+from utils.utils import set_seed
 from data_processing.synth_anomaly import SynthLoadAnomaly
 from data_processing.fill_missing_values import fill_missing_values
-from utils.utils import set_seed
 
 
 def parse_args():
@@ -21,7 +21,8 @@ def parse_args():
     parser.add_argument("--day_size",             type=int,   default=48, help="Size of a day")
     parser.add_argument("--n_days",               type=int,   default=1, help="Number of days")
     parser.add_argument("--day_stride",           type=int,   default=1, help="Day stride for sliding window")
-    parser.add_argument("--contam_ratio",         type=float, default=0.1, help="Contamination ratio (percentage of days with anomalies))") # train data contam depends on window size (nbr of days in a window)
+    parser.add_argument("--day_contam_rate",      type=float, default=0.4, help="Percentage of days with anomalies")
+    parser.add_argument("--data_contam_rate",     type=float, default=0.05, help="Percentage of datapoints with anomalies") # these two parameters are used together to determine the spread and average length of anomalies type 1 and 2
     parser.add_argument("--contam_clean_ratio",   type=float, default=0.7, help="Clean data save ratio (forcasting model is later evaluated on this clean data)")
     parser.add_argument("--ad_split_ratio",       type=float, default=0.7, help="Anomaly detection train-test split ratio")
     parser.add_argument("--seed",                 type=int,   default=0, help="Random seed")
@@ -66,32 +67,73 @@ def run(args):
     
     # split contam data into train and test sets for anomaly detection model
     N = int(args.contam_clean_ratio*len(load))//args.day_size*args.day_size
-    M = int(args.ad_split_ratio*(len(load[:N])))//args.day_size*args.day_size
-    contaminated_load = load[:N].copy()
-    clean_load = load[N:].copy()
-    ad_train_load = contaminated_load[:M].copy()
-    ad_test_load = contaminated_load[M:].copy()
 
-    # contaminate data with synthetic anomalies
+    contaminated_load = load[:N]
+    clean_load = load[N:]
+    ad_load = contaminated_load.copy()
+
+    # contaminate data with synthetic anomalies    
     anomaly_generator = SynthLoadAnomaly()
-    def contam_load(load, contam_ratio, feature_name, day_size):
-        gt = []
+    print(f"Anomaly generator probabilities: {anomaly_generator.prob_1}, {anomaly_generator.prob_2}, {anomaly_generator.prob_3}, {anomaly_generator.prob_4}, {anomaly_generator.prob_softstart}, {anomaly_generator.prob_extreme}", file=open(args.log_file, "a"))
+    
+    def contam_load(load, anomaly_generator, day_contam_rate, data_contam_rate, feature_name, day_size, seed=0):
+        """contaminate load dataframe with synthetic anomalies"""
+
+        np.random.seed(seed)
+        anomaly_generator.__init__(seed=seed) # set seed and reset probabilties (modified later in the function)
+
+        gt = np.zeros(len(load))
         n_days = len(load)//day_size
-        n_contam_days = int(contam_ratio*len(load)//day_size)
+        n_contam_days = int(day_contam_rate*len(load)//day_size)
         contam_days = np.random.choice(range(0, len(load)//day_size), n_contam_days, replace=False)
-        for i in range(n_days):
-            seq_gt = [0]*day_size
-            contam = i in contam_days
-            if contam:
-                day_st = i*day_size
-                day_end = day_st + day_size
+        
+        cur_contam = 0
+        cur_contam_days = 0
+        trg_contam = int(data_contam_rate*len(load))
+        
+        # calculate average anomaly length for type 1 and type 2 anomalies to achieve the target contamination rate
+        avg_anom_1_length = (trg_contam - n_contam_days*anomaly_generator.prob_3 - n_contam_days*anomaly_generator.prob_4) / ((anomaly_generator.prob_1 + anomaly_generator.prob_2) / anomaly_generator.prob_1) / (n_contam_days * anomaly_generator.prob_1)
+        avg_anom_2_length = (trg_contam - n_contam_days*anomaly_generator.prob_3 - n_contam_days*anomaly_generator.prob_4) / ((anomaly_generator.prob_1 + anomaly_generator.prob_2) / anomaly_generator.prob_2) / (n_contam_days * anomaly_generator.prob_2)
+        anom1_len_var = avg_anom_1_length/2
+        anom2_len_var = avg_anom_2_length/2
+        print(f"avg_anom_1_length: {avg_anom_1_length}, avg_anom_2_length: {avg_anom_2_length}", file=open(args.log_file, "a"))
+        
+        for day in range(n_days):
+            day_st = day*day_size
+            day_end = day_st + day_size
+            seq_gt = gt[day_st: day_end]
+
+            if day in contam_days:
+                if cur_contam_days >= n_contam_days*0.9:
+                    # for the last chunk of data, we contaminate with the exact number of anomalies needed to reach the target contamination rate
+                    avg_anom_1_length = (trg_contam - cur_contam) / ((anomaly_generator.prob_1 + anomaly_generator.prob_2) / anomaly_generator.prob_1) / ((n_contam_days - cur_contam_days) * anomaly_generator.prob_1)
+                    avg_anom_2_length = (trg_contam - cur_contam) / ((anomaly_generator.prob_1 + anomaly_generator.prob_2) / anomaly_generator.prob_2) / ((n_contam_days - cur_contam_days) * anomaly_generator.prob_2)
+                    anom1_len_var = 0
+                    anom2_len_var = 0
+                    anomaly_generator.prob_1 += anomaly_generator.prob_3
+                    anomaly_generator.prob_2 += anomaly_generator.prob_4
+                    anomaly_generator.prob_3 = 0
+                    anomaly_generator.prob_4 = 0
+                
+                # contaminate day randomly (anomaly probabilities are given to the generator)
                 sequence = load[feature_name].values[day_st: day_end]
-                anomalous_sequence, anom_idx = anomaly_generator.inject_anomaly(sequence)
+                anomalous_sequence, anom_idx = anomaly_generator.inject_anomaly(sequence, 1,
+                                                                                avg_anom_1_length, anom1_len_var,
+                                                                                avg_anom_2_length, anom2_len_var)
                 load[feature_name].values[day_st: day_end] = anomalous_sequence
-                for anom_id in anom_idx: seq_gt[anom_id] = 1 
-                gt.extend(seq_gt)
-            else:
-                gt.extend(seq_gt)
+
+                # update gt
+                for anom_id in anom_idx: 
+                    if not seq_gt[anom_id]: # handles adding anomalies to contaminated load (not implemented)
+                        seq_gt[anom_id] = 1 
+                        cur_contam += 1
+                cur_contam_days += 1
+
+            gt[day_st: day_end] = seq_gt
+
+            if cur_contam >= trg_contam: 
+                break
+
         return load, gt
 
     def extract_consec_days(load, gt_load, day0, n_days, day_size):
@@ -108,13 +150,13 @@ def run(args):
             end += day_size
         return np.array(sequence), np.array(gt)
 
-    def build_dataset(load, n_days, day_size, day_stride, contam_ratio, contam_data=True):
+    def build_dataset(load, n_days, day_size, day_stride, contam_data=True):
         """
             build a dataset from load dataframe using a sliding window of size n_days and stride of 1 day 
             while contamining the data with synthetic anomalies
         """
         if contam_data:
-            load, gt_load = contam_load(load, contam_ratio, args.load_feature_name, day_size)
+            load, gt_load = contam_load(load, anomaly_generator, args.day_contam_rate, args.data_contam_rate, args.load_feature_name, day_size, args.seed)
         else:
             gt_load = [[0]*day_size]*(len(load)//day_size)
         
@@ -136,11 +178,13 @@ def run(args):
 
         return time_wind, gt_time_wind, datetime_wind
 
+    ts_windows, gt_windows, date_windows = build_dataset(ad_load, args.n_days, args.day_size, args.day_stride, contam_data=True)
+    
+    M = int(args.ad_split_ratio*len(ts_windows))
+    ad_train_windows, ad_test_windows = ts_windows[:M], ts_windows[M:]
+    gt_ad_train_windows, gt_ad_test_windows = gt_windows[:M], gt_windows[M:]
+    date_ad_train_windows, date_ad_test_windows = date_windows[:M], date_windows[M:]
 
-    ad_train_windows, gt_ad_train_windows, date_ad_train_windows = build_dataset(ad_train_load, args.n_days, args.day_size, args.day_stride, args.contam_ratio, contam_data=True)
-    ad_test_windows, gt_ad_test_windows, date_ad_test_windows = build_dataset(ad_test_load, args.n_days, args.day_size, args.day_stride, args.contam_ratio, contam_data=True)
-
-    day_contam_ratio = args.contam_ratio*1/args.n_days
     datapoint_contam_ratio = np.array(gt_ad_train_windows+gt_ad_test_windows).sum() / (len(gt_ad_train_windows+gt_ad_test_windows)*args.day_size)
 
     # normalize data
@@ -191,7 +235,7 @@ def run(args):
     print(f"Number of ad_train_contam windows: {len(ad_train_windows)}", file=open(args.log_file, "a"))
     print(f"Number of ad_test_contam windows: {len(ad_test_windows)}", file=open(args.log_file, "a"))
 
-    print(f"{day_contam_ratio*100:.2f}% of days are contaminated.", file=open(args.log_file, "a"))
+    print(f"{args.day_contam_rate*100:.2f}% of days are contaminated.", file=open(args.log_file, "a"))
     print(f"{datapoint_contam_ratio*100:.2f}% of datapoints are contaminated.", file=open(args.log_file, "a"))
 
     print(f"min_quantile={min_quantile:0.3f} -> value={min_q_val}", file=open(args.log_file, "a"))
@@ -200,14 +244,12 @@ def run(args):
     # save clean load for forecasting model evaluation
     clean_load = (clean_load - min_q_val) / (max_q_val - min_q_val)
     clean_load.rename_axis("date", inplace=True)
-    clean_load.fillna(0, inplace=True) # will be detected as anomaly and imputed by AI model
     clean_load.to_csv(os.path.join(args.trg_save_data, "load_clean_lf_test.csv"))
 
     # save contaminated load serie to infer AD/AI models after training
-    contam_full_load, gt_full_load = contam_load(contaminated_load, args.contam_ratio, args.load_feature_name, args.day_size) # anomaly contamination is different than for AD model training
+    contam_full_load, gt_full_load = contam_load(contaminated_load, anomaly_generator, args.day_contam_rate, args.data_contam_rate, args.load_feature_name, args.day_size, args.seed+1) # for a more realistic scenario, data contamination here is different than for the AD model's training. AD is unsupervised anyway.
     scaled_load = (contam_full_load - min_q_val) / (max_q_val - min_q_val)
     scaled_load.rename_axis("date", inplace=True)
-    scaled_load.fillna(0, inplace=True) # will be detected as anomaly and imputed by AI model
     scaled_load.to_csv(os.path.join(args.trg_save_data, "load_contam.csv"))
     gt_full_load = pd.Series(gt_full_load, index=scaled_load.index[:len(gt_full_load)]).rename("gt", inplace=True)
     pd.Series(gt_full_load).to_csv(os.path.join(args.trg_save_data, "load_contam_gt.csv"))
