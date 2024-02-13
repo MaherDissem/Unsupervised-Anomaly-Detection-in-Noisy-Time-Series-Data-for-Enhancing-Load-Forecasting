@@ -125,6 +125,7 @@ def run_pipeline(data_folder,
     default_AD_args.contam_ratio = day_contam_rate
     default_AD_args.results_file = log_file_path
     default_AD_args.model_save_path = weights_path
+    default_AD_args.eval_plots_path = os.path.dirname(log_file_path)
     # default_AD_args.without_soft_weight = True # set to True in case of nan values left in data
 
     AD_run(default_AD_args)
