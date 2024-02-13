@@ -5,6 +5,7 @@ sys.path.append("src/anomaly_imputation")   # AI module
 sys.path.append("src/forecasting")          # LF module
 
 import os
+import shutil
 import tqdm
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -13,7 +14,6 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 
 from utils.utils import set_seed
-from utils.utils import delete_files_folders
 
 
 def run_pipeline(data_folder, 
@@ -28,9 +28,10 @@ def run_pipeline(data_folder,
     # ---
     # directories for results/plots/weights saving
     # ---
-    
+
+    results_folder = "results_0.4_0.05"
     # logs
-    log_file_path = f"results/{data_folder}/{exp_folder}/log.txt"
+    log_file_path = f"{results_folder}/{data_folder}/{exp_folder}/log.txt"
     # data
     raw_data_path = f"dataset/raw/{data_folder}"
     processed_data_path = f"dataset/processed/{data_folder}/{exp_folder}"
@@ -44,31 +45,39 @@ def run_pipeline(data_folder,
     forecasting_contam_data = f"dataset/processed/{data_folder}/{exp_folder}/lf_contam"
     forecasting_test_data = f"dataset/processed/{data_folder}/{exp_folder}/lf_test_clean"
     # plots
-    heatmaps_path = f"results/{data_folder}/{exp_folder}/heatmaps"
-    imputation_eval_plots_path = f"results/{data_folder}/{exp_folder}/ai_eval_plots"
-    imputation_infer_plots_path = f"results/{data_folder}/{exp_folder}/imputation"
-    forecasting_plots_path = f"results/{data_folder}/{exp_folder}/forecasting"
+    heatmaps_path = f"{results_folder}/{data_folder}/{exp_folder}/heatmaps"
+    imputation_eval_plots_path = f"{results_folder}/{data_folder}/{exp_folder}/ai_eval_plots"
+    imputation_infer_plots_path = f"{results_folder}/{data_folder}/{exp_folder}/imputation"
+    forecasting_plots_path = f"{results_folder}/{data_folder}/{exp_folder}/forecasting"
     # weights
-    weights_path = f"results/{data_folder}/{exp_folder}/weights"
+    weights_path = f"{results_folder}/{data_folder}/{exp_folder}/weights"
 
-    path_list = [log_file_path
-                ,AD_train_data_path
-                ,AD_test_data_path
-                ,imputation_data_path
-                ,contam_load_csv_path
-                ,cleaned_load_csv_path
-                ,test_load_csv_path
-                ,forecasting_clean_data
-                ,forecasting_contam_data
-                ,forecasting_test_data
-                ,heatmaps_path
-                ,imputation_eval_plots_path
-                ,imputation_infer_plots_path
-                ,forecasting_plots_path
-                ,weights_path]
+    folder_path_list = [AD_train_data_path
+                        ,AD_test_data_path
+                        ,imputation_data_path
+                        ,forecasting_clean_data
+                        ,forecasting_contam_data
+                        ,forecasting_test_data
+                        ,heatmaps_path
+                        ,imputation_eval_plots_path
+                        ,imputation_infer_plots_path
+                        ,forecasting_plots_path
+                        ,weights_path]
+    file_path_list = [log_file_path, contam_load_csv_path, cleaned_load_csv_path, test_load_csv_path]
     
-    for path in path_list:
-        delete_files_folders(path)
+    for path in folder_path_list:
+        os.makedirs(path, exist_ok=True)
+        for item in os.listdir(path):
+            item_path = os.path.join(path, item)
+            if os.path.isfile(item_path):
+                os.remove(item_path)
+            else:
+                shutil.rmtree(item_path)
+    
+    for path in file_path_list:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if os.path.exists(path):
+            os.remove(path)
 
     # ---
     # Generate synthetic data
