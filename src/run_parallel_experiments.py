@@ -8,7 +8,7 @@ from pipeline import run_pipeline
 
 # Environment variables
 gpu_ids = [0, 1, 2, 3] # List of GPU IDs to use
-job_per_gpu = 2        # Number of jobs to run on each GPU
+job_per_gpu = 3        # Number of jobs to run on each GPU
 
 # Grid of experiment parameters, each row is a different experiment, non-specified parameters are set to default values
 exp_parameters = [
@@ -22,12 +22,6 @@ exp_parameters = [
     {"data_folder": "Park/Office/30_minutes",},
     {"data_folder": "Park/Residential/30_minutes",},
     {"data_folder": "Park/Public/30_minutes",},
-
-    {"data_folder": "AEMO/NSW", "contam_ratio": 0.05},
-    {"data_folder": "AEMO/NSW", "contam_ratio": 0.1},
-    {"data_folder": "AEMO/NSW", "contam_ratio": 0.15},
-    {"data_folder": "AEMO/NSW", "contam_ratio": 0.2},
-    {"data_folder": "AEMO/NSW", "contam_ratio": 0.25},
 
     {"forecast_window_size": 14, "forecast_sequence_split": 0.5, "data_folder": "AEMO/NSW",},
     {"forecast_window_size": 14, "forecast_sequence_split": 0.5, "data_folder": "AEMO/QLD",},
