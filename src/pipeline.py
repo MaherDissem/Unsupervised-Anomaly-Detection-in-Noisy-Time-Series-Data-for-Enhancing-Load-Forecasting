@@ -241,7 +241,7 @@ def run_pipeline(data_folder,
 
     default_AI_args = AI_parse_args()
     default_AI_args.seq_len = window_size
-    default_AI_args.mask_size = window_size // heatmaps[0].shape[0] # TODO make it a parameter instead as length is variable, or take average from generated anomalies
+    default_AI_args.mask_size = window_size // heatmaps[0].shape[0] # TODO make it a parameter
     default_AI_args.dataset_root = imputation_data_path
     default_AI_args.checkpoint_path = f"{weights_path}/checkpoint_ai.pt"
     default_AI_args.save_folder = imputation_eval_plots_path
@@ -360,14 +360,14 @@ def run_pipeline(data_folder,
         default_LF_args.save_plots_path = f"{forecasting_plots_path}/seq2seq/cleaned"
         default_LF_args.checkpoint_path = f"{weights_path}/seq2seq/checkpoint_lf_clean.pt"
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
-        print(f"seq2seq: Cleaned data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+        print(f"seq2seq: Cleaned data: smape={smape_loss:0.3f}, r2={r2_loss:0.3f}, mae={mae_loss:0.3f} ({mae_loss * (max_q_val - min_q_val):0.3f}), mse={mse_loss:0.3f} ({mse_loss * (max_q_val - min_q_val)**2:0.3f}), rmse={rmse_loss:0.3f} ({rmse_loss * (max_q_val - min_q_val):0.3f})", file=open(default_LF_args.results_file, "a"))
     # scinet model
     if forecast_model == "scinet" or forecast_model == "all":
         default_LF_args.model_choice = "scinet"
         default_LF_args.save_plots_path = f"{forecasting_plots_path}/scinet/cleaned"
         default_LF_args.checkpoint_path = f"{weights_path}/scinet/checkpoint_lf_clean.pt"
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
-        print(f"SCINet: Cleaned data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+        print(f"SCINet: Cleaned data: smape={smape_loss:0.3f}, r2={r2_loss:0.3f}, mae={mae_loss:0.3f} ({mae_loss * (max_q_val - min_q_val):0.3f}), mse={mse_loss:0.3f} ({mse_loss * (max_q_val - min_q_val)**2:0.3f}), rmse={rmse_loss:0.3f} ({rmse_loss * (max_q_val - min_q_val):0.3f})", file=open(default_LF_args.results_file, "a"))
 
     # run forecasting model on contamined data
     default_LF_args.train_dataset_path = forecasting_contam_data
@@ -378,14 +378,14 @@ def run_pipeline(data_folder,
         default_LF_args.save_plots_path = f"{forecasting_plots_path}/seq2seq/contam"
         default_LF_args.checkpoint_path = f"{weights_path}/seq2seq/checkpoint_lf_contam.pt"
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
-        print(f"seq2seq: Contamined data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+        print(f"seq2seq: Cleaned data: smape={smape_loss:0.3f}, r2={r2_loss:0.3f}, mae={mae_loss:0.3f} ({mae_loss * (max_q_val - min_q_val):0.3f}), mse={mse_loss:0.3f} ({mse_loss * (max_q_val - min_q_val)**2:0.3f}), rmse={rmse_loss:0.3f} ({rmse_loss * (max_q_val - min_q_val):0.3f})", file=open(default_LF_args.results_file, "a"))
     # scinet model
     if forecast_model == "scinet" or forecast_model == "all":
         default_LF_args.model_choice = "scinet"
         default_LF_args.save_plots_path = f"{forecasting_plots_path}/scinet/contam"
         default_LF_args.checkpoint_path = f"{weights_path}/scinet/checkpoint_lf_contam.pt"
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
-        print(f"SCINet: Contamined data (real scale): smape={smape_loss}, mae={mae_loss * (max_q_val - min_q_val)}, mse={mse_loss * (max_q_val - min_q_val)**2}, rmse={rmse_loss * (max_q_val - min_q_val)}, r2={r2_loss}", file=open(default_LF_args.results_file, "a"))
+        print(f"SCINet: Cleaned data: smape={smape_loss:0.3f}, r2={r2_loss:0.3f}, mae={mae_loss:0.3f} ({mae_loss * (max_q_val - min_q_val):0.3f}), mse={mse_loss:0.3f} ({mse_loss * (max_q_val - min_q_val)**2:0.3f}), rmse={rmse_loss:0.3f} ({rmse_loss * (max_q_val - min_q_val):0.3f})", file=open(default_LF_args.results_file, "a"))
 
 
 if __name__ == "__main__":
