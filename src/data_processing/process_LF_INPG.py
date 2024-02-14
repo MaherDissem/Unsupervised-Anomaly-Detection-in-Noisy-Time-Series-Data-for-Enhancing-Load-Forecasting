@@ -79,7 +79,7 @@ def run(args):
     corrupt_data_dates.extend(pd.date_range('2019-08-23', '2019-08-24', freq="H")[:-1])
     corrupt_data_dates.extend(pd.date_range('2022-05-27', '2022-05-28', freq="H")[:-1])
 
-    # empty days
+    # empty days, i.e. days that were removed from the dataset for being corrupt
     empty_days = []
     days_in_train_index = pd.date_range(train_data.index[0], train_data.index[-1], freq="D")
     for day in days_in_train_index:
@@ -105,7 +105,7 @@ def run(args):
     def extract_consec_days(load, day0, n_days, day_size):
         """return n_days consecutive days starting at day0 from load dataframe"""
 
-        # discard feeding time windows that contain corrupt data to the model
+        # discard feeding time windows that contain corrupt data (empty days) to the model
         start_date = str(load.index[day0]).split(' ')[0]
         end_date = str(load.index[day0 + day_size*n_days-1]).split(' ')[0]
         days_in_seq = pd.date_range(start_date, end_date, freq="D")
@@ -168,6 +168,9 @@ def run(args):
     for i, (sample, sample_date) in enumerate(zip(test_windows, date_test_windows)):
         if np.isnan(sample).any(): continue
         np.save(os.path.join(args.trg_test_save_data, "data", sample_date), sample)
+
+    # TODO clean_load contain spikes that make the forecasting metrics not reliable
+    # ignore high variance samples?
 
     for i, (sample, sample_date) in enumerate(zip(train_windows, date_train_windows)):
         if np.isnan(sample).any(): continue
