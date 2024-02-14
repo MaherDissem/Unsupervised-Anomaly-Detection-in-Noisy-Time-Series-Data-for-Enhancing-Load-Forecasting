@@ -14,8 +14,8 @@ from utils.utils import set_seed
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Prepare data for anomaly detection model training and evaluation.")
-    parser.add_argument("--raw_train_data_csv",   type=str,   default="dataset/processed/INPG/load_cleaned.csv", help="Path to raw data root")
-    parser.add_argument("--trg_train_save_data",  type=str,   default="dataset/processed/INPG/lf_cleaned", help="Path to save processed data")
+    parser.add_argument("--raw_train_data_csv",   type=str,   default="dataset/processed/INPG/load_contam.csv", help="Path to raw data root")
+    parser.add_argument("--trg_train_save_data",  type=str,   default="dataset/processed/INPG/lf_contam", help="Path to save processed data")
     
     parser.add_argument("--raw_test_data_csv",    type=str,   default="dataset/processed/INPG/load_clean_lf_test.csv", help="Path to raw data root")
     parser.add_argument("--trg_test_save_data",   type=str,   default="dataset/processed/INPG/lf_test_clean", help="Path to save processed data")
@@ -79,6 +79,20 @@ def run(args):
     corrupt_data_dates.extend(pd.date_range('2019-08-23', '2019-08-24', freq="H")[:-1])
     corrupt_data_dates.extend(pd.date_range('2022-05-27', '2022-05-28', freq="H")[:-1])
 
+    # genuine anomalies in test data, we manually search the most extreme cases and remove them for a more fair and intuitive evaluation
+    genuine_anomalies = []
+    test_start_date = pd.to_datetime(test_data.index[0])
+    if test_start_date < pd.to_datetime('2021-02-03'):
+        genuine_anomalies.extend(pd.date_range('2021-02-03', '2021-02-04', freq="H")[:-1])
+    if test_start_date < pd.to_datetime('2021-02-19'):
+        genuine_anomalies.extend(pd.date_range('2021-02-19', '2021-02-20', freq="H")[:-1])
+    if test_start_date < pd.to_datetime('2021-05-07'):
+        genuine_anomalies.extend(pd.date_range('2021-05-07', '2021-05-08', freq="H")[:-1])
+    if test_start_date < pd.to_datetime('2022-05-09'):
+        genuine_anomalies.extend(pd.date_range('2022-05-09', '2022-05-10', freq="H")[:-1])
+    if test_start_date < pd.to_datetime('2022-05-10'):
+        genuine_anomalies.extend(pd.date_range('2022-05-10', '2022-05-11', freq="H")[:-1])
+
     # empty days, i.e. days that were removed from the dataset for being corrupt
     empty_days = []
     days_in_train_index = pd.date_range(train_data.index[0], train_data.index[-1], freq="D")
@@ -96,7 +110,7 @@ def run(args):
             hours = pd.date_range(date, next_date, freq="H")
             empty_days.extend(hours)
 
-    to_remove = corrupt_data_dates + covid_dates + lab_holidays + full_Holiday_date + empty_days
+    to_remove = corrupt_data_dates + covid_dates + lab_holidays + full_Holiday_date + empty_days + genuine_anomalies
     days_to_remove = []
     for date in to_remove:
         days_to_remove.append(str(date).split(' ')[0])
@@ -168,9 +182,6 @@ def run(args):
     for i, (sample, sample_date) in enumerate(zip(test_windows, date_test_windows)):
         if np.isnan(sample).any(): continue
         np.save(os.path.join(args.trg_test_save_data, "data", sample_date), sample)
-
-    # TODO clean_load contain spikes that make the forecasting metrics not reliable
-    # ignore high variance samples?
 
     for i, (sample, sample_date) in enumerate(zip(train_windows, date_train_windows)):
         if np.isnan(sample).any(): continue
