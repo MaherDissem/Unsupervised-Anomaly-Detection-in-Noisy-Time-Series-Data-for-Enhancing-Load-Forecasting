@@ -40,11 +40,11 @@ def parse_args():
     parser.add_argument("--results_file",           type=str,       default="results/results.txt",                 help="Path to file to save results in")
     # model selection  
     parser.add_argument("--model_choice",           type=str,       default="scinet", help="Model to use for forecasting: seq2seq or scinet")
-    # seq2seq2 model parameters, only relevant if model == "seq2seq"
+    # seq2seq2 model parameters, only relevant if model_choice = "seq2seq"
     parser.add_argument("--hidden_size",            type=int,       default=128,      help="Hidden size of the model")
     parser.add_argument("--num_grulstm_layers",     type=int,       default=1,        help="Number of GRU/LSTM layers")
     parser.add_argument("--fc_units",               type=int,       default=16,       help="Number of fully connected units") 
-    # SCINet model parameters, only relevant if model == "scinet"
+    # SCINet model parameters, only relevant if model_choice == "scinet"
     parser.add_argument('--L1Loss',                 type=bool,      default=True)
     parser.add_argument('--lradj',                  type=int,       default=2,        help='adjust learning rate')
     parser.add_argument('--concat_len',             type=int,       default=0)
@@ -101,9 +101,11 @@ def get_data_loaders(args):
     return trainloader, validloader, testloader, N_input, N_output
 
 
-def plot_predictions(model, testloader, args, device, N_input, N_output):
-    count = 0
+def plot_predictions(model, testloader, args, device, N_input, N_output, save_npz=True):
+    if save_npz: os.makedirs(f"{args.save_plots_path}/npz_files", exist_ok=True)
     plt.figure(figsize=(10, 6))
+    count = 0
+
     for dates, inputs, targets in testloader:
         dates = np.array(dates)
         inputs  = inputs.to(device)
@@ -118,7 +120,6 @@ def plot_predictions(model, testloader, args, device, N_input, N_output):
             plt.plot(range(0, N_input), input, label='Model Input', linewidth=3)
             plt.plot(range(N_input-1, N_input+N_output), np.concatenate([input[N_input-1:N_input], target]), label='Target (GT)', linewidth=3)   
             plt.plot(range(N_input-1, N_input+N_output),  np.concatenate([input[N_input-1:N_input], pred]), label='Prediction', linewidth=3)       
-            
             date_list = dates[:,i]
             next_date = str(pd.to_datetime(date_list[-1]) + pd.Timedelta(days=1)).split(' ')[0]
             date_list = [str(d).split(' ')[0] for d in date_list] + [next_date]
@@ -129,8 +130,13 @@ def plot_predictions(model, testloader, args, device, N_input, N_output):
             plt.legend()
             plt.savefig(f"{args.save_plots_path}/{count}.jpg")
             plt.clf()
-            count += 1
 
+            if save_npz:
+                # save as npz to later plot in the same figure with other models
+                np.savez(f"{args.save_plots_path}/npz_files/{count}.npz", input=input, target=target, pred=pred, date_list=date_list)
+            
+            count += 1
+          
 
 def run(args):
     set_seed(args.seed)
