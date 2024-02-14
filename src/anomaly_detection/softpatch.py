@@ -381,15 +381,15 @@ class SoftPatch(torch.nn.Module):
 
             patch_scores = timeserie_scores
 
-            timeserie_scores = self.patch_maker.unpatch_scores(
+            timeserie_scores = self.patch_maker.unpatch_scores( # 1d anomaly score vector -> (batch_size, heatmap_size)
                 timeserie_scores, batchsize=batchsize
-            ) # (B, 30)
+            )
             timeserie_scores = timeserie_scores.reshape(*timeserie_scores.shape[:2], -1)
-            timeserie_scores = self.patch_maker.score(timeserie_scores)
+            timeserie_scores = self.patch_maker.score(timeserie_scores) # max()
 
             patch_scores = self.patch_maker.unpatch_scores(
                 patch_scores, batchsize=batchsize
-            ) # (B, 30)
+            )
             scales = patch_shapes[0]
             patch_scores = patch_scores.reshape(batchsize, scales[0], scales[1])
             masks = patch_scores
