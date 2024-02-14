@@ -13,7 +13,7 @@ from utils.utils import set_seed
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Prepare data for anomaly detection model training and evaluation.")
+    parser = argparse.ArgumentParser(description="Prepare data for forecasting model training and evaluation.")
     parser.add_argument("--raw_train_data_csv",   type=str,   default="dataset/processed/INPG/load_contam.csv", help="Path to raw data root")
     parser.add_argument("--trg_train_save_data",  type=str,   default="dataset/processed/INPG/lf_contam", help="Path to save processed data")
     
