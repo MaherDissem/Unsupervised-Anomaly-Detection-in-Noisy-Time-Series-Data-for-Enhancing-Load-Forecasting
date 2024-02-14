@@ -89,10 +89,10 @@ def run(args):
     # split contam data into train and test sets for anomaly detection model
     N = int(args.contam_clean_ratio*len(load))//args.day_size*args.day_size
     M = int(args.ad_split_ratio*(len(load[:N])))//args.day_size*args.day_size
-    contaminated_load = load[:N].copy()
-    clean_load = load[N:].copy()
-    ad_train_load = contaminated_load[:M].copy()
-    ad_test_load = contaminated_load[M:].copy()
+    train_load = load[:N]
+    test_load = load[N:]
+    ad_train_load = train_load[:M].copy()
+    ad_test_load = train_load[M:].copy()
 
     def extract_consec_days(load, day0, n_days, day_size):
         """return n_days consecutive days starting at day0 from load dataframe"""
@@ -136,8 +136,8 @@ def run(args):
     min_quantile = 0.01
     max_quantile = 0.99
 
-    min_q_val = clean_load.quantile(min_quantile).item()
-    max_q_val = clean_load.quantile(max_quantile).item()
+    min_q_val = test_load.quantile(min_quantile).item()
+    max_q_val = test_load.quantile(max_quantile).item()
 
     def scale_windows(windows_list, min_q_val, max_q_val):
         scaled_windows = []
@@ -180,12 +180,12 @@ def run(args):
     print(f"max_quantile={max_quantile:0.3f} -> value={max_q_val}", file=open(args.log_file, "a"))
 
     # save clean load for forecasting model evaluation
-    clean_load = (clean_load - min_q_val) / (max_q_val - min_q_val)
-    clean_load.rename_axis("date", inplace=True)
-    clean_load.to_csv(os.path.join(args.trg_save_data, "load_clean_lf_test.csv"))
+    test_load = (test_load - min_q_val) / (max_q_val - min_q_val)
+    test_load.rename_axis("date", inplace=True)
+    test_load.to_csv(os.path.join(args.trg_save_data, "load_clean_lf_test.csv"))
 
     # save contaminated load serie to infer AD/AI models after training
-    scaled_load = (contaminated_load - min_q_val) / (max_q_val - min_q_val)
+    scaled_load = (train_load - min_q_val) / (max_q_val - min_q_val)
     scaled_load.rename_axis("date", inplace=True)
     scaled_load.to_csv(os.path.join(args.trg_save_data, "load_contam.csv"))
     print('Dataset ready!')
