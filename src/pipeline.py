@@ -378,14 +378,14 @@ def run_pipeline(data_folder,
         default_LF_args.save_plots_path = f"{forecasting_plots_path}/seq2seq/contam"
         default_LF_args.checkpoint_path = f"{weights_path}/seq2seq/checkpoint_lf_contam.pt"
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
-        print(f"seq2seq: Cleaned data: smape={smape_loss:0.3f}, r2={r2_loss:0.3f}, mae={mae_loss:0.3f} ({mae_loss * (max_q_val - min_q_val):0.3f}), mse={mse_loss:0.3f} ({mse_loss * (max_q_val - min_q_val)**2:0.3f}), rmse={rmse_loss:0.3f} ({rmse_loss * (max_q_val - min_q_val):0.3f})", file=open(default_LF_args.results_file, "a"))
+        print(f"seq2seq: Contam data: smape={smape_loss:0.3f}, r2={r2_loss:0.3f}, mae={mae_loss:0.3f} ({mae_loss * (max_q_val - min_q_val):0.3f}), mse={mse_loss:0.3f} ({mse_loss * (max_q_val - min_q_val)**2:0.3f}), rmse={rmse_loss:0.3f} ({rmse_loss * (max_q_val - min_q_val):0.3f})", file=open(default_LF_args.results_file, "a"))
     # scinet model
     if forecast_model == "scinet" or forecast_model == "all":
         default_LF_args.model_choice = "scinet"
         default_LF_args.save_plots_path = f"{forecasting_plots_path}/scinet/contam"
         default_LF_args.checkpoint_path = f"{weights_path}/scinet/checkpoint_lf_contam.pt"
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
-        print(f"SCINet: Cleaned data: smape={smape_loss:0.3f}, r2={r2_loss:0.3f}, mae={mae_loss:0.3f} ({mae_loss * (max_q_val - min_q_val):0.3f}), mse={mse_loss:0.3f} ({mse_loss * (max_q_val - min_q_val)**2:0.3f}), rmse={rmse_loss:0.3f} ({rmse_loss * (max_q_val - min_q_val):0.3f})", file=open(default_LF_args.results_file, "a"))
+        print(f"SCINet: Contam data: smape={smape_loss:0.3f}, r2={r2_loss:0.3f}, mae={mae_loss:0.3f} ({mae_loss * (max_q_val - min_q_val):0.3f}), mse={mse_loss:0.3f} ({mse_loss * (max_q_val - min_q_val)**2:0.3f}), rmse={rmse_loss:0.3f} ({rmse_loss * (max_q_val - min_q_val):0.3f})", file=open(default_LF_args.results_file, "a"))
 
 
 if __name__ == "__main__":
