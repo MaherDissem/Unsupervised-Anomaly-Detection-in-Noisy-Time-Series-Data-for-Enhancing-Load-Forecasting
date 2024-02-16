@@ -22,7 +22,7 @@ def parse_args():
     parser.add_argument("--date_feature_name",    type=str,   default="date", help="Name of the date_time feature")
 
     parser.add_argument("--day_size",             type=int,   default=48, help="Size of a day")
-    parser.add_argument("--n_days",               type=int,   default=5, help="Number of days")
+    parser.add_argument("--n_days",               type=int,   default=6, help="Number of days")
     parser.add_argument("--day_stride",           type=int,   default=1, help="Day stride for sliding window")
 
     parser.add_argument("--seed",                 type=int,   default=0, help="Random seed")
