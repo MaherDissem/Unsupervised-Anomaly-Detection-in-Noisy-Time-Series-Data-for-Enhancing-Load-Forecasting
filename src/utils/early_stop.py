@@ -33,7 +33,6 @@ class EarlyStopping:
             if self.counter >= self.patience:
                 print(f"Early Stopping activated. Final validation loss : {self.val_loss_min:.7f}")
                 self.early_stop = True
-        # if the current score does not exceed the best scroe, run the codes following below
         else:  
             self.best_score = score
             self.save_checkpoint(val_loss, model)

@@ -132,7 +132,7 @@ def plot_predictions(model, testloader, args, device, N_input, N_output, save_np
             plt.clf()
 
             if save_npz:
-                # save as npz to later plot in the same figure with other models
+                # save as npz to later plot forecasting of different models in the same plot
                 np.savez(f"{args.save_plots_path}/npz_files/{count}.npz", input=input, target=target, pred=pred, date_list=date_list)
             
             count += 1
