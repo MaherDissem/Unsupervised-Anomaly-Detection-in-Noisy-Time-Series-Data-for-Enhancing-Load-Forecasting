@@ -16,7 +16,7 @@ Our system involves synthesizing realistic load anomalies, contaminating load da
 
 - [Anomaly Detection](src/anomaly_detection/)
 
-    Train, evaluate and save the AD model: generate time series features, fill the memory bank with patch features extracted through a backbone, denoise the bank, and finally calculate an anomaly score as the distance to the saved features.
+    Train, evaluate and save the AD model. This model generates initial time series features, fills a memory bank with patch features extracted through a backbone and denoises the bank as train data may contain anomalies. An anomaly score is then calculated during inference as a distance to the saved features.
 
     Execute with `python src/anomaly_detection/main.py`.
 
@@ -28,9 +28,9 @@ Our system involves synthesizing realistic load anomalies, contaminating load da
 
 - [Load Forecasting](src/forecasting/)
 
-    Train and evaluate a forecasting model on either the contaminated or cleaned data (detected anomalies are imputed).
+    Train and evaluate a forecasting model on either the contaminated or the "cleaned" data where detected anomalies are imputed.
 
-    We employ the following models given forecasting parameters like the sequence size, forecast horizon, etc.
+    We train and evaluate the following models given parameters like the sequence size, forecast horizon, etc.
     
     - Seq2seq: a GRU-based seq2seq model for time series forecasting.
     
@@ -49,18 +49,18 @@ In our experiments, we leverage the following datasets:
 
 - Australian Energy Market Operator:
     
-    Aggregated load demand for the states of Australia.
+    Aggregated electricity demand for the states of Australia.
 
     Collect data: `python src/data_processing/collect_aemo_data.py`.
 
 - Industrial Park:
 
-    Load data for 4 different types of buildings (commercial, office, public, residential).
+    Load data for 4 different types of buildings (commercial, office, public and residential).
     Data is obtained from [here](https://www.nature.com/articles/s41597-023-02786-9).
 
 - Predis-MHI:
 
-    Load data captured in the GreEn-ER living lab (contains genuine unlabeled anomalies).
+    Load data collected in the GreEn-ER living lab (contains genuine unlabeled anomalies).
     This is a private dataset that's available upon request from the owner, [link](https://g2elab.grenoble-inp.fr/fr/plateformes/predis-mhi).
 
 ### Results Replication
