@@ -101,7 +101,7 @@ def get_data_loaders(args):
     return trainloader, validloader, testloader, N_input, N_output
 
 
-def plot_predictions(model, testloader, args, device, N_input, N_output, save_npz=True):
+def plot_predictions(model, testloader, args, device, N_input, N_output, save_npz=False):
     if save_npz: os.makedirs(f"{args.save_plots_path}/npz_files", exist_ok=True)
     plt.figure(figsize=(10, 6))
     count = 0
