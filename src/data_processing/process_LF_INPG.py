@@ -116,6 +116,60 @@ def run(args):
         days_to_remove.append(str(date).split(' ')[0])
     days_to_remove = sorted(list(set(days_to_remove)))
 
+        # create calendar features (cycle features)
+    def cyclical_encoding(data: pd.Series, cycle_length: int) -> pd.DataFrame:
+        """
+        Encode a cyclical feature with two new features sine and cosine.
+        The minimum value of the feature is assumed to be 0. The maximum value
+        of the feature is passed as an argument.
+        
+        Parameters
+        ----------
+        data : pd.Series
+            Series with the feature to encode.
+        cycle_length : int
+            The length of the cycle. For example, 12 for months, 24 for hours, etc.
+            This value is used to calculate the angle of the sin and cos.
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe with the two new features sin and cos.
+
+        """
+
+        sin = np.sin(2 * np.pi * data/cycle_length)
+        cos = np.cos(2 * np.pi * data/cycle_length)
+        result =  pd.DataFrame({
+                    f"{data.name}_sin": sin,
+                    f"{data.name}_cos": cos
+                })
+
+        return result
+    
+    # create cyclical features
+    def get_calendar_cyclical_features(data):
+        from feature_engine.datetime import DatetimeFeatures
+        transformer = DatetimeFeatures(
+                        variables           = "index",
+                        features_to_extract = "all" # It is also possible to select specific features
+                    )
+        calendar_features = transformer.fit_transform(data)
+
+        month_encoded = cyclical_encoding(calendar_features['month'], cycle_length=12)
+        day_of_week_encoded = cyclical_encoding(calendar_features['day_of_week'], cycle_length=7)
+        hour_encoded = cyclical_encoding(calendar_features['hour'], cycle_length=24)
+
+        cyclical_features = pd.concat([month_encoded, day_of_week_encoded, hour_encoded], axis=1)
+        return cyclical_features
+
+    train_cyclical_features = get_calendar_cyclical_features(train_data)
+    train_data = pd.concat([train_data, train_cyclical_features], axis=1)
+
+    test_cyclical_features = get_calendar_cyclical_features(test_data)
+    test_data = pd.concat([test_data, test_cyclical_features], axis=1)
+    
+
     def extract_consec_days(load, day0, n_days, day_size):
         """return n_days consecutive days starting at day0 from load dataframe"""
 
@@ -133,7 +187,7 @@ def run(args):
         end = start + day_size
 
         for day in range(n_days):
-            sequence.extend(load[args.trg_feature_name].values[start: end])
+            sequence.extend(load[[args.trg_feature_name, 'month_sin', 'month_cos', 'day_of_week_sin', 'day_of_week_cos', 'hour_sin', 'hour_cos']].values[start: end])
             start += day_size
             end += day_size
 

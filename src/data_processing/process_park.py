@@ -21,8 +21,8 @@ def parse_args():
     parser.add_argument("--day_size",             type=int,   default=48, help="Size of a day")
     parser.add_argument("--n_days",               type=int,   default=1, help="Number of days")
     parser.add_argument("--day_stride",           type=int,   default=1, help="Day stride for sliding window")
-    parser.add_argument("--day_contam_rate",      type=float, default=0.4, help="Percentage of days with anomalies")
-    parser.add_argument("--data_contam_rate",     type=float, default=0.05, help="Percentage of datapoints with anomalies") # these two parameters are used together to determine the spread and average length of anomalies type 1 and 2
+    parser.add_argument("--day_contam_rate",      type=float, default=0.5, help="Percentage of days with anomalies")
+    parser.add_argument("--data_contam_rate",     type=float, default=0.1, help="Percentage of datapoints with anomalies") # these two parameters are used together to determine the spread and average length of anomalies type 1 and 2
     parser.add_argument("--contam_clean_ratio",   type=float, default=0.7, help="Clean data save ratio (forcasting model is later evaluated on this clean data)")
     parser.add_argument("--ad_split_ratio",       type=float, default=0.7, help="Anomaly detection train-test split ratio")
     parser.add_argument("--seed",                 type=int,   default=0, help="Random seed")

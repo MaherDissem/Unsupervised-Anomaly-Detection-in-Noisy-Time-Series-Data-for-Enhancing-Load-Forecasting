@@ -29,7 +29,7 @@ def run_pipeline(data_folder,
     # directories for results/plots/weights saving
     # ---
 
-    results_folder = "results_0.4_0.05"
+    results_folder = "results_0.5_0.1"
     # logs
     log_file_path = f"{results_folder}/{data_folder}/{exp_folder}/log.txt"
     # data
@@ -396,8 +396,8 @@ if __name__ == "__main__":
     n_days = 1                                                              # window size for anomaly detection in terms of days
     window_size = day_size * n_days                                         # window size for anomaly detection in terms of data points
     day_stride = 1                                                          # sliding window stride for anomaly detection, a different stride may be set later for forecasting
-    day_contam_rate = 0.02 if "INPG" in data_folder else 0.4                # day contamination ratio (% of days with anomalies, one anomaly per day)
-    data_contam_rate = 0.05                                                 # data contamination ratio (% of data points with anomalies)
+    day_contam_rate = 0.02 if "INPG" in data_folder else 0.5                # day contamination ratio (% of days with anomalies, one anomaly per day)
+    data_contam_rate = 0.10                                                 # data contamination ratio (% of data points with anomalies)
     flag_consec = "INPG" not in data_folder                                 # False for INPG dataset, True otherwise (anomaly type 1 and 2)
     outlier_threshold = 2.4 if "INPG" in data_folder else 2.5               # threshold for outlier detection
     forecast_window_size = 6                                                # window size for forecasting in days (including forecast day)

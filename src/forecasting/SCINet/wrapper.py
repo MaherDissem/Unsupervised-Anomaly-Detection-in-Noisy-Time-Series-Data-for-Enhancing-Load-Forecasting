@@ -137,6 +137,10 @@ class ModelWrapper():
                     loss = self.criterion(forecast, targets)
                 if self.args.stacks == 2:
                     forecast, mid = self.model(inputs)
+                    forecast = forecast[:,:,0]
+                    mid = mid[:,:,0]
+                    targets = targets[:,:,0]
+
                     loss = self.criterion(forecast, targets) + self.criterion(mid, targets)
                 epoch_loss += loss.item()
 
@@ -189,6 +193,9 @@ class ModelWrapper():
                 elif self.args.stacks == 2:
                     outputs, _ = self.model(inputs)
 
+            targets = targets[:,:,0]
+            outputs = outputs[:,:,0]
+            
             # sMAPE
             absolute_percentage_errors = 2 * torch.abs(outputs - targets) / (torch.abs(outputs) + torch.abs(targets))
             loss_smape = torch.mean(absolute_percentage_errors) * 100

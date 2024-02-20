@@ -55,7 +55,7 @@ class ModelWrapper():
                 inputs = inputs.to(self.device)
                 targets = targets.to(self.device)
                 outputs = self.model(inputs)
-                train_loss = mse_criterion(targets, outputs)      
+                train_loss = mse_criterion(targets[:,:,0], outputs[:,:,0])      
                 optimizer.zero_grad()
                 train_loss.backward()
                 optimizer.step()
@@ -98,6 +98,9 @@ class ModelWrapper():
             targets = targets.to(self.device)
             with torch.no_grad():
                 outputs = self.model(inputs)
+            
+            outputs = outputs[:,:,0]
+            targets = targets[:,:,0]
 
             # sMAPE
             absolute_percentage_errors = 2 * torch.abs(outputs - targets) / (torch.abs(outputs) + torch.abs(targets))

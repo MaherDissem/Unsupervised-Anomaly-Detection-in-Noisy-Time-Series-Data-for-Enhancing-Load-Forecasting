@@ -19,12 +19,12 @@ from src.utils.utils import set_seed
 def parse_args():
     parser = argparse.ArgumentParser(description="Runs Load Forecasting experiments")
     # dataset
-    parser.add_argument("--train_dataset_path",     type=str,       default="dataset/processed/Park/Residential/30_minutes/exp0/lf_cleaned",       help="Path to train dataset")
-    parser.add_argument("--test_dataset_path",      type=str,       default="dataset/processed/Park/Residential/30_minutes/exp0/lf_test_clean",    help="Path to clean dataset for testing")
+    parser.add_argument("--train_dataset_path",     type=str,       default="dataset/processed/INPG/lf_contam",       help="Path to train dataset")
+    parser.add_argument("--test_dataset_path",      type=str,       default="dataset/processed/INPG//lf_test_clean",    help="Path to clean dataset for testing")
     # sequence
-    parser.add_argument("--timesteps",              type=int,       default=48*6,     help="Number of timesteps")
+    parser.add_argument("--timesteps",              type=int,       default=24*6,     help="Number of timesteps")
     parser.add_argument("--sequence_split",         type=float,     default=5/6,      help="Ratio of input to target (forecasting horizon) split")
-    parser.add_argument("--nbr_var",                type=int,       default=1,        help="Number of variables")
+    parser.add_argument("--nbr_var",                type=int,       default=7,        help="Number of variables")
     # training
     parser.add_argument("--epochs",                 type=int,       default=500,      help="Number of epochs")
     parser.add_argument("--patience",               type=int,       default=50,       help="Patience for early stopping")
@@ -114,9 +114,9 @@ def plot_predictions(model, testloader, args, device, N_input, N_output, save_np
         for i in range(args.batch_size):
             # if count == args.n_plots:
             #     return
-            input = inputs.detach().cpu().numpy()[i,:,:]
-            target = targets.detach().cpu().numpy()[i,:,:]
-            pred = preds.detach().cpu().numpy()[i,:,:]
+            input = inputs.detach().cpu().numpy()[i,:,0]
+            target = targets.detach().cpu().numpy()[i,:,0]
+            pred = preds.detach().cpu().numpy()[i,:,0] # TODO pluralize preds
             plt.plot(range(0, N_input), input, label='Model Input', linewidth=3)
             plt.plot(range(N_input-1, N_input+N_output), np.concatenate([input[N_input-1:N_input], target]), label='Target (GT)', linewidth=3)   
             plt.plot(range(N_input-1, N_input+N_output),  np.concatenate([input[N_input-1:N_input], pred]), label='Prediction', linewidth=3)       
@@ -151,6 +151,8 @@ def run(args):
         model = Seq2seq_model(args, N_input, N_output)
     elif args.model_choice == "scinet":
         model = SCINet_model(args)
+    else:
+        raise NotImplementedError(f"Model {args.model_choice} not implemented")
 
     # train model
     train_loss_evol, smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = model.train(trainloader, validloader, testloader)

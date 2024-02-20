@@ -12,13 +12,13 @@ from utils.utils import set_seed
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Prepare data for forecasting model training and evaluation.")
-    parser.add_argument("--raw_train_data_csv",   type=str,   default="dataset/processed/AEMO/NSW/load_cleaned.csv", help="Path to raw data root")
-    parser.add_argument("--trg_train_save_data",  type=str,   default="dataset/processed/AEMO/NSW/lf_cleaned", help="Path to save processed data")
+    parser.add_argument("--raw_train_data_csv",   type=str,   default="dataset/processed/Park/Office/30_minutes/exp0/load_cleaned.csv", help="Path to raw data root")
+    parser.add_argument("--trg_train_save_data",  type=str,   default="dataset/processed/Park/Office/30_minutes/exp0/lf_cleaned", help="Path to save processed data")
     
-    parser.add_argument("--raw_test_data_csv",    type=str,   default="dataset/processed/AEMO/NSW/load_clean_lf_test.csv", help="Path to raw data root")
-    parser.add_argument("--trg_test_save_data",   type=str,   default="dataset/processed/AEMO/NSW/lf_test_clean", help="Path to save processed data")
+    parser.add_argument("--raw_test_data_csv",    type=str,   default="dataset/processed/Park/Office/30_minutes/exp0/load_clean_lf_test.csv", help="Path to raw data root")
+    parser.add_argument("--trg_test_save_data",   type=str,   default="dataset/processed/Park/Office/30_minutes/exp0/lf_test_clean", help="Path to save processed data")
     
-    parser.add_argument("--trg_feature_name",     type=str,   default="TOTALDEMAND", help="Name of the feat feature")
+    parser.add_argument("--trg_feature_name",     type=str,   default="Power (kW)", help="Name of the feat feature")
     parser.add_argument("--date_feature_name",    type=str,   default="date", help="Name of the date_time feature")
 
     parser.add_argument("--day_size",             type=int,   default=48, help="Size of a day")
@@ -42,6 +42,60 @@ def run(args):
     train_data.set_index(args.date_feature_name, inplace=True)
     test_data.set_index(args.date_feature_name, inplace=True)
 
+    # create calendar features (cycle features)
+    def cyclical_encoding(data: pd.Series, cycle_length: int) -> pd.DataFrame:
+        """
+        Encode a cyclical feature with two new features sine and cosine.
+        The minimum value of the feature is assumed to be 0. The maximum value
+        of the feature is passed as an argument.
+        
+        Parameters
+        ----------
+        data : pd.Series
+            Series with the feature to encode.
+        cycle_length : int
+            The length of the cycle. For example, 12 for months, 24 for hours, etc.
+            This value is used to calculate the angle of the sin and cos.
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe with the two new features sin and cos.
+
+        """
+
+        sin = np.sin(2 * np.pi * data/cycle_length)
+        cos = np.cos(2 * np.pi * data/cycle_length)
+        result =  pd.DataFrame({
+                    f"{data.name}_sin": sin,
+                    f"{data.name}_cos": cos
+                })
+
+        return result
+    
+    # create cyclical features
+    def get_calendar_cyclical_features(data):
+        from feature_engine.datetime import DatetimeFeatures
+        transformer = DatetimeFeatures(
+                        variables           = "index",
+                        features_to_extract = "all" # It is also possible to select specific features
+                    )
+        calendar_features = transformer.fit_transform(data)
+
+        month_encoded = cyclical_encoding(calendar_features['month'], cycle_length=12)
+        day_of_week_encoded = cyclical_encoding(calendar_features['day_of_week'], cycle_length=7)
+        hour_encoded = cyclical_encoding(calendar_features['hour'], cycle_length=24)
+
+        cyclical_features = pd.concat([month_encoded, day_of_week_encoded, hour_encoded], axis=1)
+        return cyclical_features
+
+    train_cyclical_features = get_calendar_cyclical_features(train_data)
+    train_data = pd.concat([train_data, train_cyclical_features], axis=1)
+
+    test_cyclical_features = get_calendar_cyclical_features(test_data)
+    test_data = pd.concat([test_data, test_cyclical_features], axis=1)
+    
+
     def extract_consec_days(data, day0, n_days, day_size):
         """return n_days consecutive days starting at day0 from feat dataframe"""
 
@@ -50,7 +104,7 @@ def run(args):
         end = start + day_size
 
         for day in range(n_days):
-            sequence.extend(data[args.trg_feature_name].values[start: end])
+            sequence.extend(data[[args.trg_feature_name, 'month_sin', 'month_cos', 'day_of_week_sin', 'day_of_week_cos', 'hour_sin', 'hour_cos']].values[start: end])
             start += day_size
             end += day_size
         return np.array(sequence), np.array(gt)
