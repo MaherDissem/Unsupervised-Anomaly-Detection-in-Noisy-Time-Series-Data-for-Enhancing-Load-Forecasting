@@ -1,11 +1,10 @@
 faiss_cpu==1.7.4
+holidays==0.35
 matplotlib==3.7.1
-numba==0.57.1
-numpy==1.23.5
+numpy==1.26.4
+pandas==2.2.0
 scikit_learn==1.2.2
 statsmodels==0.14.0
 timm==0.9.6
 torch==2.0.1+cu118
 tqdm==4.65.0
-tslearn==0.6.2
-holidays==0.35
