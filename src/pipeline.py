@@ -379,7 +379,6 @@ def run_pipeline(data_folder,
     # run forecasting model on cleaned data
     default_LF_args.train_dataset_path = forecasting_clean_data
     default_LF_args.test_dataset_path = forecasting_test_data
-    default_LF_args.epochs = 2
     
     # seq2seq model
     if forecast_model == "seq2seq" or forecast_model == "all":
