@@ -15,7 +15,7 @@ from torch.utils.data import TensorDataset, DataLoader
 import mlflow
 
 from utils.utils import set_seed
-
+from utils.utils import get_mlflow_experiment_id
 
 def run_pipeline(data_folder, 
                  exp_folder,
@@ -79,20 +79,6 @@ def run_pipeline(data_folder,
         os.makedirs(os.path.dirname(path), exist_ok=True)
         if os.path.exists(path):
             os.remove(path)
-    
-    # ---
-    # log parameters to mlflow
-    # ---
-    
-    mlflow.set_experiment("Anomaly Detection, Imputation and Forecasting")    
-    mlflow.start_run()
-
-    mlflow.log_param("dataset", data_folder)
-    mlflow.log_param("exp_folder", f"{results_folder}/{data_folder}/{exp_folder}")
-    mlflow.log_param("data_contam_rate", data_contam_rate)
-    mlflow.log_param("day_contam_rate", day_contam_rate)
-    mlflow.log_param("forecast_window_size", forecast_window_size)
-    mlflow.log_param("forecast_sequence_split", forecast_sequence_split)
 
     # ---
     # Generate synthetic data
@@ -144,8 +130,22 @@ def run_pipeline(data_folder,
     # default_AD_args.without_soft_weight = True # set to True in case of nan values left in data
 
     _, patchwise_results = AD_run(default_AD_args)
-    patchwise_results.pop("confusion_matrix", None)
-    if patchwise_results is not None: mlflow.log_metrics(patchwise_results)
+
+    # log AD experiment to mlflow
+    if patchwise_results is not None:
+        with mlflow.start_run(experiment_id=get_mlflow_experiment_id('Anomaly Detection')) as ad_mlflow_run: # can later log to this run using mlflow.set_experiment(ad_mlflow_run.info.experiment_id)
+            mlflow.log_param("dataset", data_folder)
+            mlflow.log_param("exp_folder", f"{results_folder}/{data_folder}/{exp_folder}")
+            mlflow.log_param("data_contam_rate", data_contam_rate)
+            mlflow.log_param("day_contam_rate", day_contam_rate)
+
+            patchwise_results.pop("confusion_matrix", None)
+            mlflow.log_metrics(patchwise_results)
+            
+            mlflow.log_artifact(log_file_path)
+            mlflow.log_artifact(heatmaps_path)
+            mlflow.log_artifact(imputation_infer_plots_path)
+            mlflow.log_artifact(imputation_eval_plots_path)
 
     # ---
     # find and impute anomalies
@@ -358,8 +358,7 @@ def run_pipeline(data_folder,
     # ---
     # run forecasting model
     # ---
-
-    # run forecasting model on cleaned data
+    
     from forecasting.main import run as LF_run
     from forecasting.main import parse_args as LF_parse_args
 
@@ -368,9 +367,19 @@ def run_pipeline(data_folder,
     default_LF_args.sequence_split = forecast_sequence_split
     default_LF_args.results_file = log_file_path
 
+    lf_params_to_log = { # log parameters to mlflow
+        "dataset": data_folder,
+        "exp_folder": f"{results_folder}/{data_folder}/{exp_folder}",
+        "data_contam_rate": data_contam_rate,
+        "day_contam_rate": day_contam_rate,
+        "forecast_window_size": forecast_window_size,
+        "forecast_sequence_split": forecast_sequence_split
+    }
+
     # run forecasting model on cleaned data
     default_LF_args.train_dataset_path = forecasting_clean_data
     default_LF_args.test_dataset_path = forecasting_test_data
+    default_LF_args.epochs = 2
     
     # seq2seq model
     if forecast_model == "seq2seq" or forecast_model == "all":
@@ -379,14 +388,19 @@ def run_pipeline(data_folder,
         default_LF_args.checkpoint_path = f"{weights_path}/seq2seq/checkpoint_lf_clean.pt"
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
         print(f"seq2seq: Cleaned data: smape={smape_loss:0.3f}, r2={r2_loss:0.3f}, mae={mae_loss:0.3f} ({mae_loss * (max_q_val - min_q_val):0.3f}), mse={mse_loss:0.3f} ({mse_loss * (max_q_val - min_q_val)**2:0.3f}), rmse={rmse_loss:0.3f} ({rmse_loss * (max_q_val - min_q_val):0.3f})", file=open(default_LF_args.results_file, "a"))
-        mlflow.log_metrics({
-            "cleaned_seq2seq_smape": smape_loss,
-            "cleaned_seq2seq_r2": r2_loss,
-            "cleaned_seq2seq_mae": mae_loss,
-            "cleaned_seq2seq_mse": mse_loss,
-            "cleaned_seq2seq_rmse": rmse_loss
-        })
-    
+        with mlflow.start_run(experiment_id=get_mlflow_experiment_id('Load Forecasting')):
+            mlflow.log_params(lf_params_to_log)
+            mlflow.log_param("model", "seq2seq")
+            mlflow.log_param("data_type", "cleaned")
+            mlflow.log_metrics({
+                "smape": smape_loss,
+                "r2": r2_loss,
+                "mae": mae_loss,
+                "mse": mse_loss,
+                "rmse": rmse_loss
+            })
+            mlflow.log_artifact(f"{forecasting_plots_path}/seq2seq/cleaned")
+        
     # scinet model
     if forecast_model == "scinet" or forecast_model == "all":
         default_LF_args.model_choice = "scinet"
@@ -394,13 +408,18 @@ def run_pipeline(data_folder,
         default_LF_args.checkpoint_path = f"{weights_path}/scinet/checkpoint_lf_clean.pt"
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
         print(f"SCINet: Cleaned data: smape={smape_loss:0.3f}, r2={r2_loss:0.3f}, mae={mae_loss:0.3f} ({mae_loss * (max_q_val - min_q_val):0.3f}), mse={mse_loss:0.3f} ({mse_loss * (max_q_val - min_q_val)**2:0.3f}), rmse={rmse_loss:0.3f} ({rmse_loss * (max_q_val - min_q_val):0.3f})", file=open(default_LF_args.results_file, "a"))
-        mlflow.log_metrics({
-            "cleaned_scinet_smape": smape_loss,
-            "cleaned_scinet_r2": r2_loss,
-            "cleaned_scinet_mae": mae_loss,
-            "cleaned_scinet_mse": mse_loss,
-            "cleaned_scinet_rmse": rmse_loss
-        })
+        with mlflow.start_run(experiment_id=get_mlflow_experiment_id('Load Forecasting')):
+            mlflow.log_params(lf_params_to_log)
+            mlflow.log_param("model", "scinet")
+            mlflow.log_param("data_type", "cleaned")
+            mlflow.log_metrics({
+                "smape": smape_loss,
+                "r2": r2_loss,
+                "mae": mae_loss,
+                "mse": mse_loss,
+                "rmse": rmse_loss
+            })
+            mlflow.log_artifact(f"{forecasting_plots_path}/scinet/cleaned")
     
     # run forecasting model on contamined data
     default_LF_args.train_dataset_path = forecasting_contam_data
@@ -413,14 +432,19 @@ def run_pipeline(data_folder,
         default_LF_args.checkpoint_path = f"{weights_path}/seq2seq/checkpoint_lf_contam.pt"
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
         print(f"seq2seq: Contam data: smape={smape_loss:0.3f}, r2={r2_loss:0.3f}, mae={mae_loss:0.3f} ({mae_loss * (max_q_val - min_q_val):0.3f}), mse={mse_loss:0.3f} ({mse_loss * (max_q_val - min_q_val)**2:0.3f}), rmse={rmse_loss:0.3f} ({rmse_loss * (max_q_val - min_q_val):0.3f})", file=open(default_LF_args.results_file, "a"))
-        mlflow.log_metrics({
-            "contam_seq2seq_smape": smape_loss,
-            "contam_seq2seq_r2": r2_loss,
-            "contam_seq2seq_mae": mae_loss,
-            "contam_seq2seq_mse": mse_loss,
-            "contam_seq2seq_rmse": rmse_loss
-        })
-        
+        with mlflow.start_run(experiment_id=get_mlflow_experiment_id('Load Forecasting')):
+            mlflow.log_params(lf_params_to_log)
+            mlflow.log_param("model", "seq2seq")
+            mlflow.log_param("data_type", "contam")
+            mlflow.log_metrics({
+                "seq2seq_smape": smape_loss,
+                "seq2seq_r2": r2_loss,
+                "seq2seq_mae": mae_loss,
+                "seq2seq_mse": mse_loss,
+                "seq2seq_rmse": rmse_loss
+            })
+            mlflow.log_artifact(f"{forecasting_plots_path}/seq2seq/contam")
+            
     # scinet model
     if forecast_model == "scinet" or forecast_model == "all":
         default_LF_args.model_choice = "scinet"
@@ -428,16 +452,18 @@ def run_pipeline(data_folder,
         default_LF_args.checkpoint_path = f"{weights_path}/scinet/checkpoint_lf_contam.pt"
         smape_loss, mae_loss, mse_loss, rmse_loss, r2_loss = LF_run(default_LF_args)
         print(f"SCINet: Contam data: smape={smape_loss:0.3f}, r2={r2_loss:0.3f}, mae={mae_loss:0.3f} ({mae_loss * (max_q_val - min_q_val):0.3f}), mse={mse_loss:0.3f} ({mse_loss * (max_q_val - min_q_val)**2:0.3f}), rmse={rmse_loss:0.3f} ({rmse_loss * (max_q_val - min_q_val):0.3f})", file=open(default_LF_args.results_file, "a"))
-        mlflow.log_metrics({
-            "contam_scinet_smape": smape_loss,
-            "contam_scinet_r2": r2_loss,
-            "contam_scinet_mae": mae_loss,
-            "contam_scinet_mse": mse_loss,
-            "contam_scinet_rmse": rmse_loss
-        })
-    
-    mlflow.log_artifact(log_file_path)
-    mlflow.end_run()
+        with mlflow.start_run(experiment_id=get_mlflow_experiment_id('Load Forecasting')):
+            mlflow.log_params(lf_params_to_log)
+            mlflow.log_param("model", "scinet")
+            mlflow.log_param("data_type", "contam")
+            mlflow.log_metrics({
+                "smape": smape_loss,
+                "r2": r2_loss,
+                "mae": mae_loss,
+                "mse": mse_loss,
+                "rmse": rmse_loss
+            })
+            mlflow.log_artifact(f"{forecasting_plots_path}/scinet/contam")
 
 
 if __name__ == "__main__":
