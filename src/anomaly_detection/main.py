@@ -169,6 +169,7 @@ def run(args):
     window_threshold = np.percentile(scores, 100 - args.contam_ratio * 100) # 98 for INPG; (privilege low precision as FP impact is low thanks to imputation)
     coreset.window_threshold = window_threshold
 
+    patchwise_results = None
     if np.any(gt_is_anom):
         LOGGER.info("Computing evaluation metrics.")
         # sequence wise evaluation
@@ -225,6 +226,8 @@ def run(args):
         LOGGER.info("Saved TS_SoftPatch model")
 
     print("AD module ready!")
+    
+    return coreset, patchwise_results
 
 
 if __name__ == "__main__":
