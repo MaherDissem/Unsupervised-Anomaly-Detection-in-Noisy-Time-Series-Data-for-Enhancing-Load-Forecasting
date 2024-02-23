@@ -436,11 +436,11 @@ def run_pipeline(data_folder,
             mlflow.log_param("model", "seq2seq")
             mlflow.log_param("data_type", "contam")
             mlflow.log_metrics({
-                "seq2seq_smape": smape_loss,
-                "seq2seq_r2": r2_loss,
-                "seq2seq_mae": mae_loss,
-                "seq2seq_mse": mse_loss,
-                "seq2seq_rmse": rmse_loss
+                "smape": smape_loss,
+                "r2": r2_loss,
+                "mae": mae_loss,
+                "mse": mse_loss,
+                "rmse": rmse_loss
             })
             mlflow.log_artifact(f"{forecasting_plots_path}/seq2seq/contam")
             
