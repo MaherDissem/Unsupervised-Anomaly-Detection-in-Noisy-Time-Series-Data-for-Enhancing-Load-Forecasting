@@ -1,4 +1,4 @@
-# TODO increase number of epochs and early-stop patience
+# run `python -m mlflow ui -p 8080` to start mlflow server
 import os
 import inspect
 import concurrent.futures
