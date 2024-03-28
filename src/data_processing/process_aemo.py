@@ -85,7 +85,7 @@ def run(args):
         trg_contam = int(data_contam_rate*len(load))
         
         # calculate average anomaly length for type 1 and type 2 anomalies to achieve the target contamination rate
-        avg_anom_1_length = (trg_contam - n_contam_days*anomaly_generator.prob_3 - n_contam_days*anomaly_generator.prob_4) / ((anomaly_generator.prob_1 + anomaly_generator.prob_2) / anomaly_generator.prob_1) / (n_contam_days * anomaly_generator.prob_1)
+        avg_anom_1_length = (trg_contam - n_contam_days*anomaly_generator.prob_3 - n_contam_days*anomaly_generator.prob_4) / ((anomaly_generator.prob_1 + anomaly_generator.prob_2) / anomaly_generator.prob_1) / (n_contam_days * anomaly_generator.prob_1) # should take into account 0 probability TODO
         avg_anom_2_length = (trg_contam - n_contam_days*anomaly_generator.prob_3 - n_contam_days*anomaly_generator.prob_4) / ((anomaly_generator.prob_1 + anomaly_generator.prob_2) / anomaly_generator.prob_2) / (n_contam_days * anomaly_generator.prob_2)
         anom1_len_var = avg_anom_1_length/2
         anom2_len_var = avg_anom_2_length/2
@@ -97,7 +97,7 @@ def run(args):
             seq_gt = gt[day_st: day_end]
 
             if day in contam_days:
-                if cur_contam_days >= n_contam_days*0.9:
+                if cur_contam_days >= n_contam_days*0.95:
                     # for the last chunk of data, we contaminate with the exact number of anomalies needed to reach the target contamination rate
                     avg_anom_1_length = (trg_contam - cur_contam) / ((anomaly_generator.prob_1 + anomaly_generator.prob_2) / anomaly_generator.prob_1) / ((n_contam_days - cur_contam_days) * anomaly_generator.prob_1)
                     avg_anom_2_length = (trg_contam - cur_contam) / ((anomaly_generator.prob_1 + anomaly_generator.prob_2) / anomaly_generator.prob_2) / ((n_contam_days - cur_contam_days) * anomaly_generator.prob_2)

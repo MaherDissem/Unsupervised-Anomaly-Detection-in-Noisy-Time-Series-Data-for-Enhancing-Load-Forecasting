@@ -29,8 +29,8 @@ class DecoderRNN(nn.Module):
         
     def forward(self, input, hidden):
         output, hidden = self.gru(input, hidden) 
-        output = F.relu( self.fc(output) )
-        output = self.out(output)      
+        output = F.relu(self.fc(output))
+        output = self.out(output)
         return output, hidden
     
 

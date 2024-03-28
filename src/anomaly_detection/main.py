@@ -186,7 +186,7 @@ def run(args):
         # patchtwise evaluation
         pred_masks = []
         for timeserie, score, heatmap in zip(timeseries, scores, heatmaps):
-            if score>coreset.window_threshold:
+            if score > coreset.window_threshold:
                 pred_mask = heatmap_postprocess(timeserie, heatmap, 
                                                 flag_highest_patch=False,  # disabling as it is not precise enough
                                                 flag_consec=True,          # True for synthetic data
