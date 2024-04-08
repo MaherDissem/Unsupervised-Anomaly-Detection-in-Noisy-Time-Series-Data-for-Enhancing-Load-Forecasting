@@ -200,12 +200,12 @@ def run_pipeline(data_folder,
 
                 else:
                     anom_idx = heatmap_postprocess(timeserie, heatmap, 
-                                                flag_highest_patch=False,
-                                                flag_consec=flag_consec,  # False for INPG dataset, True otherwise
-                                                flag_outliers=True,
-                                                extend_to_patch=True,
-                                                outlier_threshold=outlier_threshold,
-                                                anom_idx_only=True)
+                                                    flag_highest_patch=False,
+                                                    flag_consec=flag_consec,  # False for INPG dataset, True otherwise
+                                                    flag_outliers=True,
+                                                    extend_to_patch=True,
+                                                    outlier_threshold=outlier_threshold,
+                                                    anom_idx_only=True)
                     
                     masked_data = timeserie.clone()
                     masked_data[anom_idx] = 0
@@ -263,9 +263,30 @@ def run_pipeline(data_folder,
     default_AI_args.checkpoint_path = f"{weights_path}/checkpoint_ai.pt"
     default_AI_args.save_folder = imputation_eval_plots_path
 
-    AI_train(default_AI_args)
+    ai_mae, ai_mse, ai_rmse, ai_smape, ai_r2 = AI_train(default_AI_args, min_q_val, max_q_val)
 
-    # infer anomaly imputation model on samples flagged as anomalous
+    # scale metrics to original data range for better interpretability
+    ai_mae = ai_mae * (max_q_val - min_q_val)
+    ai_mse = ai_mse * (max_q_val - min_q_val)**2
+    ai_rmse = ai_rmse * (max_q_val - min_q_val)
+    
+    # log AI experiment
+    print(f"Anomaly Imputation: MAE={ai_mae:0.3f}, MSE={ai_mse:0.3f}, RMSE={ai_rmse:0.3f}, SMAPE={ai_smape:0.3f}, R2={ai_r2:0.3f}", file=open(log_file_path, "a"))
+    with mlflow.start_run(experiment_id=get_mlflow_experiment_id('Anomaly Imputation')) as ai_mlflow_run:
+        mlflow.log_param("dataset", data_folder)
+        mlflow.log_param("exp_folder", f"{results_folder}/{data_folder}/{exp_folder}")
+        mlflow.log_param("data_contam_rate", data_contam_rate)
+        mlflow.log_param("day_contam_rate", day_contam_rate)
+        mlflow.log_artifact(imputation_eval_plots_path)
+        mlflow.log_metrics({
+            "MAE": ai_mae,
+            "MSE": ai_mse,
+            "RMSE": ai_rmse,
+            "SMAPE": ai_smape,
+            "R2": ai_r2
+        })
+
+    # Infer anomaly imputation model on samples flagged as anomalous
     loaded_model = LSTM_AE(default_AI_args.seq_len, default_AI_args.no_features, default_AI_args.embedding_dim, default_AI_args.learning_rate, default_AI_args.every_epoch_print, default_AI_args.epochs, default_AI_args.patience, default_AI_args.max_grad_norm, default_AI_args.checkpoint_path, default_AI_args.seed)
     loaded_model.load()
 
