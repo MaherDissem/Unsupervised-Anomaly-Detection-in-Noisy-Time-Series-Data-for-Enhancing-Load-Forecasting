@@ -74,6 +74,7 @@ pip install -r requirements.txt
 
 python src/run_parallel_experiments.py
 ``````
+Results metrics, visualizations and weights will be saved to `results/` and logged to an MLflow server. Start it with `$ mlflow ui -p 8080`.
 
 ### Acknowledgement
 
