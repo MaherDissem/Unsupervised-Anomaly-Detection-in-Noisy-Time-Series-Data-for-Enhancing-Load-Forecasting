@@ -90,7 +90,7 @@ def train(args, device):
         mae = torch.nn.L1Loss()(gt_ts_batch, model_out_batch)
         mse = torch.nn.MSELoss()(gt_ts_batch, model_out_batch)
         rmse = torch.sqrt(mse)
-        smape = torch.mean(2.0 * torch.abs(gt_ts_batch - model_out_batch) / (torch.abs(gt_ts_batch) + torch.abs(model_out_batch)))
+        smape = 100 * torch.mean(2.0 * torch.abs(gt_ts_batch - model_out_batch) / (torch.abs(gt_ts_batch) + torch.abs(model_out_batch)))
         r2 = 1 - torch.sum((gt_ts_batch - model_out_batch) ** 2) / torch.sum((gt_ts_batch - torch.mean(gt_ts_batch)) ** 2)
         
         mae_list.append(mae.item())
