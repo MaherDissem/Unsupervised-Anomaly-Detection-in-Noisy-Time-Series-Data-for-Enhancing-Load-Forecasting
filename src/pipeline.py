@@ -263,7 +263,7 @@ def run_pipeline(data_folder,
     default_AI_args.checkpoint_path = f"{weights_path}/checkpoint_ai.pt"
     default_AI_args.save_folder = imputation_eval_plots_path
 
-    ai_mae, ai_mse, ai_rmse, ai_smape, ai_r2 = AI_train(default_AI_args, min_q_val, max_q_val)
+    ai_mae, ai_mse, ai_rmse, ai_smape, ai_r2 = AI_train(default_AI_args, device)
 
     # scale metrics to original data range for better interpretability
     ai_mae = ai_mae * (max_q_val - min_q_val)
