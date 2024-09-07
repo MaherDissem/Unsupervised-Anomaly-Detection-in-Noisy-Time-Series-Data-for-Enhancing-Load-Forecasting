@@ -15,9 +15,9 @@ from utils.utils import set_seed
 def parse_args():
     parser = argparse.ArgumentParser(description="Define hyperparameters for training")
     # data params
-    parser.add_argument("--dataset_root",        type=str,   default="dataset/processed/INPG/exp0/ai_train/data",   help="Root directory of the dataset")
+    parser.add_argument("--dataset_root",        type=str,   default="dataset/processed/AEMO/TAS/exp2/ai_train/data",   help="Root directory of the dataset")
     parser.add_argument("--split_ratio",         type=float, default=0.8,                                           help="Ratio for train-test split")
-    parser.add_argument("--seq_len",             type=int,   default=24*1,                                          help="Sequence length")
+    parser.add_argument("--seq_len",             type=int,   default=48*1,                                          help="Sequence length")
     parser.add_argument("--no_features",         type=int,   default=1,                                             help="Number of features")
     # model params
     parser.add_argument("--mask_size",           type=int,   default=8,                                             help="Length of the mask")
@@ -87,17 +87,22 @@ def train(args, device):
         model_out_batch = loaded_model.infer(ts_batch)
         gt_ts_batch = gt_ts_batch.to(device)
 
-        mae = torch.nn.L1Loss()(gt_ts_batch, model_out_batch)
-        mse = torch.nn.MSELoss()(gt_ts_batch, model_out_batch)
-        rmse = torch.sqrt(mse)
-        smape = 100 * torch.mean(2.0 * torch.abs(gt_ts_batch - model_out_batch) / (torch.abs(gt_ts_batch) + torch.abs(model_out_batch)))
-        r2 = 1 - torch.sum((gt_ts_batch - model_out_batch) ** 2) / torch.sum((gt_ts_batch - torch.mean(gt_ts_batch)) ** 2)
+        for gt_ts, mask, model_out in zip(gt_ts_batch,  mask_batch, model_out_batch):
+            ids = [i for i in range(len(mask)) if mask[i] == 0]
+            gt_ts = gt_ts[ids]
+            model_out = model_out[ids]
+
+            mae = torch.nn.L1Loss()(gt_ts, model_out)
+            mse = torch.nn.MSELoss()(gt_ts, model_out)
+            rmse = torch.sqrt(mse)
+            smape = 100 * torch.mean(2.0 * torch.abs(gt_ts - model_out) / (torch.abs(gt_ts) + torch.abs(model_out)))
+            r2 = 1 - torch.sum((gt_ts - model_out) ** 2) / torch.sum((gt_ts - torch.mean(gt_ts)) ** 2)
         
-        mae_list.append(mae.item())
-        mse_list.append(mse.item())
-        rmse_list.append(rmse.item())
-        smape_list.append(smape.item())
-        r2_list.append(r2.item())
+            mae_list.append(mae.item())
+            mse_list.append(mse.item())
+            rmse_list.append(rmse.item())
+            smape_list.append(smape.item())
+            r2_list.append(r2.item())
 
         if args.save_eval_plots:
             for ts, mask, gt_ts, model_out in zip(ts_batch, mask_batch, gt_ts_batch, model_out_batch):
