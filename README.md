@@ -87,5 +87,21 @@ Our codebase builds heavily on the following projects:
 Thanks for open-sourcing!
 
 ### Citation
-
-TBA
+If you find this repository useful for your research work, please consider citing it as follows:
+```
+﻿@Article{Dissem2024,
+    author={Dissem, Maher
+    and Amayri, Manar},
+    title={Unsupervised anomaly detection and imputation in noisy time series data for enhancing load forecasting},
+    journal={Applied Intelligence},
+    year={2024},
+    month={Nov},
+    day={22},
+    volume={55},
+    number={1},
+    pages={11},
+    issn={1573-7497},
+    doi={10.1007/s10489-024-05856-6},
+    url={https://doi.org/10.1007/s10489-024-05856-6}
+}
+```
